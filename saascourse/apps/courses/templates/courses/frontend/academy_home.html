@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}{{ current_tenant.name }} - Official Academy Storefront{% endblock %}
+
+{% block content %}
+<div>
+  
+  <!-- Academy Hero Banner -->
+  <section class="relative overflow-hidden py-20 lg:py-28 border-b border-slate-200 dark:border-slate-800 transition-colors">
+    {% if current_tenant.get_banner_url %}
+      <!-- Custom Hero Cover Banner Image with Backdrop Overlay -->
+      <div class="absolute inset-0 z-0">
+        <img src="{{ current_tenant.get_banner_url }}" alt="{{ current_tenant.name }} Cover Banner" class="w-full h-full object-cover opacity-25 dark:opacity-30 filter blur-[0.5px]">
+        <div class="absolute inset-0 bg-gradient-to-b from-slate-50/80 via-slate-50/95 to-slate-50 dark:from-slate-900/80 dark:via-slate-900/95 dark:to-slate-900"></div>
+      </div>
+    {% endif %}
+
+    <!-- Dynamic theme glow from tenant's primary color -->
+    <div class="absolute -top-36 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-brand-primary/20 blur-3xl opacity-60 pointer-events-none"></div>
+
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+      
+      <!-- Academy Pill -->
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold bg-brand-primary/10 text-brand-primary border border-brand-primary/25 mb-6">
+        <span class="w-2 h-2 rounded-full bg-brand-primary"></span>
+        {{ current_tenant.name }} Official Portal
+      </div>
+
+      <!-- Hero Headline from Tenant Branding -->
+      <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
+        {{ current_tenant.branding.hero_headline|default:"Master Practical Skills with Our Expert-Led Courses" }}
+      </h1>
+
+      <!-- Hero Subheadline -->
+      <p class="mt-6 text-lg sm:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
+        {{ current_tenant.branding.hero_subheadline|default:"Explore our curated, interactive curriculums with full code walkthroughs and community support." }}
+      </p>
+
+      <!-- Action Buttons -->
+      <div class="mt-10 flex flex-wrap items-center justify-center gap-4">
+        <a 
+          href="#courses"
+          class="px-8 py-4 rounded-2xl text-base font-bold bg-brand-primary text-white shadow-xl shadow-brand-primary/30 hover:opacity-90 transition-all transform hover:-translate-y-0.5"
+        >
+          {{ current_tenant.branding.cta_text|default:"Browse Courses" }} ↓
+        </a>
+        
+        {% if user.is_authenticated and current_tenant.owner == user %}
+          <a 
+            href="{% url 'courses:manage_dashboard' %}"
+            class="px-6 py-4 rounded-2xl text-sm font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm transition-all"
+          >
+            🛠️ Open Instructor Studio
+          </a>
+        {% endif %}
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Featured Courses Section -->
+  <section id="courses" class="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-12 border-b border-slate-200 dark:border-slate-800 pb-6">
+      <div>
+        <h2 class="text-xs font-mono uppercase tracking-wider text-brand-primary mb-1">Curriculum Directory</h2>
+        <h3 class="text-3xl font-extrabold text-slate-900 dark:text-white">Available Courses</h3>
+      </div>
+      <a href="{% url 'courses:list' %}" class="text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white mt-2 sm:mt-0">
+        View Complete Catalog →
+      </a>
+    </div>
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+      {% for course in courses %}
+        <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 overflow-hidden hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col group shadow-sm hover:shadow-md">
+          <!-- Thumbnail -->
+          <div class="h-48 bg-gradient-to-tr from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 relative overflow-hidden flex items-center justify-center">
+            {% if course.thumbnail %}
+              <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+            {% else %}
+              <div class="w-16 h-16 rounded-2xl bg-brand-primary/20 flex items-center justify-center text-brand-primary text-3xl font-bold">
+                🎓
+              </div>
+            {% endif %}
+            
+            <div class="absolute top-3 right-3">
+              {% if course.is_free %}
+                <span class="px-2.5 py-1 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                  FREE
+                </span>
+              {% else %}
+                <span class="px-2.5 py-1 rounded-xl text-xs font-bold bg-white/90 dark:bg-slate-900/90 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 shadow-sm">
+                  ৳{{ course.price }}
+                </span>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Body -->
+          <div class="p-6 flex-1 flex flex-col justify-between">
+            <div>
+              <div class="text-[11px] font-mono text-slate-500 mb-1">
+                Instructor: {{ course.instructor.get_full_name|default:course.instructor.email }}
+              </div>
+              <h4 class="text-xl font-bold text-slate-900 dark:text-white group-hover:text-brand-primary transition-colors line-clamp-1 mb-2">
+                <a href="{% url 'courses:detail' course.slug %}">
+                  {{ course.title }}
+                </a>
+              </h4>
+              <p class="text-xs text-slate-600 dark:text-slate-400 line-clamp-3 leading-relaxed">
+                {{ course.description|default:"Hands-on instructional curriculum designed for mastery." }}
+              </p>
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between">
+              <span class="text-xs text-slate-500 font-mono">
+                {{ course.modules.count }} Modules
+              </span>
+              <a 
+                href="{% url 'courses:detail' course.slug %}" 
+                class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-primary hover:opacity-80 transition-colors"
+              >
+                Enroll / View Syllabus →
+              </a>
+            </div>
+          </div>
+        </div>
+      {% empty %}
+        <div class="sm:col-span-3 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 p-12 text-center text-slate-500 shadow-sm">
+          <p class="text-sm font-medium">Courses are currently being recorded and published for this academy.</p>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- Academy Value Proposition / About Us -->
+  <section class="py-20 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 transition-colors">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <h3 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-4">
+        {{ current_tenant.branding.about_heading|default:"Why Learn With Us?" }}
+      </h3>
+      <p class="text-base text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl mx-auto mb-10">
+        {{ current_tenant.branding.about_text|default:"We are passionate about delivering top-tier educational materials that enable our students to achieve real outcomes." }}
+      </p>
+
+      <div class="grid sm:grid-cols-3 gap-6 text-left">
+        <div class="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 shadow-sm">
+          <div class="text-brand-primary text-xl mb-2">✓</div>
+          <h5 class="font-bold text-slate-900 dark:text-white text-sm mb-1">Direct Instructor Access</h5>
+          <p class="text-xs text-slate-600 dark:text-slate-400">Get feedback on your code and project submissions directly from real practitioners.</p>
+        </div>
+        <div class="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 shadow-sm">
+          <div class="text-brand-primary text-xl mb-2">✓</div>
+          <h5 class="font-bold text-slate-900 dark:text-white text-sm mb-1">Self-Paced Progress</h5>
+          <p class="text-xs text-slate-600 dark:text-slate-400">Your progress is automatically synchronized so you can pick up exactly where you left off.</p>
+        </div>
+        <div class="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 shadow-sm">
+          <div class="text-brand-primary text-xl mb-2">✓</div>
+          <h5 class="font-bold text-slate-900 dark:text-white text-sm mb-1">Lifetime Access</h5>
+          <p class="text-xs text-slate-600 dark:text-slate-400">Once enrolled, all updates, bonus videos, and resources are yours forever.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+{% endblock %}

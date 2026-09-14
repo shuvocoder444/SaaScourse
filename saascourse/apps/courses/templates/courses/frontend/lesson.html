@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}{{ lesson.title }} - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="py-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+  
+  <!-- Navigation bar -->
+  <div class="mb-6 flex items-center justify-between">
+    <a href="{% url 'courses:detail' course.slug %}" class="inline-flex items-center gap-2 text-xs font-mono text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors">
+      ← Back to {{ course.title }}
+    </a>
+    <span class="text-xs font-mono text-slate-500 dark:text-slate-400">
+      {{ lesson.module.title }}
+    </span>
+  </div>
+
+  <!-- Lesson Player & Content Box -->
+  <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 p-8 sm:p-10 mb-8 shadow-sm">
+    
+    <!-- Title & HTMX Progress Action -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6 mb-8">
+      <div>
+        <div class="text-xs font-mono text-brand-primary uppercase tracking-wider mb-1">
+          Lesson #{{ lesson.order }} ({{ lesson.get_content_type_display }})
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+          {{ lesson.title }}
+        </h1>
+      </div>
+
+      <!-- HTMX Interactive Completion Toggle -->
+      <div>
+        {% if user.is_authenticated %}
+          <button
+            hx-post="{% url 'courses:toggle_progress' lesson.id %}"
+            hx-swap="outerHTML"
+            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-md {% if progress and progress.is_completed %}bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20{% else %}bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700{% endif %}"
+          >
+            <span>{% if progress and progress.is_completed %}✓ Completed{% else %}Mark as Complete{% endif %}</span>
+          </button>
+        {% else %}
+          <span class="text-xs text-slate-500 dark:text-slate-400 font-mono">Sign in to track completion</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Video or Article Player -->
+    {% if lesson.video_url %}
+      <div class="aspect-video w-full rounded-2xl bg-black overflow-hidden border border-slate-200 dark:border-slate-800 mb-8 flex items-center justify-center relative shadow-2xl">
+        <iframe 
+          src="{{ lesson.video_url }}" 
+          class="w-full h-full" 
+          frameborder="0" 
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+          allowfullscreen>
+        </iframe>
+      </div>
+    {% endif %}
+
+    <!-- Lesson Article Body -->
+    <div class="prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 leading-relaxed text-sm sm:text-base space-y-4">
+      {{ lesson.content|linebreaks }}
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{{ current_tenant.name|default:"CourseFlow SaaS" }}{% endblock %}</title>
+
+  <!-- Favicon: Dynamic Tenant Favicon or Platform Fallback -->
+  {% if current_tenant and current_tenant.get_favicon_url %}
+    <link rel="icon" href="{{ current_tenant.get_favicon_url }}">
+  {% else %}
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+  {% endif %}
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              primary: 'var(--brand-primary, #4f46e5)',
+              accent: 'var(--brand-accent, #06b6d4)',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Alpine.js & HTMX CDN -->
+  <script defer src="https://unpkg.com/alpinejs@3.13.5/dist/cdn.min.js"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+  <!-- Dynamic Tenant Brand Tokens -->
+  <style>
+    :root {
+      --brand-primary: {{ current_tenant.branding.primary_color|default:"#4f46e5" }};
+      --brand-accent: {{ current_tenant.branding.accent_color|default:"#06b6d4" }};
+    }
+    .bg-brand-primary { background-color: var(--brand-primary); }
+    .text-brand-primary { color: var(--brand-primary); }
+    .border-brand-primary { border-color: var(--brand-primary); }
+    .ring-brand-primary { --tw-ring-color: var(--brand-primary); }
+    .hover\:bg-brand-primary:hover { background-color: var(--brand-primary); }
+    .hover\:text-brand-primary:hover { color: var(--brand-primary); }
+  </style>
+
+  <!-- Theme Initialization: Default is Light / White (sada) unless user selected dark -->
+  <script>
+    if (localStorage.theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  </script>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body 
+  x-data="{ isDark: document.documentElement.classList.contains('dark') }"
+  class="h-full bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex flex-col font-sans antialiased transition-colors duration-200" 
+  hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+>
+
+  <!-- Top Navigation Header -->
+  <header class="sticky top-0 z-50 backdrop-blur-md bg-white/80 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 transition-colors">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Brand Logo / Name -->
+      <div class="flex items-center gap-3">
+        <a href="{% url 'home' %}" class="flex items-center gap-2.5 group">
+          {% if current_tenant and current_tenant.get_logo_url %}
+            <img 
+              src="{{ current_tenant.get_logo_url }}" 
+              alt="{{ current_tenant.name }}" 
+              class="h-10 max-w-[140px] object-contain rounded-xl shadow-sm group-hover:scale-105 transition-transform"
+            >
+          {% else %}
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-primary to-cyan-400 flex items-center justify-center font-extrabold text-white text-lg shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform">
+              {% if current_tenant %}
+                {{ current_tenant.name|slice:":1"|upper }}
+              {% else %}
+                ⚡
+              {% endif %}
+            </div>
+          {% endif %}
+          <div>
+            <span class="font-bold text-lg tracking-tight text-slate-900 dark:text-white block group-hover:text-cyan-500 transition-colors">
+              {{ current_tenant.name|default:"CourseFlow" }}
+            </span>
+            {% if current_tenant %}
+              <span class="text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 -mt-1 block">
+                {{ current_tenant.slug }}.platform
+              </span>
+            {% else %}
+              <span class="text-[10px] font-mono uppercase tracking-wider text-indigo-600 dark:text-indigo-400 -mt-1 block">
+                Multi-Tenant Cloud
+              </span>
+            {% endif %}
+          </div>
+        </a>
+      </div>
+
+      <!-- Navigation Links & Theme Switcher -->
+      <nav class="flex items-center gap-2.5 sm:gap-3">
+        {% if current_tenant %}
+          <a href="{% url 'courses:list' %}" class="text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors hidden sm:block">Courses</a>
+        {% endif %}
+
+        {% if user.is_authenticated %}
+          <!-- Role-based Dashboard button -->
+          <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-brand-primary text-white hover:opacity-90 shadow-md shadow-brand-primary/20 transition-all">
+            <span>⚡ Dashboard</span>
+          </a>
+
+          {% if user.is_superuser %}
+            <a href="/tenants/platform/dashboard/?tab=settings" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 border border-amber-500/20 transition-all" title="Platform & Coaching Center Settings">
+              <span>⚙️ Settings</span>
+            </a>
+          {% endif %}
+
+          <!-- User Badge / Role -->
+          <div class="hidden md:flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800 text-xs font-mono">
+            <span class="text-slate-600 dark:text-slate-400 truncate max-w-[140px]">{{ user.first_name|default:user.email }}</span>
+            {% if user.is_superuser %}
+              <span class="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-bold">Admin</span>
+            {% elif current_tenant and current_tenant.owner == user %}
+              <span class="px-2 py-0.5 rounded-full text-[10px] bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 font-bold">Creator</span>
+            {% else %}
+              <span class="px-2 py-0.5 rounded-full text-[10px] bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 font-bold">Student</span>
+            {% endif %}
+          </div>
+
+          <!-- Sign Out -->
+          <a href="{% url 'users:logout' %}" class="text-xs font-mono text-slate-500 hover:text-rose-500 dark:text-slate-400 dark:hover:text-rose-400 transition-colors px-2 py-1" title="Sign Out">
+            Sign Out
+          </a>
+        {% else %}
+          <!-- Sign In Button -->
+          <a href="{% url 'users:login' %}" class="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-semibold transition-all shadow-sm">
+            Sign In
+          </a>
+          {% if not current_tenant %}
+            <a href="{% url 'signup' %}" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-brand-primary to-cyan-500 hover:opacity-90 text-white text-xs font-bold shadow-md shadow-brand-primary/20 transition-all">
+              Free Trial →
+            </a>
+          {% endif %}
+        {% endif %}
+
+        <!-- Dark / Light Mode Toggle Button (Available everywhere and all the time) -->
+        <button 
+          type="button"
+          @click="
+            isDark = !isDark;
+            if (isDark) {
+              document.documentElement.classList.add('dark');
+              localStorage.theme = 'dark';
+            } else {
+              document.documentElement.classList.remove('dark');
+              localStorage.theme = 'light';
+            }
+          "
+          class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-amber-400 hover:text-amber-500 dark:hover:text-amber-300 transition-all shadow-sm focus:outline-none"
+          title="Toggle Light (White) / Dark Mode"
+          aria-label="Toggle Theme"
+        >
+          <!-- Sun Icon (in dark mode to switch to light) -->
+          <svg x-show="isDark" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: none;">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+          </svg>
+          <!-- Moon Icon (in light mode to switch to dark) -->
+          <svg x-show="!isDark" class="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+          </svg>
+        </button>
+
+        <a href="/admin/" class="text-[11px] font-mono px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950/60 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-400 transition-all" title="Django Admin Console">
+          ⚙️
+        </a>
+      </nav>
+
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 py-8 mt-auto transition-colors">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 dark:text-slate-400 gap-4">
+      <div>
+        © 2026 {{ current_tenant.name|default:"CourseFlow LMS Platform" }}. Powered by Shared-DB Multi-Tenancy.
+      </div>
+      <div class="flex items-center gap-4 font-mono">
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          {% if current_tenant %}Tenant: {{ current_tenant.slug }}{% else %}Platform Host{% endif %}
+        </span>
+      </div>
+    </div>
+  </footer>
+
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

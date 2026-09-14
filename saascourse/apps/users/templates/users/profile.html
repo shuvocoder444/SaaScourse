@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}User Profile - CourseFlow{% endblock %}
+
+{% block content %}
+<div class="py-12 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+  <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 p-8 sm:p-10 shadow-sm">
+    <div class="flex items-center gap-4 border-b border-slate-200 dark:border-slate-800 pb-6 mb-8">
+      <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-cyan-400 flex items-center justify-center font-bold text-2xl text-white shadow-lg">
+        {{ user.email|slice:":1"|upper }}
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900 dark:text-white">{{ user.get_full_name|default:user.email }}</h1>
+        <p class="text-xs font-mono text-slate-500 dark:text-slate-400">{{ user.email }}</p>
+      </div>
+    </div>
+
+    <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4">Tenant Academy Memberships</h2>
+    <div class="divide-y divide-slate-200 dark:divide-slate-800/80 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-slate-50 dark:bg-slate-950/40">
+      {% for membership in user.tenant_memberships.all %}
+        <div class="p-4 flex items-center justify-between">
+          <div>
+            <div class="font-semibold text-slate-900 dark:text-white text-sm">{{ membership.tenant.name }}</div>
+            <div class="text-xs font-mono text-slate-500">{{ membership.tenant.slug }}.platform</div>
+          </div>
+          <span class="px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+            {{ membership.get_role_display }}
+          </span>
+        </div>
+      {% empty %}
+        <div class="p-6 text-center text-xs text-slate-500">
+          No active academy memberships.
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

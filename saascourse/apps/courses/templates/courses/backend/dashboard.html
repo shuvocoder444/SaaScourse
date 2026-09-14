@@ -1,0 +1,777 @@
+{% extends "base.html" %}
+
+{% block title %}Instructor Studio — {{ current_tenant.name }}{% endblock %}
+
+{% block content %}
+<div 
+  x-data="{ 
+    sidebarOpen: false, 
+    activeTab: new URLSearchParams(window.location.search).get('tab') || 'overview' 
+  }" 
+  class="min-h-[calc(100vh-4rem)] flex flex-col lg:flex-row bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors"
+>
+
+  <!-- Mobile Top Bar for Sidebar Toggle -->
+  <div class="lg:hidden flex items-center justify-between px-4 py-3 bg-white/90 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800">
+    <div class="flex items-center gap-2">
+      <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-brand-primary to-cyan-400 flex items-center justify-center font-bold text-white text-xs">
+        {{ current_tenant.name|slice:":1"|upper }}
+      </div>
+      <span class="text-sm font-bold text-slate-900 dark:text-white truncate max-w-[200px]">{{ current_tenant.name }} Studio</span>
+    </div>
+    <button 
+      @click="sidebarOpen = !sidebarOpen"
+      class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-slate-700 focus:outline-none"
+    >
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Mobile Off-Canvas Drawer Backdrop -->
+  <div 
+    x-show="sidebarOpen" 
+    x-cloak 
+    @click="sidebarOpen = false" 
+    class="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden transition-opacity"
+  ></div>
+
+  <!-- Left Sidebar (Slide Bar Menu - Stays present on all tabs/menus) -->
+  <aside 
+    :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+    class="fixed lg:static inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between transition-transform duration-300 ease-in-out lg:min-h-[calc(100vh-4rem)] shadow-2xl lg:shadow-none shrink-0"
+  >
+    <!-- Top Branding & Navigation -->
+    <div class="p-6 space-y-6">
+      
+      <!-- Academy Header Card -->
+      <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800/80">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-primary to-cyan-400 flex items-center justify-center font-extrabold text-white text-lg shadow-lg shadow-brand-primary/20">
+            {{ current_tenant.name|slice:":1"|upper }}
+          </div>
+          <div class="truncate max-w-[140px]">
+            <span class="font-extrabold text-sm text-slate-900 dark:text-white block truncate">{{ current_tenant.name }}</span>
+            <span class="text-[10px] font-mono text-indigo-600 dark:text-cyan-400 block truncate">{{ current_tenant.slug }}.localhost</span>
+          </div>
+        </div>
+        <button @click="sidebarOpen = false" class="lg:hidden text-slate-400 hover:text-slate-900 dark:hover:text-white">✕</button>
+      </div>
+
+      <!-- Navigation Menu Items (Sidebar always present across all dashboard views) -->
+      <div class="space-y-1">
+        <span class="text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 px-3 block mb-2 font-semibold">
+          Studio Navigation
+        </span>
+
+        <!-- Menu 1: Studio Overview -->
+        <button 
+          type="button"
+          @click="activeTab = 'overview'; sidebarOpen = false" 
+          :class="activeTab === 'overview' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/20' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'"
+          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all text-left"
+        >
+          <span class="text-sm">📊</span>
+          <span>Studio Overview</span>
+        </button>
+
+        <!-- Menu 2: Courses & Curriculum -->
+        <button 
+          type="button"
+          @click="activeTab = 'courses'; sidebarOpen = false" 
+          :class="activeTab === 'courses' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/20' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'"
+          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all text-left"
+        >
+          <span class="text-sm">📚</span>
+          <span>Courses & Curriculum</span>
+          <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">{{ courses.count }}</span>
+        </button>
+
+        <!-- Menu 3: Domain Management (Subdomain & Custom Domain) -->
+        <button 
+          type="button"
+          @click="activeTab = 'domain'; sidebarOpen = false" 
+          :class="activeTab === 'domain' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/20' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'"
+          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all text-left"
+        >
+          <span class="text-sm">🌐</span>
+          <span>Domain Management</span>
+          {% if current_tenant.custom_domain_verified %}
+            <span class="ml-auto text-emerald-600 dark:text-emerald-400 text-xs">✓</span>
+          {% endif %}
+        </button>
+
+        <!-- Menu 4: Storefront & Branding -->
+        <button 
+          type="button"
+          @click="activeTab = 'branding'; sidebarOpen = false" 
+          :class="activeTab === 'branding' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/20' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'"
+          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all text-left"
+        >
+          <span class="text-sm">🎨</span>
+          <span>Storefront & Branding</span>
+        </button>
+
+        <!-- Menu 5: SMS Gateway Settings -->
+        <a 
+          href="{% url 'tenants:settings' %}?tab=sms" 
+          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900 transition-all text-left"
+        >
+          <span class="text-sm">📱</span>
+          <span>SMS Gateway Settings</span>
+          <span class="ml-auto text-[10px] text-indigo-600 dark:text-cyan-400 font-mono">↗</span>
+        </a>
+
+        <!-- Menu 6: Plan & Subscription -->
+        <button 
+          type="button"
+          @click="activeTab = 'subscription'; sidebarOpen = false" 
+          :class="activeTab === 'subscription' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/20' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'"
+          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all text-left"
+        >
+          <span class="text-sm">💳</span>
+          <span>Plan & Subscription</span>
+        </button>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="space-y-1 pt-4 border-t border-slate-200 dark:border-slate-800/80">
+        <span class="text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 px-3 block mb-2 font-semibold">
+          Quick Actions
+        </span>
+
+        <a href="/admin/courses/course/add/" target="_blank" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-indigo-600 dark:text-cyan-400 hover:text-indigo-800 dark:hover:text-cyan-300 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all">
+          <span class="text-sm">➕</span>
+          <span>Add New Course ↗</span>
+        </a>
+
+        <a href="/" target="_blank" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900 transition-all">
+          <span class="text-sm">👁️</span>
+          <span>Public Storefront ↗</span>
+        </a>
+      </div>
+
+      <!-- Quota Meter Widget in Sidebar -->
+      <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
+        <div class="flex justify-between text-[11px] font-mono">
+          <span class="text-slate-500 dark:text-slate-400">Course Plan Limit:</span>
+          <span class="text-slate-900 dark:text-white font-bold">{{ courses.count }}/{{ max_courses }}</span>
+        </div>
+        <div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+          <div class="bg-gradient-to-r from-brand-primary to-cyan-400 h-1.5 rounded-full" style="width: {{ course_usage_percent }}%"></div>
+        </div>
+        <div class="text-[10px] font-mono text-slate-500 flex justify-between">
+          <span>{{ current_tenant.subscription.plan.name|default:"Pro" }}</span>
+          <span class="text-emerald-600 dark:text-emerald-400 font-bold">৳{{ current_tenant.subscription.plan.price_monthly|default:"7900"|floatformat:0 }}/mo</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom User Profile Card -->
+    <div class="p-4 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/40">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center font-bold text-xs text-slate-700 dark:text-slate-200">
+          {% if user.is_authenticated %}{{ user.first_name|default:user.email|slice:":1"|upper }}{% else %}A{% endif %}
+        </div>
+        <div class="truncate max-w-[150px]">
+          <span class="text-xs font-semibold text-slate-900 dark:text-white block truncate">{% if user.is_authenticated %}{{ user.get_full_name|default:user.email }}{% else %}Academy Owner{% endif %}</span>
+          <span class="text-[10px] font-mono text-indigo-600 dark:text-indigo-400">Academy Owner</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Studio Content Area (Changes smoothly based on activeTab) -->
+  <main class="flex-1 p-6 sm:p-10 max-w-7xl overflow-y-auto">
+
+    {% if messages %}
+      <div class="mb-6 space-y-2">
+        {% for message in messages %}
+          <div class="p-4 rounded-xl border text-xs font-semibold flex items-center gap-2 shadow-sm {% if message.tags == 'error' %}bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400{% else %}bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400{% endif %}">
+            <span>{% if message.tags == 'error' %}⚠️{% else %}✓{% endif %}</span>
+            <span>{{ message }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- ========================================== -->
+    <!-- TAB 1: STUDIO OVERVIEW                    -->
+    <!-- ========================================== -->
+    <div x-show="activeTab === 'overview'" x-cloak class="space-y-8">
+      <!-- Header -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-50 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-500/20">
+              Active Studio Context
+            </span>
+            <span class="text-xs text-slate-500 font-mono">Subdomain: {{ current_tenant.slug }}.localhost</span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            Course Management Studio — {{ current_tenant.name }}
+          </h1>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button 
+            @click="activeTab = 'domain'" 
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm transition-all"
+          >
+            <span>🌐 Change Domain</span>
+          </button>
+          <a 
+            href="/admin/courses/course/add/" 
+            target="_blank"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-brand-primary text-white hover:opacity-90 shadow-md shadow-brand-primary/20 transition-all"
+          >
+            <span>➕ New Course</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Overview Stats Grid -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-sm">
+          <span class="text-xs font-mono text-slate-500 dark:text-slate-400 block mb-1">Published Courses</span>
+          <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ published_count }}</div>
+          <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">Live on Storefront</span>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-sm">
+          <span class="text-xs font-mono text-slate-500 dark:text-slate-400 block mb-1">Total Enrollments</span>
+          <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ total_enrollments }}</div>
+          <span class="text-[10px] text-indigo-600 dark:text-cyan-400 font-mono">Active Students</span>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-sm">
+          <span class="text-xs font-mono text-slate-500 dark:text-slate-400 block mb-1">Curriculum Modules</span>
+          <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ total_modules }}</div>
+          <span class="text-[10px] text-slate-500 dark:text-slate-400 font-mono">Structured Units</span>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-sm">
+          <span class="text-xs font-mono text-slate-500 dark:text-slate-400 block mb-1">Plan Quota</span>
+          <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ courses.count }}/{{ max_courses }}</div>
+          <span class="text-[10px] text-amber-600 dark:text-amber-400 font-mono">{{ course_usage_percent }}% capacity</span>
+        </div>
+      </div>
+
+      <!-- Domain & Storefront Quick Access Card -->
+      <div class="p-6 rounded-3xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div>
+          <span class="text-xs font-mono uppercase tracking-wider text-indigo-600 dark:text-cyan-400 font-bold block mb-1">
+            Academy Web Address & Domains
+          </span>
+          <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+            {% if current_tenant.custom_domain %}
+              {{ current_tenant.custom_domain }}
+            {% else %}
+              {{ current_tenant.slug }}.localhost:8001
+            {% endif %}
+          </h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            {% if current_tenant.custom_domain %}
+              Custom CNAME active. Primary subdomain: <code class="font-mono text-indigo-600 dark:text-cyan-400">{{ current_tenant.slug }}.localhost:8001</code>
+            {% else %}
+              Operating on default subdomain. You can change your subdomain or bind your custom domain anytime.
+            {% endif %}
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button 
+            @click="activeTab = 'domain'" 
+            class="px-4 py-2.5 rounded-xl bg-brand-primary text-white text-xs font-bold hover:opacity-90 shadow-md shadow-brand-primary/20 transition-all"
+          >
+            Manage Domain Settings →
+          </button>
+        </div>
+      </div>
+
+      <!-- Recent Courses Preview -->
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-bold text-slate-900 dark:text-white">Your Courses</h2>
+          <button @click="activeTab = 'courses'" class="text-xs font-semibold text-indigo-600 hover:text-indigo-700 dark:text-cyan-400">View All ({{ courses.count }}) →</button>
+        </div>
+        <div class="divide-y divide-slate-200 dark:divide-slate-800 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900/40 shadow-sm">
+          {% for course in courses|slice:":4" %}
+            <div class="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+              <div>
+                <div class="flex items-center gap-2">
+                  <h4 class="font-bold text-slate-900 dark:text-white text-sm">{{ course.title }}</h4>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-mono {% if course.status == 'PUBLISHED' %}bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20{% else %}bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400{% endif %}">
+                    {{ course.status }}
+                  </span>
+                </div>
+                <div class="text-xs font-mono text-slate-500 mt-1">
+                  {{ course.modules.count }} Modules • {{ course.enrollments.count }} Students • ৳{{ course.price|default:"Free" }}
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <a href="{% url 'courses:detail' course.slug %}" target="_blank" class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white">
+                  Preview ↗
+                </a>
+                <a href="/admin/courses/course/{{ course.id }}/change/" target="_blank" class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700">
+                  Edit ⚙️
+                </a>
+              </div>
+            </div>
+          {% empty %}
+            <div class="p-8 text-center text-xs text-slate-500">No courses created yet.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: COURSES & CURRICULUM                -->
+    <!-- ========================================== -->
+    <div x-show="activeTab === 'courses'" x-cloak class="space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
+        <div>
+          <h2 class="text-2xl font-extrabold text-slate-900 dark:text-white">Courses & Curriculum Builder</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Create, organize modules, and track active student enrollments.</p>
+        </div>
+        <a href="/admin/courses/course/add/" target="_blank" class="px-4 py-2 rounded-xl text-xs font-bold bg-brand-primary text-white hover:opacity-90 shadow-md shadow-brand-primary/20 transition-all">
+          ➕ Add New Course
+        </a>
+      </div>
+
+      <!-- Course Table -->
+      <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm overflow-hidden">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-100/70 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 font-mono text-slate-500 uppercase">
+            <tr>
+              <th class="p-4">Course Title</th>
+              <th class="p-4">Status</th>
+              <th class="p-4">Price</th>
+              <th class="p-4">Curriculum</th>
+              <th class="p-4">Students</th>
+              <th class="p-4 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+            {% for course in courses %}
+              <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                <td class="p-4 font-semibold text-slate-900 dark:text-white">
+                  {{ course.title }}
+                  <span class="block text-[10px] font-mono text-slate-400">/courses/{{ course.slug }}/</span>
+                </td>
+                <td class="p-4">
+                  <span class="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold {% if course.status == 'PUBLISHED' %}bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20{% else %}bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400{% endif %}">
+                    {{ course.status }}
+                  </span>
+                </td>
+                <td class="p-4 font-mono font-bold text-slate-900 dark:text-white">
+                  {% if course.price %}৳{{ course.price }}{% else %}Free{% endif %}
+                </td>
+                <td class="p-4 font-mono text-slate-600 dark:text-slate-400">
+                  {{ course.modules.count }} Modules
+                </td>
+                <td class="p-4 font-mono text-slate-600 dark:text-slate-400">
+                  {{ course.enrollments.count }} Enrolled
+                </td>
+                <td class="p-4 text-right space-x-2">
+                  <a href="{% url 'courses:detail' course.slug %}" target="_blank" class="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold">
+                    View
+                  </a>
+                  <a href="/admin/courses/course/{{ course.id }}/change/" target="_blank" class="px-2.5 py-1 rounded-lg bg-brand-primary text-white font-semibold">
+                    Edit
+                  </a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6" class="p-8 text-center text-slate-500 font-mono">No courses in academy yet.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: DOMAIN MANAGEMENT (CHANGE DOMAIN)   -->
+    <!-- ========================================== -->
+    <div x-show="activeTab === 'domain'" x-cloak class="space-y-8">
+      <div class="border-b border-slate-200 dark:border-slate-800 pb-6">
+        <h2 class="text-2xl font-extrabold text-slate-900 dark:text-white">Academy Domain & Web Address Settings</h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          Here you can change both your Academy Subdomain (e.g. <code class="text-indigo-600 dark:text-cyan-400">{{ current_tenant.slug }}.localhost:8001</code>) and connect your own Custom CNAME Domain (e.g. <code class="text-indigo-600 dark:text-cyan-400">learn.mycompany.com</code>).
+        </p>
+      </div>
+
+      <!-- Card 1: Change Subdomain -->
+      <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 p-6 sm:p-8 shadow-sm space-y-6">
+        <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+          <div>
+            <span class="text-xs font-mono uppercase text-indigo-600 dark:text-cyan-400 font-bold">Primary Subdomain</span>
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white mt-0.5">Change Academy Subdomain</h3>
+          </div>
+          <span class="px-3 py-1 rounded-full text-xs font-mono font-bold bg-cyan-50 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-500/20">
+            Current: {{ current_tenant.slug }}
+          </span>
+        </div>
+
+        <form method="POST" action="{% url 'tenants:settings' %}" class="space-y-4">
+          {% csrf_token %}
+          <input type="hidden" name="active_tab" value="domain">
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              Enter New Subdomain Prefix
+            </label>
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 max-w-xl">
+              <div class="flex-1 flex items-center rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 overflow-hidden focus-within:border-cyan-500 shadow-sm">
+                <input 
+                  type="text" 
+                  name="subdomain" 
+                  value="{{ current_tenant.slug }}" 
+                  required 
+                  class="w-full px-4 py-3 bg-transparent text-slate-900 dark:text-white text-sm font-mono focus:outline-none"
+                  placeholder="myacademy"
+                >
+                <span class="px-3 py-3 bg-slate-100 dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 text-slate-500 text-xs font-mono">
+                  .localhost:8001
+                </span>
+              </div>
+
+              <button 
+                type="submit" 
+                class="px-5 py-3 rounded-xl bg-brand-primary text-white text-xs font-bold hover:opacity-90 shadow-md shadow-brand-primary/20 transition-all shrink-0"
+              >
+                Update Subdomain →
+              </button>
+            </div>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+              Note: Updating your subdomain immediately redirects your academy address. Only lowercase letters, numbers, and hyphens are allowed.
+            </p>
+          </div>
+        </form>
+      </div>
+
+      <!-- Card 2: Change Custom Domain (CNAME) -->
+      <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 p-6 sm:p-8 shadow-sm space-y-6">
+        <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+          <div>
+            <span class="text-xs font-mono uppercase text-indigo-600 dark:text-cyan-400 font-bold">White-Label Custom Domain</span>
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white mt-0.5">Connect Your Custom Domain (CNAME)</h3>
+          </div>
+          {% if current_tenant.custom_domain %}
+            <span class="px-3 py-1 rounded-full text-xs font-mono font-bold {% if current_tenant.custom_domain_verified %}bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20{% else %}bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20{% endif %}">
+              {% if current_tenant.custom_domain_verified %}✓ SSL Verified{% else %}⚠️ Pending DNS Verification{% endif %}
+            </span>
+          {% endif %}
+        </div>
+
+        <form method="POST" action="{% url 'tenants:settings' %}" class="space-y-4">
+          {% csrf_token %}
+          <input type="hidden" name="active_tab" value="domain">
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              Custom Domain Address
+            </label>
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 max-w-xl">
+              <input 
+                type="text" 
+                name="custom_domain" 
+                value="{{ current_tenant.custom_domain|default:'' }}" 
+                placeholder="e.g. learn.myacademy.com"
+                class="flex-1 px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm font-mono focus:bg-white focus:outline-none focus:border-cyan-500 shadow-sm"
+              >
+              <button 
+                type="submit" 
+                class="px-5 py-3 rounded-xl bg-brand-primary text-white text-xs font-bold hover:opacity-90 shadow-md shadow-brand-primary/20 transition-all shrink-0"
+              >
+                Save Custom Domain
+              </button>
+            </div>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+              Leave blank to remove custom domain and revert to the primary subdomain.
+            </p>
+          </div>
+        </form>
+
+        <!-- DNS Guidance & SSL Verification (When Custom Domain is set) -->
+        {% if current_tenant.custom_domain %}
+          <div class="mt-6 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/70 space-y-4">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-mono uppercase tracking-wider text-indigo-600 dark:text-cyan-400 font-bold">
+                DNS Configuration for {{ current_tenant.custom_domain }}
+              </h4>
+              <span class="text-[11px] font-mono text-slate-500">Configure at your DNS provider (Cloudflare, GoDaddy, Namecheap)</span>
+            </div>
+
+            <div class="grid sm:grid-cols-2 gap-4 text-xs font-mono">
+              <!-- Record 1: CNAME -->
+              <div class="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+                <span class="text-[10px] uppercase text-indigo-600 dark:text-indigo-400 font-bold block mb-1">1. CNAME Routing Record</span>
+                <div class="text-slate-600 dark:text-slate-300">Type: <strong class="text-slate-900 dark:text-white">CNAME</strong></div>
+                <div class="text-slate-600 dark:text-slate-300">Host: <strong class="text-slate-900 dark:text-white">{{ current_tenant.custom_domain }}</strong></div>
+                <div class="text-slate-600 dark:text-slate-300 truncate">Target: <strong class="text-indigo-600 dark:text-cyan-400">cname.platform.com</strong></div>
+              </div>
+
+              <!-- Record 2: TXT Verification -->
+              <div class="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+                <span class="text-[10px] uppercase text-cyan-600 dark:text-cyan-400 font-bold block mb-1">2. TXT Security Challenge</span>
+                <div class="text-slate-600 dark:text-slate-300">Type: <strong class="text-slate-900 dark:text-white">TXT</strong></div>
+                <div class="text-slate-600 dark:text-slate-300 truncate">Host: <strong class="text-slate-900 dark:text-white">_saascourse-challenge.{{ current_tenant.custom_domain }}</strong></div>
+                <div class="text-slate-600 dark:text-slate-300 truncate">Value: <strong class="text-indigo-600 dark:text-cyan-400">{{ current_tenant.custom_domain_token }}</strong></div>
+              </div>
+            </div>
+
+            <!-- Live SSL Verification Action Trigger -->
+            <div class="pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div class="text-xs text-slate-500 dark:text-slate-400">
+                Click verify after adding your DNS records to issue your automated TLS/SSL certificate.
+              </div>
+              <button 
+                hx-post="{% url 'tenants:verify_custom_domain' %}"
+                hx-target="#verification-result"
+                hx-indicator="#verifying-spinner"
+                class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/20 flex items-center gap-2"
+              >
+                <span>Verify DNS & Activate SSL</span>
+                <span id="verifying-spinner" class="htmx-indicator animate-spin">⏳</span>
+              </button>
+            </div>
+
+            <div id="verification-result"></div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 4: STOREFRONT & BRANDING               -->
+    <!-- ========================================== -->
+    <div x-show="activeTab === 'branding'" x-cloak class="space-y-8">
+      <div class="border-b border-slate-200 dark:border-slate-800 pb-6">
+        <h2 class="text-2xl font-extrabold text-slate-900 dark:text-white">Storefront Visual Customizer</h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Tailor the visual branding, theme palette, and copy for your public academy landing page.</p>
+      </div>
+
+      <form method="POST" action="{% url 'tenants:settings' %}" enctype="multipart/form-data" class="space-y-8 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-6 sm:p-10 shadow-sm">
+        {% csrf_token %}
+        <input type="hidden" name="active_tab" value="branding">
+
+        <!-- Brand Visual Assets (Logo, Banner, Favicon) -->
+        <div class="space-y-4">
+          <div class="border-b border-slate-200 dark:border-slate-800 pb-2">
+            <h3 class="text-xs font-mono uppercase text-indigo-600 dark:text-cyan-400 font-bold tracking-wider">Visual Assets</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Upload academy logo, hero cover banner, and browser favicon.</p>
+          </div>
+
+          <div class="grid md:grid-cols-3 gap-6">
+            <!-- Asset 1: Logo -->
+            <div class="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 flex flex-col justify-between space-y-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-2">Academy Logo</label>
+                <div class="h-24 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center p-2">
+                  {% if current_tenant.get_logo_url %}
+                    <img src="{{ current_tenant.get_logo_url }}" alt="Logo" class="max-h-20 max-w-full object-contain">
+                  {% else %}
+                    <span class="text-xs font-mono text-slate-400">No logo uploaded</span>
+                  {% endif %}
+                </div>
+              </div>
+              <input type="file" name="logo" accept="image/*" class="block w-full text-[11px] text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-semibold file:bg-indigo-50 file:text-indigo-700 dark:file:bg-slate-800 dark:file:text-cyan-400">
+            </div>
+
+            <!-- Asset 2: Cover Banner -->
+            <div class="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 flex flex-col justify-between space-y-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-2">Hero Cover Banner</label>
+                <div class="h-24 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center p-1 overflow-hidden">
+                  {% if current_tenant.get_banner_url %}
+                    <img src="{{ current_tenant.get_banner_url }}" alt="Banner" class="w-full h-full object-cover rounded-lg">
+                  {% else %}
+                    <span class="text-xs font-mono text-slate-400">No cover banner</span>
+                  {% endif %}
+                </div>
+              </div>
+              <input type="file" name="banner" accept="image/*" class="block w-full text-[11px] text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-semibold file:bg-indigo-50 file:text-indigo-700 dark:file:bg-slate-800 dark:file:text-cyan-400">
+            </div>
+
+            <!-- Asset 3: Favicon -->
+            <div class="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 flex flex-col justify-between space-y-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-2">Browser Favicon</label>
+                <div class="h-24 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center p-2">
+                  {% if current_tenant.get_favicon_url %}
+                    <img src="{{ current_tenant.get_favicon_url }}" alt="Favicon" class="w-8 h-8 object-contain">
+                  {% else %}
+                    <span class="text-xs font-mono text-slate-400">Default icon</span>
+                  {% endif %}
+                </div>
+              </div>
+              <input type="file" name="favicon" accept="image/x-icon,image/png" class="block w-full text-[11px] text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-semibold file:bg-indigo-50 file:text-indigo-700 dark:file:bg-slate-800 dark:file:text-cyan-400">
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Academy Brand Name</label>
+          <input 
+            type="text" 
+            name="name" 
+            value="{{ current_tenant.name }}" 
+            required 
+            class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-cyan-500 shadow-sm"
+          >
+        </div>
+
+        <!-- Color Tokens -->
+        <div class="grid sm:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Primary Theme Color</label>
+            <div class="flex items-center gap-3">
+              <input 
+                type="color" 
+                name="primary_color" 
+                value="{{ current_tenant.branding.primary_color|default:'#4f46e5' }}" 
+                class="w-12 h-12 rounded-xl cursor-pointer border border-slate-300 dark:border-slate-700 bg-transparent p-1"
+              >
+              <input 
+                type="text" 
+                value="{{ current_tenant.branding.primary_color|default:'#4f46e5' }}" 
+                readonly 
+                class="flex-1 px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-mono"
+              >
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Accent Color</label>
+            <div class="flex items-center gap-3">
+              <input 
+                type="color" 
+                name="accent_color" 
+                value="{{ current_tenant.branding.accent_color|default:'#06b6d4' }}" 
+                class="w-12 h-12 rounded-xl cursor-pointer border border-slate-300 dark:border-slate-700 bg-transparent p-1"
+              >
+              <input 
+                type="text" 
+                value="{{ current_tenant.branding.accent_color|default:'#06b6d4' }}" 
+                readonly 
+                class="flex-1 px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-mono"
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Storefront Copy -->
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Storefront Tagline</label>
+            <input 
+              type="text" 
+              name="tagline" 
+              value="{{ current_tenant.branding.tagline|default:'' }}" 
+              class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-cyan-500 shadow-sm"
+            >
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Hero Headline</label>
+            <input 
+              type="text" 
+              name="hero_headline" 
+              value="{{ current_tenant.branding.hero_headline|default:'' }}" 
+              class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-cyan-500 shadow-sm"
+            >
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Hero Subheadline</label>
+            <textarea 
+              name="hero_subheadline" 
+              rows="3" 
+              class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-cyan-500 shadow-sm"
+            >{{ current_tenant.branding.hero_subheadline|default:'' }}</textarea>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Call to Action (CTA) Button Text</label>
+            <input 
+              type="text" 
+              name="cta_text" 
+              value="{{ current_tenant.branding.cta_text|default:'Explore All Courses' }}" 
+              class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-cyan-500 shadow-sm"
+            >
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">About Section Heading</label>
+            <input 
+              type="text" 
+              name="about_heading" 
+              value="{{ current_tenant.branding.about_heading|default:'Why Learn With Us?' }}" 
+              class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-cyan-500 shadow-sm"
+            >
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">About Section Description</label>
+            <textarea 
+              name="about_text" 
+              rows="3" 
+              class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-cyan-500 shadow-sm"
+            >{{ current_tenant.branding.about_text|default:'' }}</textarea>
+          </div>
+        </div>
+
+        <button 
+          type="submit" 
+          class="px-6 py-3 rounded-xl bg-brand-primary text-white text-xs font-bold hover:opacity-90 shadow-md shadow-brand-primary/20 transition-all"
+        >
+          Save Storefront Branding
+        </button>
+      </form>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 5: PLAN & SUBSCRIPTION                 -->
+    <!-- ========================================== -->
+    <div x-show="activeTab === 'subscription'" x-cloak class="space-y-8">
+      <div class="border-b border-slate-200 dark:border-slate-800 pb-6">
+        <h2 class="text-2xl font-extrabold text-slate-900 dark:text-white">SaaS Subscription & Capacity Quotas</h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Review your plan tier, quotas, and billing cycle status.</p>
+      </div>
+
+      <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-8 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div>
+          <span class="text-xs font-mono uppercase text-slate-500 block mb-1">Current Active Tier</span>
+          <div class="flex items-center gap-3">
+            <h3 class="text-3xl font-black text-slate-900 dark:text-white">{{ current_tenant.subscription.plan.name }} Plan</h3>
+            <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              {{ current_tenant.subscription.get_status_display }}
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 font-mono">
+            Rate: <strong>৳{{ current_tenant.subscription.plan.price_monthly|floatformat:0 }}/mo</strong> • 
+            {% if current_tenant.subscription.status == 'TRIALING' %}
+              Free Trial valid until: {{ current_tenant.subscription.trial_ends_at|date:"M d, Y" }}
+            {% else %}
+              Next Renewal: {{ current_tenant.subscription.current_period_end|date:"M d, Y" }}
+            {% endif %}
+          </p>
+        </div>
+
+        <div class="text-xs text-slate-700 dark:text-slate-300 font-mono space-y-1 sm:text-right border-t sm:border-t-0 sm:border-l border-slate-200 dark:border-slate-800 pt-4 sm:pt-0 sm:pl-6">
+          <div>Course Limit: <strong>{{ current_tenant.subscription.plan.max_courses }} courses</strong></div>
+          <div>Student Limit: <strong>{{ current_tenant.subscription.plan.max_students }} students</strong></div>
+          <div>Custom CNAME Domain: <strong>{% if current_tenant.subscription.plan.custom_domain_allowed %}Supported{% else %}Pro Required{% endif %}</strong></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+</div>
+{% endblock %}

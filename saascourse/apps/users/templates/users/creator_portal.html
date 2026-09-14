@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}My Academies — Creator Portal{% endblock %}
+
+{% block content %}
+<div x-data="{ sidebarOpen: false }" class="min-h-[calc(100vh-4rem)] flex flex-col lg:flex-row bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors">
+
+  <!-- Mobile Top Bar for Sidebar Toggle -->
+  <div class="lg:hidden flex items-center justify-between px-4 py-3 bg-white/90 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800">
+    <div class="flex items-center gap-2">
+      <span class="text-sm font-bold text-slate-900 dark:text-white">🏫 Creator Portal</span>
+    </div>
+    <button 
+      @click="sidebarOpen = !sidebarOpen"
+      class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-slate-700 focus:outline-none"
+    >
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Mobile Off-Canvas Drawer Backdrop -->
+  <div 
+    x-show="sidebarOpen" 
+    x-cloak 
+    @click="sidebarOpen = false" 
+    class="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden transition-opacity"
+  ></div>
+
+  <!-- Left Sidebar (Slide Bar Menu) -->
+  <aside 
+    :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+    class="fixed lg:static inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between transition-transform duration-300 ease-in-out lg:min-h-[calc(100vh-4rem)] shadow-2xl lg:shadow-none"
+  >
+    <!-- Top Branding & Navigation -->
+    <div class="p-6 space-y-6">
+      
+      <!-- Creator Header Card -->
+      <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800/80">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-primary to-cyan-400 flex items-center justify-center font-extrabold text-white text-lg shadow-lg shadow-brand-primary/20">
+            🏫
+          </div>
+          <div>
+            <span class="font-extrabold text-sm text-slate-900 dark:text-white block">Creator Hub</span>
+            <span class="text-[10px] font-mono uppercase text-brand-primary font-bold tracking-wider">Multi-Academy Portal</span>
+          </div>
+        </div>
+        <button @click="sidebarOpen = false" class="lg:hidden text-slate-400 hover:text-slate-900 dark:hover:text-white">✕</button>
+      </div>
+
+      <!-- Navigation Menu Items -->
+      <div class="space-y-1">
+        <span class="text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 px-3 block mb-2 font-semibold">
+          Your Portals
+        </span>
+
+        <a href="#academies" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-brand-primary text-white shadow-md shadow-brand-primary/20 transition-all">
+          <span class="text-sm">🏫</span>
+          <span>Owned Academies</span>
+          <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-mono bg-white/20 text-white">{{ owned_academies.count }}</span>
+        </a>
+
+        {% if memberships %}
+          <a href="#joined" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900 transition-all">
+            <span class="text-sm">🎓</span>
+            <span>Joined Academies</span>
+            <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">{{ memberships.count }}</span>
+          </a>
+        {% endif %}
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="space-y-1 pt-4 border-t border-slate-200 dark:border-slate-800/80">
+        <span class="text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 px-3 block mb-2 font-semibold">
+          Actions
+        </span>
+
+        <a href="{% url 'signup' %}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-indigo-600 dark:text-cyan-400 hover:text-indigo-800 dark:hover:text-cyan-300 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all">
+          <span class="text-sm">➕</span>
+          <span>Launch New Academy</span>
+        </a>
+
+        <a href="{% url 'home' %}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900 transition-all">
+          <span class="text-sm">🌐</span>
+          <span>Platform Home</span>
+        </a>
+      </div>
+
+    </div>
+
+    <!-- Bottom User Status Card -->
+    <div class="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-950/90">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-full bg-indigo-500/10 dark:bg-indigo-500/20 text-brand-primary border border-indigo-500/30 flex items-center justify-center text-xs font-bold font-mono">
+            👤
+          </div>
+          <div class="truncate max-w-[140px]">
+            <span class="text-xs font-bold text-slate-900 dark:text-white block truncate">{{ request.user.first_name|default:request.user.email }}</span>
+            <span class="text-[10px] font-mono text-indigo-600 dark:text-cyan-400">● Creator Account</span>
+          </div>
+        </div>
+        <a href="{% url 'users:logout' %}" class="text-xs font-mono text-slate-400 hover:text-rose-500" title="Sign Out">
+          🚪
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <main class="flex-1 p-6 sm:p-10 space-y-10 overflow-y-auto">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-8 border-b border-slate-200 dark:border-slate-800">
+      <div>
+        <span class="text-xs font-mono uppercase tracking-widest text-brand-primary font-bold">Creator Hub</span>
+        <h1 class="text-3xl font-extrabold text-slate-900 dark:text-white mt-1">Welcome back, {{ request.user.first_name|default:request.user.email }}</h1>
+        <p class="text-slate-600 dark:text-slate-400 text-sm mt-1">Select an academy below to enter its instructor studio, or launch a new academy.</p>
+      </div>
+      <div>
+        <a href="{% url 'signup' %}" class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-brand-primary to-cyan-500 hover:opacity-95 text-white font-bold text-xs shadow-lg shadow-brand-primary/25 transition-all">
+          <span>+ Launch Another Academy</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="space-y-8">
+      <!-- Owned Academies -->
+      <div id="academies">
+        <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+          <span>🏫</span> Your Owned Academies
+        </h2>
+
+        {% if owned_academies %}
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for academy in owned_academies %}
+              <div class="p-6 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-sm flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-700 transition-all">
+                <div>
+                  <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-primary to-cyan-400 flex items-center justify-center font-extrabold text-white text-xl">
+                      {{ academy.name|slice:":1"|upper }}
+                    </div>
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-mono {% if academy.is_active %}bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20{% else %}bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20{% endif %}">
+                      {% if academy.is_active %}● Active{% else %}Suspended{% endif %}
+                    </span>
+                  </div>
+
+                  <h3 class="text-xl font-bold text-slate-900 dark:text-white">{{ academy.name }}</h3>
+                  <p class="text-xs font-mono text-slate-500 dark:text-slate-400 mt-1">{{ academy.slug }}.localhost:8001</p>
+                  {% if academy.custom_domain %}
+                    <p class="text-xs font-mono text-indigo-600 dark:text-cyan-400 mt-0.5">🌐 {{ academy.custom_domain }}</p>
+                  {% endif %}
+
+                  <p class="text-xs text-slate-600 dark:text-slate-400 mt-3 line-clamp-2">
+                    {{ academy.branding.tagline|default:"No description set." }}
+                  </p>
+                </div>
+
+                <div class="pt-6 mt-6 border-t border-slate-200 dark:border-slate-800/80 flex items-center gap-3">
+                  <a href="http://{{ academy.slug }}.localhost:8001/dashboard/" class="flex-1 text-center py-2.5 px-3 rounded-xl bg-brand-primary hover:bg-opacity-90 text-white font-bold text-xs shadow-md transition-all">
+                    Open Studio →
+                  </a>
+                  <a href="http://{{ academy.slug }}.localhost:8001/" target="_blank" class="py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium text-xs border border-slate-300 dark:border-slate-700 transition-all">
+                    Storefront ↗
+                  </a>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="p-8 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/40 text-center text-slate-600 dark:text-slate-400 text-sm shadow-sm">
+            You don't own any academies yet. <a href="{% url 'signup' %}" class="text-indigo-600 dark:text-cyan-400 font-bold ml-1">Create your first academy now →</a>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Other Memberships -->
+      {% if memberships %}
+        <div id="joined" class="pt-4">
+          <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+            <span>🎓</span> Academies You Joined
+          </h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for m in memberships %}
+              {% if m.tenant.owner != request.user %}
+                <div class="p-6 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm flex items-center justify-between">
+                  <div>
+                    <h4 class="font-bold text-slate-900 dark:text-white">{{ m.tenant.name }}</h4>
+                    <span class="text-xs font-mono text-slate-500 dark:text-slate-400">{{ m.get_role_display }}</span>
+                  </div>
+                  <a href="http://{{ m.tenant.slug }}.localhost:8001/dashboard/" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white text-xs font-semibold border border-slate-300 dark:border-slate-700">
+                    Enter →
+                  </a>
+                </div>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
+    </div>
+  </main>
+</div>
+{% endblock %}

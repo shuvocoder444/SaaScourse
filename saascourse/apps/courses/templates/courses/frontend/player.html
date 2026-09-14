@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}{{ lesson.title }} - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="flex-1 flex flex-col min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors" x-data="{ sidebarOpen: false }">
+
+  <!-- Mobile Top Bar with Sidebar Toggle -->
+  <div class="lg:hidden flex items-center justify-between px-4 py-3 bg-white/90 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-16 z-30 transition-colors">
+    <button 
+      @click="sidebarOpen = !sidebarOpen" 
+      class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 text-xs font-semibold shadow-sm"
+    >
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+      <span>Curriculum Menu</span>
+    </button>
+
+    <div class="text-xs font-mono text-slate-500 dark:text-slate-400 truncate max-w-[200px]">
+      {{ lesson.title }}
+    </div>
+  </div>
+
+  <div class="flex-1 flex overflow-hidden relative">
+
+    <!-- Mobile Backdrop Overlay -->
+    <div 
+      x-show="sidebarOpen" 
+      x-transition:enter="transition-opacity ease-linear duration-200"
+      x-transition:enter-start="opacity-0"
+      x-transition:enter-end="opacity-100"
+      x-transition:leave="transition-opacity ease-linear duration-200"
+      x-transition:leave-start="opacity-100"
+      x-transition:leave-end="opacity-0"
+      @click="sidebarOpen = false" 
+      class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+    ></div>
+
+    <!-- Left Collapsible Sidebar -->
+    <aside 
+      class="fixed inset-y-0 left-0 z-50 w-80 sm:w-96 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 flex flex-col transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 overflow-y-auto shadow-2xl lg:shadow-none"
+      :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
+    >
+      <!-- Sidebar Header -->
+      <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <a 
+            href="{% url 'courses:detail' course.slug %}" 
+            class="text-xs font-mono text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors flex items-center gap-1.5"
+          >
+            ← Course Overview
+          </a>
+          <button @click="sidebarOpen = false" class="lg:hidden text-slate-400 hover:text-slate-900 dark:hover:text-white p-1">
+            ✕
+          </button>
+        </div>
+
+        <div>
+          <h2 class="text-base font-bold text-slate-900 dark:text-white tracking-tight leading-snug">
+            {{ course.title }}
+          </h2>
+        </div>
+
+        <!-- Real-Time Progress Bar (Out-of-Band Target) -->
+        <div id="course-progress-container" class="space-y-1.5 pt-1">
+          <div class="flex items-center justify-between text-xs font-mono">
+            <span class="text-slate-500 dark:text-slate-400">Curriculum Progress</span>
+            <span class="text-emerald-600 dark:text-emerald-400 font-bold">{{ progress_data.percent }}%</span>
+          </div>
+          <div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
+            <div 
+              class="bg-gradient-to-r from-brand-primary to-emerald-400 h-2 rounded-full transition-all duration-500" 
+              style="width: {{ progress_data.percent }}%"
+            ></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Curriculum Modules List -->
+      <div class="p-3 space-y-4 flex-1">
+        {% for module in course.modules.all %}
+          <div class="rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-900/40 overflow-hidden shadow-sm" x-data="{ open: true }">
+            
+            <!-- Module Title Toggle -->
+            <button 
+              @click="open = !open" 
+              class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-slate-100 dark:hover:bg-slate-800/30 transition-colors"
+            >
+              <div>
+                <span class="text-[10px] font-mono uppercase tracking-wider text-brand-primary block">
+                  Module {{ module.order }}
+                </span>
+                <span class="text-xs font-bold text-slate-900 dark:text-white block truncate max-w-[200px]">
+                  {{ module.title }}
+                </span>
+              </div>
+              <svg class="w-4 h-4 text-slate-400 transform transition-transform" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+              </svg>
+            </button>
+
+            <!-- Lessons in Module -->
+            <div x-show="open" class="border-t border-slate-200 dark:border-slate-800/60 divide-y divide-slate-200 dark:divide-slate-800/40">
+              {% for l in module.lessons.all %}
+                <button
+                  hx-get="{% url 'courses:player' course.slug l.slug %}"
+                  hx-target="#player-main-content"
+                  hx-swap="innerHTML"
+                  @click="sidebarOpen = false"
+                  class="w-full px-4 py-3 flex items-center justify-between text-left transition-colors group {% if l.id == lesson.id %}bg-slate-100 dark:bg-slate-800/80 text-brand-primary dark:text-white font-semibold{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-100/60 dark:hover:bg-slate-800/30 hover:text-slate-900 dark:hover:text-slate-200{% endif %}"
+                >
+                  <div class="flex items-center gap-3 overflow-hidden">
+                    <!-- Lesson Checkmark / Order Indicator (Out-of-Band Updatable) -->
+                    <span 
+                      id="lesson-check-{{ l.id }}" 
+                      class="w-5 h-5 flex items-center justify-center rounded-full text-xs flex-shrink-0 {% if l.id in progress_data.completed_ids %}bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-slate-700{% endif %}"
+                    >
+                      {% if l.id in progress_data.completed_ids %}✓{% else %}{{ l.order }}{% endif %}
+                    </span>
+                    <span class="text-xs truncate">
+                      {{ l.title }}
+                    </span>
+                  </div>
+
+                  {% if l.duration_minutes %}
+                    <span class="text-[10px] font-mono text-slate-400 dark:text-slate-500 flex-shrink-0 ml-2">
+                      {{ l.duration_minutes }}m
+                    </span>
+                  {% endif %}
+                </button>
+              {% empty %}
+                <div class="px-4 py-2 text-[11px] text-slate-500 font-mono">No lessons</div>
+              {% endfor %}
+            </div>
+
+          </div>
+        {% endfor %}
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 overflow-y-auto p-4 sm:p-8 lg:p-10 max-w-6xl mx-auto w-full">
+      <div id="player-main-content">
+        {% include "courses/frontend/partials/player_content.html" %}
+      </div>
+    </main>
+
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Academy Suspended - {{ tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="min-h-[70vh] flex items-center justify-center px-4 transition-colors">
+  <div class="max-w-md w-full text-center">
+    <div class="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 mx-auto flex items-center justify-center text-2xl mb-6">
+      ⚠️
+    </div>
+    <h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">Academy Temporarily Inactive</h1>
+    <p class="text-sm text-slate-600 dark:text-slate-400 mb-8 leading-relaxed">
+      The academy <span class="text-slate-900 dark:text-slate-200 font-semibold">{{ tenant.name }}</span> is currently suspended or under maintenance by its administrator.
+    </p>
+    <div class="p-4 rounded-xl bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-xs text-slate-600 dark:text-slate-400 mb-6 shadow-sm">
+      If you are the academy administrator, please log in to the management portal to reactivate your subscription.
+    </div>
+    <a href="http://localhost:8001/" class="inline-flex items-center gap-2 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-cyan-600 dark:hover:text-cyan-300 transition-colors">
+      ← Return to Main Platform
+    </a>
+  </div>
+</div>
+{% endblock %}

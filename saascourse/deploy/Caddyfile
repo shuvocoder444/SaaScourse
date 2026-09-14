@@ -1,0 +1,74 @@
+# Caddyfile for Multi-Tenant Course/LMS SaaS Platform
+# On-Demand Automated Zero-Touch TLS Configuration
+
+{
+    # Global TLS Options
+    # Caddy will issue certificates on-the-fly for any custom domain that connects!
+    # The 'ask' directive prevents TLS exhaustion attacks by querying Django first.
+    on_demand_tls {
+        ask http://127.0.0.1:8000/tenants/api/caddy-check/
+        interval 2m
+        burst 10
+    }
+
+    # Production email for Let's Encrypt / ZeroSSL certificate notifications
+    email admin@saascourse.com
+}
+
+# 1. Main Platform Domain & Wildcard Subdomains
+# Handles saascourse.com and *.saascourse.com
+saascourse.com, *.saascourse.com {
+    # Gzip / Zstandard compression
+    encode gzip zstd
+
+    # Static files served directly by Caddy for maximum performance
+    handle /static/* {
+        root * /var/www/saascourse/staticfiles
+        file_server
+    }
+
+    # Media uploads (thumbnails, avatars)
+    handle /media/* {
+        root * /var/www/saascourse/media
+        file_server
+    }
+
+    # Reverse proxy to Django (Gunicorn / Uvicorn)
+    handle {
+        reverse_proxy 127.0.0.1:8000 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+}
+
+# 2. Dynamic Catch-All for Custom Domains (e.g. learn.myacademy.com)
+# Any CNAME pointed to your server will be automatically handled here.
+:443 {
+    tls {
+        on_demand
+    }
+
+    encode gzip zstd
+
+    handle /static/* {
+        root * /var/www/saascourse/staticfiles
+        file_server
+    }
+
+    handle /media/* {
+        root * /var/www/saascourse/media
+        file_server
+    }
+
+    handle {
+        reverse_proxy 127.0.0.1:8000 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+}

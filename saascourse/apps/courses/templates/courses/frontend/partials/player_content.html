@@ -1,0 +1,151 @@
+<!-- Main Lesson Content Area -->
+<div class="space-y-6">
+
+  {% if course_completed %}
+    <!-- Course Completion Celebration View -->
+    <div class="rounded-3xl border border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/20 p-8 sm:p-12 text-center shadow-lg transition-colors">
+      <div class="w-20 h-20 rounded-3xl bg-gradient-to-tr from-emerald-500 to-cyan-400 text-white flex items-center justify-center text-4xl mx-auto mb-6 shadow-xl shadow-emerald-500/20">
+        🎉
+      </div>
+      <h2 class="text-2xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-3">
+        Congratulations! You Finished the Course!
+      </h2>
+      <p class="text-sm sm:text-base text-slate-600 dark:text-slate-300 max-w-xl mx-auto leading-relaxed mb-8">
+        You have successfully completed every module and lesson in <strong class="text-slate-900 dark:text-white">{{ course.title }}</strong>.
+      </p>
+      <div class="flex flex-wrap items-center justify-center gap-4">
+        <a 
+          href="{% url 'courses:detail' course.slug %}" 
+          class="px-6 py-3 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 shadow-sm transition-all"
+        >
+          ← Course Overview
+        </a>
+        <a 
+          href="{% url 'courses:list' %}" 
+          class="px-6 py-3 rounded-xl text-xs font-bold bg-brand-primary text-white hover:opacity-90 shadow-md transition-all"
+        >
+          Explore More Courses →
+        </a>
+      </div>
+    </div>
+  {% else %}
+    <!-- Video Player / Reading Section -->
+    <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 overflow-hidden shadow-md transition-colors">
+      
+      <!-- Video Player (if video URL provided) -->
+      {% if lesson.video_url %}
+        <div class="aspect-video w-full bg-black relative border-b border-slate-200 dark:border-slate-800">
+          <iframe 
+            src="{{ lesson.video_url }}" 
+            class="w-full h-full" 
+            frameborder="0" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+            allowfullscreen>
+          </iframe>
+        </div>
+      {% endif %}
+
+      <!-- Lesson Metadata Header -->
+      <div class="p-6 sm:p-8 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-3 text-xs font-mono text-slate-500 dark:text-slate-400 mb-1.5">
+            <span class="text-brand-primary font-bold uppercase tracking-wider">{{ lesson.module.title }}</span>
+            <span>•</span>
+            <span>Lesson {{ lesson.order }} ({{ lesson.get_content_type_display }})</span>
+            {% if lesson.duration_minutes %}
+              <span>•</span>
+              <span>⏱️ {{ lesson.duration_minutes }} mins</span>
+            {% endif %}
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            {{ lesson.title }}
+          </h1>
+        </div>
+
+        <!-- Action Control Buttons -->
+        <div class="flex items-center gap-3 flex-shrink-0">
+          {% if user.is_authenticated %}
+            <button
+              id="lesson-toggle-btn-{{ lesson.id }}"
+              hx-post="{% url 'courses:toggle_progress' lesson.id %}"
+              hx-swap="outerHTML"
+              class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-sm {% if progress and progress.is_completed %}bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-900/30{% else %}bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700{% endif %}"
+            >
+              <span>{% if progress and progress.is_completed %}✓ Completed{% else %}Mark Complete{% endif %}</span>
+            </button>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Lesson Body Content (Article / Reading Material) -->
+      {% if lesson.content %}
+        <div class="p-6 sm:p-8 prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 leading-relaxed text-sm sm:text-base border-b border-slate-200 dark:border-slate-800">
+          {{ lesson.content|linebreaks }}
+        </div>
+      {% endif %}
+
+      <!-- Bottom Navigation Footer Bar -->
+      <div class="p-6 sm:p-8 bg-slate-50 dark:bg-slate-950/60 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4">
+        <div>
+          {% if prev_lesson %}
+            <button
+              hx-get="{% url 'courses:player' course.slug prev_lesson.slug %}"
+              hx-target="#player-main-content"
+              hx-swap="innerHTML"
+              class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 shadow-sm transition-all"
+            >
+              ← Previous: {{ prev_lesson.title|truncatechars:20 }}
+            </button>
+          {% else %}
+            <span class="text-xs text-slate-400 dark:text-slate-600 font-mono">First lesson</span>
+          {% endif %}
+        </div>
+
+        <div>
+          {% if user.is_authenticated %}
+            <!-- Mark as Complete & Next Button -->
+            <button
+              hx-post="{% url 'courses:complete_and_next' lesson.id %}"
+              hx-target="#player-main-content"
+              hx-swap="innerHTML"
+              class="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-brand-primary to-cyan-500 hover:opacity-90 shadow-lg shadow-brand-primary/25 transition-all transform hover:-translate-y-0.5"
+            >
+              <span>{% if next_lesson %}Complete & Next Lesson →{% else %}Complete & Finish Course 🏆{% endif %}</span>
+            </button>
+          {% else %}
+            <span class="text-xs text-slate-500 font-mono">Log in to save progress</span>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+  {% endif %}
+
+</div>
+
+<!-- Out-Of-Band (OOB) Real-Time Updates for Sidebar -->
+
+<!-- 1. Out-of-Band Course Progress Bar Update -->
+<div id="course-progress-container" hx-swap-oob="true" class="space-y-1.5">
+  <div class="flex items-center justify-between text-xs font-mono">
+    <span class="text-slate-500 dark:text-slate-400">Curriculum Progress</span>
+    <span class="text-emerald-600 dark:text-emerald-400 font-bold">{{ progress_data.percent }}%</span>
+  </div>
+  <div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
+    <div 
+      class="bg-gradient-to-r from-brand-primary to-emerald-400 h-2 rounded-full transition-all duration-500" 
+      style="width: {{ progress_data.percent }}%"
+    ></div>
+  </div>
+</div>
+
+<!-- 2. Out-of-Band Completed Checkmark for Completed Lesson -->
+{% if completed_lesson_id %}
+  <span 
+    id="lesson-check-{{ completed_lesson_id }}" 
+    hx-swap-oob="true" 
+    class="w-5 h-5 flex items-center justify-center rounded-full text-xs bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex-shrink-0"
+  >
+    ✓
+  </span>
+{% endif %}

@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In — {{ current_tenant.name|default:"CourseFlow SaaS" }}{% endblock %}
+
+{% block content %}
+<div class="min-h-[85vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full p-8 rounded-3xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-xl space-y-8 transition-colors">
+    
+    <!-- Header -->
+    <div class="text-center">
+      <div class="inline-flex w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-primary to-cyan-400 items-center justify-center text-white text-2xl font-extrabold shadow-xl shadow-brand-primary/20 mb-4">
+        {% if current_tenant %}
+          {{ current_tenant.name|slice:":1"|upper }}
+        {% else %}
+          ⚡
+        {% endif %}
+      </div>
+      <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+        Welcome to {{ current_tenant.name|default:"CourseFlow Cloud" }}
+      </h2>
+      <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
+        Sign in to access your role-specific dashboard.
+      </p>
+    </div>
+
+    <!-- Alert / Messages -->
+    {% if messages %}
+      <div class="space-y-2">
+        {% for message in messages %}
+          <div class="p-3 rounded-xl text-xs font-mono border {% if message.tags == 'error' %}bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400{% else %}bg-indigo-500/10 border-indigo-500/30 text-indigo-600 dark:text-indigo-400{% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- 1-Click Quick Demo Login Section -->
+    <div class="p-5 rounded-2xl border border-indigo-200 dark:border-indigo-500/30 bg-indigo-50/70 dark:bg-indigo-950/20 shadow-sm space-y-3">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+          <span>⚡</span> 1-Click Demo Login
+        </span>
+        <span class="text-[11px] text-slate-500">Instant Access</span>
+      </div>
+      <p class="text-xs text-slate-600 dark:text-slate-300">
+        Click below to immediately log in as any role without typing passwords:
+      </p>
+      
+      <div class="grid grid-cols-1 gap-2 pt-1">
+        <!-- SuperAdmin Button -->
+        <form method="POST" action="{% url 'users:login' %}">
+          {% csrf_token %}
+          <input type="hidden" name="demo_role" value="superadmin">
+          <input type="hidden" name="next" value="{{ next }}">
+          <button type="submit" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-amber-300 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 hover:bg-amber-100 dark:hover:bg-amber-500/20 text-amber-900 dark:text-amber-300 text-xs font-semibold transition-all text-left group">
+            <div class="flex items-center gap-2.5">
+              <span class="text-base">👑</span>
+              <div>
+                <span class="font-bold block">Platform SuperAdmin</span>
+                <span class="text-[10px] text-amber-700 dark:text-amber-400/80 font-mono">admin@platform.com</span>
+              </div>
+            </div>
+            <span class="text-xs group-hover:translate-x-1 transition-transform">→</span>
+          </button>
+        </form>
+
+        <!-- Instructor / Creator Button -->
+        <form method="POST" action="{% url 'users:login' %}">
+          {% csrf_token %}
+          <input type="hidden" name="demo_role" value="instructor">
+          <input type="hidden" name="next" value="{{ next }}">
+          <button type="submit" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-cyan-300 dark:border-cyan-500/30 bg-cyan-50 dark:bg-cyan-500/10 hover:bg-cyan-100 dark:hover:bg-cyan-500/20 text-cyan-900 dark:text-cyan-300 text-xs font-semibold transition-all text-left group">
+            <div class="flex items-center gap-2.5">
+              <span class="text-base">🎓</span>
+              <div>
+                <span class="font-bold block">Academy Creator / Instructor</span>
+                <span class="text-[10px] text-cyan-700 dark:text-cyan-400/80 font-mono">sarah@alpha.io</span>
+              </div>
+            </div>
+            <span class="text-xs group-hover:translate-x-1 transition-transform">→</span>
+          </button>
+        </form>
+
+        <!-- Student Button -->
+        <form method="POST" action="{% url 'users:login' %}">
+          {% csrf_token %}
+          <input type="hidden" name="demo_role" value="student">
+          <input type="hidden" name="next" value="{{ next }}">
+          <button type="submit" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-emerald-300 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 text-emerald-900 dark:text-emerald-300 text-xs font-semibold transition-all text-left group">
+            <div class="flex items-center gap-2.5">
+              <span class="text-base">📚</span>
+              <div>
+                <span class="font-bold block">Student / Learner</span>
+                <span class="text-[10px] text-emerald-700 dark:text-emerald-400/80 font-mono">alex@student.com</span>
+              </div>
+            </div>
+            <span class="text-xs group-hover:translate-x-1 transition-transform">→</span>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <div class="relative flex py-1 items-center">
+      <div class="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
+      <span class="flex-shrink mx-4 text-xs font-mono text-slate-400 dark:text-slate-500 uppercase tracking-widest">Or Sign In Manually</span>
+      <div class="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
+    </div>
+
+    <!-- Standard Login Form -->
+    <form class="space-y-4" method="POST" action="{% url 'users:login' %}">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+
+      <div>
+        <label for="email" class="block text-xs font-mono font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+          Email Address
+        </label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          required
+          placeholder="you@example.com"
+          class="appearance-none block w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent text-sm shadow-sm"
+        >
+      </div>
+
+      <div>
+        <label for="password" class="block text-xs font-mono font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+          Password
+        </label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          required
+          placeholder="••••••••••••"
+          class="appearance-none block w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent text-sm shadow-sm"
+        >
+      </div>
+
+      <div>
+        <button
+          type="submit"
+          class="w-full flex justify-center py-3.5 px-4 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-brand-primary to-cyan-500 hover:opacity-95 focus:outline-none shadow-lg shadow-brand-primary/25 transition-all transform hover:-translate-y-0.5"
+        >
+          Sign In to Dashboard
+        </button>
+      </div>
+    </form>
+
+    {% if not current_tenant %}
+      <div class="text-center text-xs text-slate-500 dark:text-slate-400">
+        Want to launch your own course academy?
+        <a href="{% url 'signup' %}" class="font-bold text-indigo-600 dark:text-cyan-400 hover:text-indigo-800 dark:hover:text-cyan-300 ml-1">
+          Start 14-Day Free Trial →
+        </a>
+      </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

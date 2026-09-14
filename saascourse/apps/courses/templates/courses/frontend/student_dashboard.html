@@ -1,0 +1,377 @@
+{% extends "base.html" %}
+
+{% block title %}Student Dashboard — {{ current_tenant.name }}{% endblock %}
+
+{% block content %}
+<div 
+  x-data="{ 
+    sidebarOpen: false, 
+    activeTab: new URLSearchParams(window.location.search).get('tab') || 'journey' 
+  }" 
+  class="min-h-[calc(100vh-4rem)] flex flex-col lg:flex-row bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors"
+>
+
+  <!-- Mobile Top Bar for Sidebar Toggle -->
+  <div class="lg:hidden flex items-center justify-between px-4 py-3 bg-white/90 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800">
+    <div class="flex items-center gap-2">
+      <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-brand-primary to-cyan-400 flex items-center justify-center font-bold text-white text-xs">
+        {{ current_tenant.name|slice:":1"|upper }}
+      </div>
+      <span class="text-sm font-bold text-slate-900 dark:text-white truncate max-w-[200px]">{{ current_tenant.name }} Student</span>
+    </div>
+    <button 
+      @click="sidebarOpen = !sidebarOpen"
+      class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-slate-700 focus:outline-none"
+    >
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Mobile Off-Canvas Drawer Backdrop -->
+  <div 
+    x-show="sidebarOpen" 
+    x-cloak 
+    @click="sidebarOpen = false" 
+    class="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden transition-opacity"
+  ></div>
+
+  <!-- Left Sidebar (Slide Bar Menu - Stays present on all dashboard views) -->
+  <aside 
+    :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+    class="fixed lg:static inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between transition-transform duration-300 ease-in-out lg:min-h-[calc(100vh-4rem)] shadow-2xl lg:shadow-none shrink-0"
+  >
+    <div class="p-6 space-y-6">
+      
+      <!-- Academy Header Card -->
+      <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800/80">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-primary to-cyan-400 flex items-center justify-center font-extrabold text-white text-lg shadow-lg shadow-brand-primary/20">
+            {{ current_tenant.name|slice:":1"|upper }}
+          </div>
+          <div class="truncate max-w-[140px]">
+            <span class="font-extrabold text-sm text-slate-900 dark:text-white block truncate">{{ current_tenant.name }}</span>
+            <span class="text-[10px] font-mono uppercase text-indigo-600 dark:text-cyan-400 font-bold tracking-wider">Student Portal</span>
+          </div>
+        </div>
+        <button @click="sidebarOpen = false" class="lg:hidden text-slate-400 hover:text-slate-900 dark:hover:text-white">✕</button>
+      </div>
+
+      <!-- Navigation Menu Items (Always present) -->
+      <div class="space-y-1">
+        <span class="text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 px-3 block mb-2 font-semibold">
+          Learning Navigation
+        </span>
+
+        <!-- Menu 1: My Learning Journey -->
+        <button 
+          type="button"
+          @click="activeTab = 'journey'; sidebarOpen = false" 
+          :class="activeTab === 'journey' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/20' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'"
+          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all text-left"
+        >
+          <span class="text-sm">🎯</span>
+          <span>My Learning Journey</span>
+          <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-mono bg-white/20 text-white">{{ total_enrolled }}</span>
+        </button>
+
+        <!-- Menu 2: Browse Academy Catalog -->
+        <button 
+          type="button"
+          @click="activeTab = 'catalog'; sidebarOpen = false" 
+          :class="activeTab === 'catalog' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/20' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'"
+          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all text-left"
+        >
+          <span class="text-sm">📚</span>
+          <span>Browse Academy Catalog</span>
+          <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">{{ available_courses|length|add:total_enrolled }}</span>
+        </button>
+
+        <!-- Menu 3: Achievements & Progress -->
+        <button 
+          type="button"
+          @click="activeTab = 'achievements'; sidebarOpen = false" 
+          :class="activeTab === 'achievements' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/20' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'"
+          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all text-left"
+        >
+          <span class="text-sm">🏆</span>
+          <span>Achievements & Progress</span>
+        </button>
+      </div>
+
+      <!-- Quick Shortcuts -->
+      <div class="space-y-1 pt-4 border-t border-slate-200 dark:border-slate-800/80">
+        <span class="text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-slate-500 px-3 block mb-2 font-semibold">
+          Academy
+        </span>
+
+        <a href="/" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-cyan-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all">
+          <span class="text-sm">🏠</span>
+          <span>Academy Storefront ↗</span>
+        </a>
+      </div>
+
+      <!-- Learning Achievement Widget in Sidebar -->
+      <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
+        <div class="flex items-center justify-between text-xs font-mono">
+          <span class="text-slate-500 dark:text-slate-400">Total Progress:</span>
+          <span class="text-emerald-600 dark:text-emerald-400 font-bold">{{ total_lessons_completed }} Lessons</span>
+        </div>
+        <div class="text-[11px] text-slate-600 dark:text-slate-400">
+          🏆 <strong>{{ completed_courses_count }}</strong> course{{ completed_courses_count|pluralize }} completed.
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom User Status Card -->
+    <div class="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-950/90">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-xs font-bold font-mono">
+            🎓
+          </div>
+          <div class="truncate max-w-[140px]">
+            <span class="text-xs font-bold text-slate-900 dark:text-white block truncate">{{ request.user.first_name|default:request.user.email }}</span>
+            <span class="text-[10px] font-mono text-emerald-600 dark:text-emerald-400">● Student</span>
+          </div>
+        </div>
+        <a href="{% url 'users:logout' %}" class="text-xs font-mono text-slate-400 hover:text-rose-500" title="Sign Out">
+          🚪
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Area with Persistent Sidebar -->
+  <main class="flex-1 p-6 sm:p-10 space-y-10 overflow-y-auto">
+
+    <!-- Header & Learner Profile -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-8 border-b border-slate-200 dark:border-slate-800">
+      <div>
+        <div class="flex items-center gap-2 text-xs font-mono text-indigo-600 dark:text-cyan-400 font-bold uppercase tracking-wider mb-1">
+          <span>📚</span> Student Learning Dashboard
+        </div>
+        <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+          Welcome back, {{ request.user.first_name|default:request.user.email }}!
+        </h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          Continue where you left off or browse new curriculums at {{ current_tenant.name }}.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button 
+          @click="activeTab = 'catalog'" 
+          class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-sm transition-all"
+        >
+          <span>Browse All Courses →</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Learner Metrics Strip -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <div class="p-6 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-sm flex items-center justify-between">
+        <div>
+          <span class="text-xs font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1">Enrolled Courses</span>
+          <span class="text-3xl font-extrabold text-slate-900 dark:text-white">{{ total_enrolled }}</span>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 text-brand-primary flex items-center justify-center text-xl font-bold border border-indigo-500/20">
+          📚
+        </div>
+      </div>
+
+      <div class="p-6 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-sm flex items-center justify-between">
+        <div>
+          <span class="text-xs font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1">Completed Lessons</span>
+          <span class="text-3xl font-extrabold text-indigo-600 dark:text-cyan-400">{{ total_lessons_completed }}</span>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center text-xl font-bold border border-cyan-500/20">
+          ✓
+        </div>
+      </div>
+
+      <div class="p-6 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-sm flex items-center justify-between">
+        <div>
+          <span class="text-xs font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1">Completed Courses</span>
+          <span class="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">{{ completed_courses_count }}</span>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl font-bold border border-emerald-500/20">
+          🏆
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 1: MY LEARNING JOURNEY                 -->
+    <!-- ========================================== -->
+    <div x-show="activeTab === 'journey'" x-cloak class="space-y-6">
+      <div class="flex items-center justify-between">
+        <h2 class="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
+          <span>🎯</span> Your Learning Journey
+        </h2>
+        <span class="text-xs font-mono text-slate-500">{{ total_enrolled }} active enrollment{{ total_enrolled|pluralize }}</span>
+      </div>
+
+      {% if enrolled_courses_data %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {% for item in enrolled_courses_data %}
+            <div class="p-6 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-sm flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-700 transition-all group">
+              <div>
+                <div class="flex items-center justify-between mb-4">
+                  <span class="px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold {% if item.is_completed %}bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20{% else %}bg-brand-primary/10 text-brand-primary dark:text-cyan-300 border border-brand-primary/20{% endif %}">
+                    {% if item.is_completed %}🎉 Completed{% else %}● In Progress{% endif %}
+                  </span>
+                  <span class="text-xs font-mono text-slate-500">
+                    {{ item.progress.completed_count }}/{{ item.progress.total_lessons }} Lessons
+                  </span>
+                </div>
+
+                <h3 class="text-xl font-extrabold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-cyan-400 transition-colors">
+                  {{ item.course.title }}
+                </h3>
+                <p class="text-xs text-slate-600 dark:text-slate-400 mt-2 line-clamp-2">
+                  {{ item.course.description }}
+                </p>
+
+                <!-- Progress Bar -->
+                <div class="mt-5 space-y-1.5">
+                  <div class="flex justify-between text-xs font-mono">
+                    <span class="text-slate-500 dark:text-slate-400">Curriculum Progress</span>
+                    <span class="text-slate-900 dark:text-white font-bold">{{ item.progress.percent }}%</span>
+                  </div>
+                  <div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                    <div class="bg-gradient-to-r from-brand-primary to-emerald-400 h-2.5 rounded-full transition-all duration-500" style="width: {{ item.progress.percent }}%"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Action Button: Resume Learning -->
+              <div class="pt-6 mt-6 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between gap-4">
+                <div class="text-xs font-mono text-slate-500 dark:text-slate-400">
+                  {% if item.resume_lesson %}
+                    <span class="block text-[11px] text-slate-400 dark:text-slate-500">Up Next:</span>
+                    <span class="text-slate-800 dark:text-slate-300 font-semibold truncate max-w-[200px] block">{{ item.resume_lesson.title }}</span>
+                  {% else %}
+                    <span class="text-emerald-600 dark:text-emerald-400 font-semibold">Course Complete</span>
+                  {% endif %}
+                </div>
+
+                {% if item.resume_lesson %}
+                  <a href="{% url 'courses:player' item.course.slug item.resume_lesson.slug %}" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-brand-primary to-cyan-500 hover:opacity-95 text-white font-bold text-xs shadow-lg shadow-brand-primary/25 transition-all transform hover:-translate-y-0.5">
+                    <span>Resume Learning →</span>
+                  </a>
+                {% else %}
+                  <a href="{% url 'courses:detail' item.course.slug %}" class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs border border-slate-300 dark:border-slate-700">
+                    Review Syllabus
+                  </a>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="p-12 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 text-center space-y-4 shadow-sm">
+          <span class="text-5xl block">🎓</span>
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white">You haven't enrolled in any courses yet</h3>
+          <p class="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+            Explore our published curriculum and start tracking your video and lesson progress.
+          </p>
+          <button @click="activeTab = 'catalog'" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-brand-primary hover:bg-opacity-95 text-white font-bold text-xs shadow-lg shadow-brand-primary/25">
+            Browse Course Catalog →
+          </button>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: BROWSE ACADEMY CATALOG              -->
+    <!-- ========================================== -->
+    <div x-show="activeTab === 'catalog'" x-cloak class="space-y-6">
+      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-6">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <span>📚</span> Browse Academy Course Catalog
+          </h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            All courses offered by {{ current_tenant.name }} (Currency: ৳ BDT)
+          </p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {% for course in available_courses %}
+          <div class="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-700 transition-all">
+            <div>
+              <span class="text-[10px] font-mono uppercase px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                {% if course.is_free %}Free Course{% else %}৳{{ course.price|floatformat:0 }}{% endif %}
+              </span>
+              <h3 class="text-lg font-bold text-slate-900 dark:text-white mt-2.5">{{ course.title }}</h3>
+              <p class="text-xs text-slate-600 dark:text-slate-400 mt-1 line-clamp-2">{{ course.description }}</p>
+            </div>
+            <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800/60 flex items-center justify-between">
+              <span class="text-xs text-slate-500">{{ course.modules.count }} Modules</span>
+              <a href="{% url 'courses:detail' course.slug %}" class="text-xs font-bold text-indigo-600 dark:text-cyan-400 hover:text-indigo-800 dark:hover:text-cyan-300">
+                View Syllabus →
+              </a>
+            </div>
+          </div>
+        {% empty %}
+          <div class="col-span-3 p-8 text-center text-slate-500 font-mono text-xs">
+            You are enrolled in all published courses in this academy!
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: ACHIEVEMENTS & PROGRESS             -->
+    <!-- ========================================== -->
+    <div x-show="activeTab === 'achievements'" x-cloak class="space-y-6">
+      <div class="border-b border-slate-200 dark:border-slate-800 pb-6">
+        <h2 class="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <span>🏆</span> Learning Progress & Achievements
+        </h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Track your milestone completions and earned badges.</p>
+      </div>
+
+      <div class="grid sm:grid-cols-2 gap-6">
+        <div class="p-6 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 shadow-sm space-y-4">
+          <h3 class="font-bold text-slate-900 dark:text-white text-base">Completed Modules & Lessons</h3>
+          <div class="space-y-3">
+            <div class="flex justify-between text-xs font-mono">
+              <span class="text-slate-500">Completed Lessons:</span>
+              <span class="font-bold text-slate-900 dark:text-white">{{ total_lessons_completed }}</span>
+            </div>
+            <div class="flex justify-between text-xs font-mono">
+              <span class="text-slate-500">Fully Finished Courses:</span>
+              <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ completed_courses_count }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-6 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 shadow-sm space-y-4">
+          <h3 class="font-bold text-slate-900 dark:text-white text-base">Earned Certificates</h3>
+          {% if completed_courses_count > 0 %}
+            <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-3">
+              <span class="text-2xl">🎓</span>
+              <div>
+                <span class="font-bold block">Verified Completion Status</span>
+                <span>You have satisfied graduation requirements for {{ completed_courses_count }} curriculum{{ completed_courses_count|pluralize }}.</span>
+              </div>
+            </div>
+          {% else %}
+            <div class="text-xs text-slate-500 p-4 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl text-center">
+              Complete 100% of any curriculum to unlock your graduation certificate.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+</div>
+{% endblock %}
