@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}{{ book.title }} - {{ current_tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
+
+  <!-- Breadcrumb -->
+  <div class="flex items-center gap-2 text-xs text-slate-500">
+    <a href="{% url 'home' %}" class="hover:text-slate-900 dark:hover:text-white">হোম</a>
+    <span>/</span>
+    <a href="{% url 'books' %}" class="hover:text-slate-900 dark:hover:text-white">বইসমূহ</a>
+    <span>/</span>
+    <span class="text-slate-900 dark:text-white font-semibold truncate">{{ book.title }}</span>
+  </div>
+
+  <!-- Book Main Overview -->
+  <div class="grid md:grid-cols-12 gap-8 items-start">
+    
+    <!-- Cover Column -->
+    <div class="md:col-span-5 flex justify-center">
+      <div class="w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 p-4">
+        <div class="h-80 sm:h-96 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
+          {% if book.get_cover_url %}
+            <img src="{{ book.get_cover_url }}" alt="{{ book.title }}" class="w-full h-full object-cover">
+          {% else %}
+            <span class="text-6xl">📖</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Details Column -->
+    <div class="md:col-span-7 space-y-6">
+      <div>
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 mb-2">
+          {{ book.edition|default:"২০২৬ সংস্করণ" }}
+        </div>
+        <h1 class="text-2xl sm:text-4xl font-extrabold text-slate-900 dark:text-white leading-tight">
+          {{ book.title }}
+        </h1>
+        {% if book.subtitle %}
+          <p class="text-base text-slate-500 dark:text-slate-400 mt-1 font-medium">{{ book.subtitle }}</p>
+        {% endif %}
+        <div class="text-xs text-slate-500 mt-2">
+          লেখক / সংকলক: <strong class="text-slate-900 dark:text-white">{{ book.author }}</strong>
+        </div>
+      </div>
+
+      <!-- Price Box -->
+      <div class="p-5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+        <div>
+          <div class="text-[11px] text-slate-500 uppercase font-bold">মূল্য</div>
+          <div class="flex items-baseline gap-2">
+            <span class="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">৳{{ book.price }}</span>
+            {% if book.discount_price %}
+              <span class="text-sm text-slate-400 line-through">৳{{ book.discount_price }}</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div>
+          {% if book.in_stock %}
+            <span class="px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold border border-emerald-500/30">
+              ✓ স্টকে আছে
+            </span>
+          {% else %}
+            <span class="px-3 py-1.5 rounded-xl bg-rose-500/20 text-rose-600 text-xs font-bold">
+              স্টক আউট
+            </span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-wrap gap-4 pt-2">
+        {% if book.buy_url %}
+          <a 
+            href="{{ book.buy_url }}" target="_blank"
+            class="px-8 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-2"
+          >
+            <span>🛍️ সরাসরি অর্ডার করুন</span>
+          </a>
+        {% else %}
+          <a 
+            href="https://wa.me/{{ current_tenant.branding.contact_phone|default:'8801800123456' }}?text={{ book.title }} অর্ডার করতে চাই" target="_blank"
+            class="px-8 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-2"
+          >
+            <span>💬 হোয়াটসঅ্যাপে অর্ডার করুন</span>
+          </a>
+        {% endif %}
+
+        {% if book.preview_pdf_url %}
+          <a 
+            href="{{ book.preview_pdf_url }}" target="_blank"
+            class="px-6 py-3.5 rounded-2xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 font-bold text-sm shadow-sm transition-all"
+          >
+            📄 সূচিপত্র ও প্রিভিউ
+          </a>
+        {% endif %}
+      </div>
+
+      <!-- Description -->
+      {% if book.description %}
+        <div class="pt-6 border-t border-slate-200 dark:border-slate-800">
+          <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400 mb-2">বইয়ের বিবরণ</h3>
+          <div class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line">
+            {{ book.description }}
+          </div>
+        </div>
+      {% endif %}
+
+    </div>
+
+  </div>
+
+  <!-- Related Books -->
+  {% if related_books %}
+    <div class="pt-12 border-t border-slate-200 dark:border-slate-800">
+      <h3 class="text-xl font-extrabold text-slate-900 dark:text-white mb-6">অন্যান্য প্রকাশনা</h3>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {% for r_book in related_books %}
+          <a href="{% url 'book_detail' r_book.slug %}" class="p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 hover:border-emerald-500 transition-all block group">
+            <div class="h-32 rounded-xl bg-slate-100 dark:bg-slate-800 overflow-hidden mb-2 flex items-center justify-center">
+              {% if r_book.get_cover_url %}
+                <img src="{{ r_book.get_cover_url }}" alt="{{ r_book.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
+              {% else %}
+                <span class="text-3xl">📖</span>
+              {% endif %}
+            </div>
+            <div class="text-xs font-bold text-slate-900 dark:text-white group-hover:text-emerald-500 truncate">{{ r_book.title }}</div>
+            <div class="text-[11px] text-emerald-600 dark:text-emerald-400 font-extrabold mt-0.5">৳{{ r_book.price }}</div>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+

@@ -4,7 +4,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from saascourse.views import root_home_view
 from apps.tenants.views import tenant_registration_view
-
+from apps.courses import views as courses_views
 from apps.users.views import universal_dashboard_view
 
 urlpatterns = [
@@ -12,10 +12,21 @@ urlpatterns = [
     path("", root_home_view, name="home"),
     path("dashboard/", universal_dashboard_view, name="dashboard"),
     path("signup/", tenant_registration_view, name="signup"),
+    
+    # Direct Public Routes for Custom Navbar
+    path("courses/", courses_views.course_list, name="courses"),
+    path("books/", courses_views.book_list, name="books"),
+    path("books/<slug:slug>/", courses_views.book_detail, name="book_detail"),
+    path("resources/", courses_views.resource_list, name="resources"),
+    path("resources/<slug:slug>/download/", courses_views.resource_download, name="resource_download"),
+    path("blog/", courses_views.blog_list, name="blog"),
+    path("blog/<slug:slug>/", courses_views.blog_detail, name="blog_detail"),
+
     path("tenants/", include("apps.tenants.urls", namespace="tenants")),
     path("courses/", include("apps.courses.urls", namespace="courses")),
     path("", include("apps.users.urls", namespace="users")),
 ]
+
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

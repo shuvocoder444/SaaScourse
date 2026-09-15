@@ -7,17 +7,45 @@ from django.utils import timezone
 
 def default_branding():
     return {
-        "primary_color": "#4f46e5",    # Indigo-600
-        "accent_color": "#06b6d4",     # Cyan-500
+        "primary_color": "#16a34a",    # Green-600 (Fresh EdTech default)
+        "accent_color": "#f59e0b",     # Amber-500
         "logo_url": "",
         "banner_url": "",
         "favicon_url": "",
-        "tagline": "Empowering learners through high-impact courses.",
-        "hero_headline": "Master In-Demand Skills with Expert Guidance",
-        "hero_subheadline": "Access interactive, project-driven curriculums with full code walkthroughs and community support.",
-        "cta_text": "Explore All Courses",
-        "about_heading": "Why Learn With Us?",
-        "about_text": "We combine industry-proven engineering principles with real-world builds so you can level up your career quickly.",
+        "tagline": "স্বপ্ন হোক সফলতার সূচনা।",
+        "hero_badge": "HSC 2026 • DU ICU BATCH",
+        "hero_headline": "সেরা শিক্ষক ও প্র্যাকটিস ব্যাচে নির্ভুল প্রস্তুতি",
+        "hero_subheadline": "এইচএসসি, ঢাকা বিশ্ববিদ্যালয় ও মেডিকেল ভর্তি পরীক্ষার পূর্ণাঙ্গ প্রস্তুতি নিন ঘরে বসেই।",
+        "cta_text": "সেরা কোর্স বেছে নাও",
+        "cta_link": "#courses",
+        "cta_secondary_text": "আমাদের বইসমূহ",
+        "cta_secondary_link": "/books/",
+        "notice_text": "📢 ভর্তি চলছে! আগামী ব্যাচের লাইভ ক্লাসে দ্রুত যুক্ত হোন। আসন সংখ্যা সীমিত।",
+        "about_heading": "কেন আমাদের সাথে প্রস্তুতি নেবেন?",
+        "about_text": "অভিজ্ঞ মেন্টর, সার্বক্ষণিক ডাউট সলভিং, প্র্যাকটিস এক্সাম ও লাইভ ক্লাসের মাধ্যমে আমরা নিশ্চিত করি সর্বোচ্চ প্রস্তুতি।",
+        "app_promo_title": "ডাউনলোড করুন আমাদের মোবাইল অ্যাপ, শেখা শুরু করুন আজ থেকেই",
+        "app_promo_subtitle": "লাইভ ক্লাস, মডেল টেস্ট, লেকচার শিট ও পরীক্ষার ফলাফল সব পাবেন এক অ্যাপে।",
+        "app_rating": "4.8★ (৫,০০০+ রিভিউ)",
+        "app_downloads": "৫০,০০০+ শিক্ষার্থী",
+        "play_store_url": "https://play.google.com",
+        "app_store_url": "https://apple.com/app-store/",
+        "contact_phone": "+880 1800-123456",
+        "contact_email": "support@academy.edu.bd",
+        "contact_address": "ফার্মগেট / নীলক্ষেত, ঢাকা, বাংলাদেশ",
+        "facebook_url": "https://facebook.com",
+        "youtube_url": "https://youtube.com",
+        "telegram_url": "https://t.me",
+        "whatsapp_number": "+8801800123456",
+        "trade_license": "TRAD/DSCC/029148/2024",
+        "govt_reg_no": "Govt Reg: ED-9482-BD",
+        "header_cta_text": "ভর্তি আবেদন",
+        "header_cta_link": "/courses/",
+        "show_header_notice": True,
+        "show_header_search": True,
+        "show_footer_payments": True,
+        "show_footer_apps": True,
+        "footer_about": "বাংলাদেশের শীর্ষস্থানীয় অনলাইন এডুকেশন প্ল্যাটফর্ম। আধুনিক কারিকুলাম ও অভিজ্ঞ শিক্ষক মণ্ডলীর তত্ত্বাবধানে প্রতিটি শিক্ষার্থীর পূর্ণাঙ্গ প্রস্তুতি নিশ্চিত করাই আমাদের লক্ষ্য।",
+        "footer_copyright": "© 2026 সর্বস্বত্ব সংরক্ষিত।",
         "font_family": "Inter",
     }
 
@@ -50,6 +78,21 @@ class Tenant(models.Model):
     An independent academy tenant operated by a customer/creator.
     """
 
+    class LandingTemplate(models.TextChoices):
+        EDTECH_BANGLA = "edtech_bangla", "এডমিশন ও একাডেমি EdTech (ডিজাইন ১)"
+        MODERN_SAAS = "modern_saas", "মডার্ন টেক ও প্রো একাডেমি (ডিজাইন ২)"
+        CLASSIC_COACHING = "classic_coaching", "ক্লাসিক কোচিং সেন্টার ও লাইভ নোটিশ (ডিজাইন ৩)"
+
+    class HeaderStyle(models.TextChoices):
+        HEADER_1 = "header_1", "এডটেক নোটিশ ও হটলাইন টপবার (স্টাইল ১)"
+        HEADER_2 = "header_2", "মডার্ন ফ্ল্যাটিং গ্লাস হেডার (স্টাইল ২)"
+        HEADER_3 = "header_3", "ক্লাসিক একাডেমি ডুয়াল-টিয়ার হেডার (স্টাইল ৩)"
+
+    class FooterStyle(models.TextChoices):
+        FOOTER_1 = "footer_1", "এডটেক পেমেন্ট ও অ্যাপ সমৃদ্ধ ফুটার (স্টাইল ১)"
+        FOOTER_2 = "footer_2", "মডার্ন মাল্টি-কলাম ও নিউজলেটার ফুটার (স্টাইল ২)"
+        FOOTER_3 = "footer_3", "ক্লাসিক ক্যাম্পাস ব্রাঞ্চ ও হেল্পলাইন ফুটার (স্টাইল ৩)"
+
     name = models.CharField(max_length=150, help_text="Public brand name of the academy.")
     slug = models.SlugField(
         max_length=63,
@@ -68,6 +111,24 @@ class Tenant(models.Model):
         on_delete=models.PROTECT,
         related_name="owned_tenants",
         help_text="Primary platform user who owns this academy.",
+    )
+    landing_template = models.CharField(
+        max_length=30,
+        choices=LandingTemplate.choices,
+        default=LandingTemplate.EDTECH_BANGLA,
+        help_text="Selected landing page layout design for this academy storefront.",
+    )
+    header_style = models.CharField(
+        max_length=30,
+        choices=HeaderStyle.choices,
+        default=HeaderStyle.HEADER_1,
+        help_text="Selected header navigation style for this academy storefront.",
+    )
+    footer_style = models.CharField(
+        max_length=30,
+        choices=FooterStyle.choices,
+        default=FooterStyle.FOOTER_1,
+        help_text="Selected footer layout style for this academy storefront.",
     )
     custom_domain = models.CharField(
         max_length=255,
@@ -140,10 +201,47 @@ class Tenant(models.Model):
             defaults.update(self.branding)
             self.branding = defaults
         super().save(*args, **kwargs)
+        # Ensure default navigation menus exist for this tenant
+        self.ensure_default_menus()
         # Invalidate middleware cache on update
         cache.delete(f"tenant:slug:{self.slug}")
         if self.custom_domain:
             cache.delete(f"tenant:domain:{self.custom_domain}")
+
+    def ensure_default_menus(self):
+        """Creates the standard 5 navigation items if none exist yet for this tenant."""
+        if not self.pk:
+            return
+        if not self.menu_items.exists():
+            default_items = [
+                ("হোম", "/", 1),
+                ("কোর্সসমূহ", "/courses/", 2),
+                ("বইসমূহ", "/books/", 3),
+                ("ফ্রি রিসোর্স", "/resources/", 4),
+                ("ব্লগ", "/blog/", 5),
+            ]
+            for title, url, order in default_items:
+                TenantMenuItem.objects.create(
+                    tenant=self,
+                    title=title,
+                    url=url,
+                    order=order,
+                    is_active=True,
+                )
+
+    def get_menu_items(self):
+        """Returns ordered active menu items for public storefront header."""
+        items = list(self.menu_items.filter(is_active=True).order_by("order"))
+        if not items:
+            # Fallback in-memory list
+            return [
+                {"title": "হোম", "url": "/", "open_in_new_tab": False},
+                {"title": "কোর্সসমূহ", "url": "/courses/", "open_in_new_tab": False},
+                {"title": "বইসমূহ", "url": "/books/", "open_in_new_tab": False},
+                {"title": "ফ্রি রিসোর্স", "url": "/resources/", "open_in_new_tab": False},
+                {"title": "ব্লগ", "url": "/blog/", "open_in_new_tab": False},
+            ]
+        return items
 
     def generate_domain_token(self) -> str:
         """Generates or returns existing verification token for DNS challenge."""
@@ -184,6 +282,35 @@ class Tenant(models.Model):
         if not sub:
             return False
         return sub.is_valid
+
+
+class TenantMenuItem(models.Model):
+    """
+    Customizable navigation menu links for an academy tenant's header.
+    Defaults to: [হোম] [কোর্সসমূহ] [বইসমূহ] [ফ্রি রিসোর্স] [ব্লগ]
+    Academies can add custom external links, internal pages, and reorder them.
+    """
+
+    tenant = models.ForeignKey(
+        Tenant,
+        on_delete=models.CASCADE,
+        related_name="menu_items",
+    )
+    title = models.CharField(max_length=100, help_text="Label displayed in navigation (e.g., 'কোর্সসমূহ')")
+    url = models.CharField(
+        max_length=255,
+        help_text="Path or external URL (e.g., '/courses/', '/books/', 'https://youtube.com')",
+    )
+    order = models.PositiveIntegerField(default=0, help_text="Display order in the navigation bar")
+    is_active = models.BooleanField(default=True, help_text="Visible in the public storefront header")
+    open_in_new_tab = models.BooleanField(default=False, help_text="Open link in a new browser tab")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["order", "id"]
+
+    def __str__(self):
+        return f"{self.tenant.slug}: {self.title} -> {self.url}"
 
 
 class TenantSMSSetting(models.Model):

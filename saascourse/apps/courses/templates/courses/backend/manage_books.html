@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}বই ও প্রকাশনা পরিচালনা — {{ tenant.name }}{% endblock %}
+
+{% block content %}
+<div 
+  x-data="{ sidebarOpen: false }" 
+  class="min-h-[calc(100vh-4rem)] flex flex-col lg:flex-row bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors"
+>
+
+  <!-- Mobile Off-Canvas Drawer Backdrop -->
+  <div 
+    x-show="sidebarOpen" 
+    x-cloak 
+    @click="sidebarOpen = false" 
+    class="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden transition-opacity"
+  ></div>
+
+  {% include "includes/instructor_sidebar.html" %}
+
+  <!-- Main Content Area -->
+  <main class="flex-1 p-6 sm:p-10 max-w-7xl overflow-y-auto space-y-6">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
+      <div>
+        <div class="flex items-center gap-2 text-xs font-mono text-slate-500 mb-1">
+          <a href="{% url 'courses:manage_dashboard' %}" class="hover:text-brand-primary">← স্টুডিও ড্যাশবোর্ড</a>
+          <span>/</span>
+          <span class="text-slate-900 dark:text-white font-bold">বইসমূহ</span>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+          <span>📚</span>
+          <span>বই ও প্রকাশনা ম্যানেজমেন্ট</span>
+        </h1>
+        <p class="text-xs text-slate-500 mt-1">আপনার একাডেমির প্রকাশিত বই ও হ্যান্ড নোট এখানে যুক্ত ও পরিচালনা করুন।</p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <a href="{% url 'books' %}" target="_blank" class="px-4 py-2 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+          পাবলিক স্টোর দেখুন ↗
+        </a>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+      <div class="space-y-2">
+        {% for message in messages %}
+          <div class="p-4 rounded-2xl border text-xs font-bold flex items-center gap-2 shadow-sm {% if message.tags == 'error' %}bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400{% else %}bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400{% endif %}">
+            <span>{% if message.tags == 'error' %}⚠️{% else %}✓{% endif %}</span>
+            <span>{{ message }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- Add New Book Form -->
+    <div class="p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+      <h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+        <span>➕ নতুন বই যুক্ত করুন</span>
+      </h3>
+
+      <form method="POST" enctype="multipart/form-data" class="space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create">
+
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">বইয়ের নাম *</label>
+            <input type="text" name="title" required placeholder="যেমন: DU ICU প্রশ্নব্যাংক ২০২৬" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">সাবটাইটেল / বিষয়</label>
+            <input type="text" name="subtitle" placeholder="যেমন: বাংলা, ইংরেজি ও সাধারণ জ্ঞান প্রস্তুতি" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">লেখক / সংকলক</label>
+            <input type="text" name="author" value="একাডেমি ফ্যাকাল্টি" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">বিক্রয় মূল্য (৳) *</label>
+            <input type="number" step="0.01" name="price" required placeholder="৩৫০" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">রেগুলার মূল্য (যদি ছাড় থাকে)</label>
+            <input type="number" step="0.01" name="discount_price" placeholder="৪৫০" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">সংস্করণ</label>
+            <input type="text" name="edition" value="২০২৬ সংস্করণ" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">কভার ছবি আপলোড</label>
+            <input type="file" name="cover_image" accept="image/*" class="w-full text-xs file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">অথবা কভার ছবির URL</label>
+            <input type="url" name="cover_url" placeholder="https://..." class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">সরাসরি অর্ডার লিঙ্ক (অপশনাল)</label>
+            <input type="url" name="buy_url" placeholder="দারাজ / রকমারি / পেমেন্ট লিঙ্ক" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+          <div class="flex items-center gap-2 pt-6">
+            <input type="checkbox" id="in_stock" name="in_stock" checked class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500">
+            <label for="in_stock" class="text-xs font-bold text-slate-700 dark:text-slate-300">স্টকে এভেইলেবল আছে</label>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">বইয়ের বিস্তারিত বিবরণ</label>
+          <textarea name="description" rows="3" placeholder="বইয়ের বিষয়বস্তু, সিলেবাস ও বৈশিষ্ট্য..." class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
+        </div>
+
+        <button type="submit" class="px-6 py-3 rounded-xl bg-brand-primary hover:opacity-90 text-white font-bold text-xs shadow-md transition-all">
+          ✓ বই সেভ করুন
+        </button>
+      </form>
+    </div>
+
+    <!-- Existing Books Table -->
+    <div class="p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+      <h3 class="text-base font-bold text-slate-900 dark:text-white">
+        বর্তমান বইসমূহ ({{ books.count }})
+      </h3>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs text-slate-600 dark:text-slate-300">
+          <thead class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold uppercase text-[10px]">
+            <tr>
+              <th class="p-3 rounded-l-xl">কভার ও নাম</th>
+              <th class="p-3">লেখক</th>
+              <th class="p-3">মূল্য</th>
+              <th class="p-3">স্ট্যাটাস</th>
+              <th class="p-3 rounded-r-xl text-right">অ্যাকশন</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+            {% for book in books %}
+              <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                <td class="p-3 flex items-center gap-3">
+                  <div class="w-10 h-12 rounded-lg bg-slate-200 dark:bg-slate-700 overflow-hidden shrink-0 flex items-center justify-center">
+                    {% if book.get_cover_url %}
+                      <img src="{{ book.get_cover_url }}" alt="{{ book.title }}" class="w-full h-full object-cover">
+                    {% else %}
+                      <span>📖</span>
+                    {% endif %}
+                  </div>
+                  <div>
+                    <div class="font-bold text-slate-900 dark:text-white">{{ book.title }}</div>
+                    <div class="text-[10px] text-slate-400">{{ book.edition }}</div>
+                  </div>
+                </td>
+                <td class="p-3">{{ book.author }}</td>
+                <td class="p-3 font-bold text-emerald-600 dark:text-emerald-400">৳{{ book.price }}</td>
+                <td class="p-3">
+                  {% if book.in_stock %}
+                    <span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-bold">ইন স্টক</span>
+                  {% else %}
+                    <span class="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 text-[10px] font-bold">আউট অব স্টক</span>
+                  {% endif %}
+                </td>
+                <td class="p-3 text-right">
+                  <form method="POST" onsubmit="return confirm('আপনি কি এই বইটি ডিলিট করতে চান?');" class="inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="book_id" value="{{ book.id }}">
+                    <button type="submit" class="px-2.5 py-1 rounded-lg text-[11px] font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors">
+                      মুছুন 🗑️
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" class="p-6 text-center text-slate-400">এখনও কোনো বই যোগ করা হয়নি।</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+</div>
+{% endblock %}

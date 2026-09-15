@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}ব্লগ ও আর্টিকেল - {{ current_tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
+
+  <!-- Header -->
+  <div class="border-b border-slate-200 dark:border-slate-800 pb-6 text-center max-w-2xl mx-auto">
+    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 mb-2">
+      📝 অফিসিয়াল ব্লগ
+    </div>
+    <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">ভর্তি পরামর্শ ও পড়াশোনার কৌশল</h1>
+    <p class="text-sm text-slate-500 dark:text-slate-400 mt-2">সেরা মেন্টর ও সফল শিক্ষার্থীদের দিকনির্দেশনামূলক আর্টিকেল এবং ভর্তি পরীক্ষার সর্বশেষ তথ্য।</p>
+  </div>
+
+  <!-- Featured Blog Post (if available) -->
+  {% if featured_post %}
+    <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 p-6 sm:p-8 hover:shadow-xl transition-all">
+      <div class="grid md:grid-cols-12 gap-8 items-center">
+        <div class="md:col-span-5 h-64 sm:h-72 rounded-2xl bg-slate-100 dark:bg-slate-800 overflow-hidden">
+          {% if featured_post.get_cover_url %}
+            <img src="{{ featured_post.get_cover_url }}" alt="{{ featured_post.title }}" class="w-full h-full object-cover">
+          {% else %}
+            <div class="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-tr from-emerald-600 to-teal-600 text-white font-bold">
+              📝
+            </div>
+          {% endif %}
+        </div>
+        <div class="md:col-span-7 space-y-4">
+          <div class="flex items-center gap-3 text-xs text-slate-400 font-mono">
+            <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
+              {{ featured_post.category }}
+            </span>
+            <span>•</span>
+            <span>{{ featured_post.created_at|date:"d M, Y" }}</span>
+          </div>
+
+          <h2 class="text-xl sm:text-3xl font-extrabold text-slate-900 dark:text-white hover:text-emerald-600 transition-colors">
+            <a href="{% url 'blog_detail' featured_post.slug %}">{{ featured_post.title }}</a>
+          </h2>
+
+          <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-3">
+            {{ featured_post.excerpt|default:featured_post.content|truncatechars:180 }}
+          </p>
+
+          <div class="flex items-center justify-between pt-2">
+            <span class="text-xs text-slate-500">লেখক: <strong>{{ featured_post.author_name }}</strong></span>
+            <a href="{% url 'blog_detail' featured_post.slug %}" class="px-5 py-2.5 rounded-xl bg-slate-900 dark:bg-slate-700 hover:bg-emerald-600 text-white font-bold text-xs transition-colors">
+              পুরোটা পড়ুন →
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Blog Posts Grid -->
+  <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+    {% for post in posts %}
+      <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 overflow-hidden hover:border-emerald-500/50 hover:shadow-xl transition-all flex flex-col justify-between group">
+        <div>
+          <div class="h-44 bg-slate-100 dark:bg-slate-800 overflow-hidden relative">
+            {% if post.get_cover_url %}
+              <img src="{{ post.get_cover_url }}" alt="{{ post.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+            {% else %}
+              <div class="w-full h-full flex items-center justify-center text-4xl bg-slate-800 text-slate-400">
+                📄
+              </div>
+            {% endif %}
+            <div class="absolute top-3 left-3">
+              <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-900/80 backdrop-blur-md text-white">
+                {{ post.category }}
+              </span>
+            </div>
+          </div>
+
+          <div class="p-6 space-y-2">
+            <div class="text-[11px] text-slate-400 font-mono">{{ post.created_at|date:"d M, Y" }} • {{ post.views_count }} ভিউ</div>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-2 leading-snug">
+              <a href="{% url 'blog_detail' post.slug %}">{{ post.title }}</a>
+            </h3>
+            <p class="text-xs text-slate-600 dark:text-slate-400 line-clamp-3 leading-relaxed">
+              {{ post.excerpt|default:post.content|truncatechars:120 }}
+            </p>
+          </div>
+        </div>
+
+        <div class="p-6 pt-0 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between mt-4">
+          <span class="text-xs text-slate-500 truncate max-w-[150px]">{{ post.author_name }}</span>
+          <a href="{% url 'blog_detail' post.slug %}" class="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline">
+            পড়ুন →
+          </a>
+        </div>
+      </div>
+    {% empty %}
+      {% if not featured_post %}
+        <div class="col-span-full rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 p-12 text-center text-slate-500">
+          <p class="text-sm font-medium">কোনো ব্লগ পোস্ট পাওয়া যায়নি।</p>
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}
+

@@ -1,5 +1,11 @@
 from django.contrib import admin
-from apps.tenants.models import Tenant, SubscriptionPlan, TenantSubscription, TenantSMSSetting
+from apps.tenants.models import Tenant, SubscriptionPlan, TenantSubscription, TenantSMSSetting, TenantMenuItem
+
+
+
+class TenantMenuItemInline(admin.TabularInline):
+    model = TenantMenuItem
+    extra = 1
 
 
 class TenantSubscriptionInline(admin.StackedInline):
@@ -16,18 +22,19 @@ class TenantSMSSettingInline(admin.StackedInline):
 
 @admin.register(Tenant)
 class TenantAdmin(admin.ModelAdmin):
-    list_display = ("name", "slug", "owner", "custom_domain", "is_active", "get_plan", "created_at")
-    list_filter = ("is_active", "subscription__status", "created_at")
+    list_display = ("name", "slug", "owner", "landing_template", "custom_domain", "is_active", "get_plan", "created_at")
+    list_filter = ("is_active", "landing_template", "subscription__status", "created_at")
     search_fields = ("name", "slug", "custom_domain", "owner__email")
     readonly_fields = ("created_at", "updated_at")
-    inlines = [TenantSubscriptionInline, TenantSMSSettingInline]
+    inlines = [TenantMenuItemInline, TenantSubscriptionInline, TenantSMSSettingInline]
     fieldsets = (
-        ("General Info", {"fields": ("name", "slug", "owner", "is_active")}),
+        ("General Info", {"fields": ("name", "slug", "owner", "landing_template", "is_active")}),
         ("Domain Routing", {"fields": ("custom_domain", "custom_domain_verified")}),
         ("Brand Assets (Logo, Banner, Favicon)", {"fields": ("logo", "banner", "favicon")}),
         ("Branding & Theme Settings", {"fields": ("branding",)}),
         ("Timestamps", {"fields": ("created_at", "updated_at")}),
     )
+
 
     def get_plan(self, obj):
         return obj.subscription.plan.name if hasattr(obj, "subscription") else "No Plan"

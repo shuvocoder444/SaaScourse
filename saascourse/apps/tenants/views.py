@@ -227,19 +227,71 @@ def tenant_branding_settings_view(request):
                 cache.delete(f"tenant:domain:{custom_domain_input}")
                 messages.success(request, f"Custom domain updated to '{custom_domain_input}'. Follow the DNS instructions below and verify SSL.")
 
-        # 3. Update Brand Name, Colors, and Copy
+        # 3. Update Brand Name, Template, Colors, and Copy
         if "name" in request.POST:
             tenant.name = request.POST.get("name", tenant.name).strip()
 
+        if "landing_template" in request.POST:
+            tenant.landing_template = request.POST.get("landing_template", tenant.landing_template).strip()
+
+        if "header_style" in request.POST:
+            tenant.header_style = request.POST.get("header_style", tenant.header_style).strip()
+
+        if "footer_style" in request.POST:
+            tenant.footer_style = request.POST.get("footer_style", tenant.footer_style).strip()
+
         if "primary_color" in request.POST:
-            branding["primary_color"] = request.POST.get("primary_color", branding.get("primary_color", "#4f46e5"))
-            branding["accent_color"] = request.POST.get("accent_color", branding.get("accent_color", "#06b6d4"))
+            branding["primary_color"] = request.POST.get("primary_color", branding.get("primary_color", "#16a34a"))
+            branding["accent_color"] = request.POST.get("accent_color", branding.get("accent_color", "#f59e0b"))
             branding["tagline"] = request.POST.get("tagline", branding.get("tagline", ""))
+            branding["hero_badge"] = request.POST.get("hero_badge", branding.get("hero_badge", "HSC 2026 • DU ICU BATCH"))
             branding["hero_headline"] = request.POST.get("hero_headline", branding.get("hero_headline", ""))
             branding["hero_subheadline"] = request.POST.get("hero_subheadline", branding.get("hero_subheadline", ""))
-            branding["cta_text"] = request.POST.get("cta_text", branding.get("cta_text", "Explore Courses"))
-            branding["about_heading"] = request.POST.get("about_heading", branding.get("about_heading", "Why Learn With Us?"))
+            branding["cta_text"] = request.POST.get("cta_text", branding.get("cta_text", "সেরা কোর্স বেছে নাও"))
+            branding["cta_link"] = request.POST.get("cta_link", branding.get("cta_link", "#courses"))
+            branding["cta_secondary_text"] = request.POST.get("cta_secondary_text", branding.get("cta_secondary_text", "আমাদের বইসমূহ"))
+            branding["cta_secondary_link"] = request.POST.get("cta_secondary_link", branding.get("cta_secondary_link", "/books/"))
+            branding["notice_text"] = request.POST.get("notice_text", branding.get("notice_text", ""))
+            branding["about_heading"] = request.POST.get("about_heading", branding.get("about_heading", "কেন আমাদের সাথে শিখবেন?"))
             branding["about_text"] = request.POST.get("about_text", branding.get("about_text", ""))
+            
+            # App Promo & Contact Info
+            branding["app_promo_title"] = request.POST.get("app_promo_title", branding.get("app_promo_title", ""))
+            branding["app_promo_subtitle"] = request.POST.get("app_promo_subtitle", branding.get("app_promo_subtitle", ""))
+            branding["app_rating"] = request.POST.get("app_rating", branding.get("app_rating", "4.8★"))
+            branding["app_downloads"] = request.POST.get("app_downloads", branding.get("app_downloads", "৫০,০০০+"))
+            branding["play_store_url"] = request.POST.get("play_store_url", branding.get("play_store_url", "#"))
+            branding["app_store_url"] = request.POST.get("app_store_url", branding.get("app_store_url", "#"))
+            branding["contact_phone"] = request.POST.get("contact_phone", branding.get("contact_phone", "+880 1800-123456"))
+            branding["contact_email"] = request.POST.get("contact_email", branding.get("contact_email", "support@academy.edu.bd"))
+            branding["contact_address"] = request.POST.get("contact_address", branding.get("contact_address", "ফার্মগেট, ঢাকা"))
+
+        # Header & Footer specific field handler (tab=header_footer or general save)
+        if "trade_license" in request.POST or "footer_copyright" in request.POST or "header_cta_text" in request.POST or target_tab == "header_footer":
+            if "notice_text" in request.POST:
+                branding["notice_text"] = request.POST.get("notice_text", branding.get("notice_text", ""))
+            if "contact_phone" in request.POST:
+                branding["contact_phone"] = request.POST.get("contact_phone", branding.get("contact_phone", "+880 1800-123456"))
+            if "contact_email" in request.POST:
+                branding["contact_email"] = request.POST.get("contact_email", branding.get("contact_email", "support@academy.edu.bd"))
+            if "contact_address" in request.POST:
+                branding["contact_address"] = request.POST.get("contact_address", branding.get("contact_address", ""))
+            branding["trade_license"] = request.POST.get("trade_license", branding.get("trade_license", "")).strip()
+            branding["govt_reg_no"] = request.POST.get("govt_reg_no", branding.get("govt_reg_no", "")).strip()
+            branding["whatsapp_number"] = request.POST.get("whatsapp_number", branding.get("whatsapp_number", "")).strip()
+            branding["facebook_url"] = request.POST.get("facebook_url", branding.get("facebook_url", "")).strip()
+            branding["youtube_url"] = request.POST.get("youtube_url", branding.get("youtube_url", "")).strip()
+            branding["telegram_url"] = request.POST.get("telegram_url", branding.get("telegram_url", "")).strip()
+            branding["header_cta_text"] = request.POST.get("header_cta_text", branding.get("header_cta_text", "ভর্তি আবেদন")).strip()
+            branding["header_cta_link"] = request.POST.get("header_cta_link", branding.get("header_cta_link", "/courses/")).strip()
+            branding["footer_about"] = request.POST.get("footer_about", branding.get("footer_about", "")).strip()
+            branding["footer_copyright"] = request.POST.get("footer_copyright", branding.get("footer_copyright", "© 2026 সর্বস্বত্ব সংরক্ষিত।")).strip()
+            
+            if "header_checkbox_sent" in request.POST:
+                branding["show_header_notice"] = request.POST.get("show_header_notice") == "on"
+                branding["show_header_search"] = request.POST.get("show_header_search") == "on"
+                branding["show_footer_payments"] = request.POST.get("show_footer_payments") == "on"
+                branding["show_footer_apps"] = request.POST.get("show_footer_apps") == "on"
 
         # 4. Update Brand Image Files (Logo, Banner, Favicon)
         if "logo" in request.FILES:
@@ -260,7 +312,38 @@ def tenant_branding_settings_view(request):
         tenant.branding = branding
         tenant.save()
 
-        # 5. Update SMS Gateway Settings
+        # 5. Menu Items Management Actions (tab=navigation)
+        menu_action = request.POST.get("menu_action")
+        if menu_action == "add_menu":
+            menu_title = request.POST.get("menu_title", "").strip()
+            menu_url = request.POST.get("menu_url", "").strip()
+            menu_order = int(request.POST.get("menu_order", 0) or 0)
+            open_in_new_tab = request.POST.get("menu_new_tab") == "on"
+            if menu_title and menu_url:
+                from apps.tenants.models import TenantMenuItem
+                TenantMenuItem.objects.create(
+                    tenant=tenant,
+                    title=menu_title,
+                    url=menu_url,
+                    order=menu_order,
+                    open_in_new_tab=open_in_new_tab,
+                    is_active=True,
+                )
+                messages.success(request, f"মেনু আইটেম '{menu_title}' যুক্ত হয়েছে!")
+
+        elif menu_action == "delete_menu":
+            menu_id = request.POST.get("menu_id")
+            from apps.tenants.models import TenantMenuItem
+            TenantMenuItem.objects.filter(tenant=tenant, id=menu_id).delete()
+            messages.success(request, "মেনু আইটেমটি মুছে ফেলা হয়েছে।")
+
+        elif menu_action == "reset_menus":
+            from apps.tenants.models import TenantMenuItem
+            TenantMenuItem.objects.filter(tenant=tenant).delete()
+            tenant.ensure_default_menus()
+            messages.success(request, "মেনু আইটেমসমূহ ডিফল্ট অবস্থায় ফিরিয়ে আনা হয়েছে।")
+
+        # 6. Update SMS Gateway Settings
         sms_setting, _ = TenantSMSSetting.objects.get_or_create(tenant=tenant)
         if target_tab == "sms" or "sms_provider" in request.POST:
             sms_setting.provider = request.POST.get("sms_provider", sms_setting.provider)
@@ -274,8 +357,9 @@ def tenant_branding_settings_view(request):
             ).strip()
             sms_setting.save()
             messages.success(request, "SMS Gateway configuration saved successfully!")
-        else:
-            messages.success(request, "Settings saved successfully!")
+        elif not menu_action:
+            messages.success(request, "সেটিংস সফলভাবে সংরক্ষিত হয়েছে!")
+
 
         # If subdomain changed, redirect to the new subdomain URL so session and routing stay valid
         if subdomain_changed:

@@ -1,0 +1,169 @@
+<!-- Header Style 3: Classic Academic Dual-Tier Coaching Header -->
+<header class="sticky top-0 z-50 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm font-sans transition-colors">
+
+  <!-- 1. Top Tier: Contact & Social Strip -->
+  <div class="bg-slate-900 text-slate-300 text-xs py-2 px-4 sm:px-6 lg:px-8 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2 text-[11px] sm:text-xs">
+      
+      <!-- Left: Helpline & Campus location -->
+      <div class="flex items-center gap-4 flex-wrap">
+        {% if current_tenant.branding.contact_phone %}
+          <a href="tel:{{ current_tenant.branding.contact_phone }}" class="flex items-center gap-1.5 hover:text-amber-400 font-bold text-white transition-colors">
+            <span>☎️ হটলাইন:</span>
+            <span class="font-mono text-amber-400">{{ current_tenant.branding.contact_phone }}</span>
+          </a>
+        {% endif %}
+        {% if current_tenant.branding.contact_address %}
+          <span class="hidden sm:flex items-center gap-1 text-slate-400">
+            <span>📍</span>
+            <span>{{ current_tenant.branding.contact_address }}</span>
+          </span>
+        {% endif %}
+      </div>
+
+      <!-- Right: Social Links & Helpdesk -->
+      <div class="flex items-center gap-3">
+        {% if current_tenant.branding.facebook_url %}
+          <a href="{{ current_tenant.branding.facebook_url }}" target="_blank" class="hover:text-blue-400 transition-colors" title="Facebook Page">
+            <span>📘 ফেসবুক</span>
+          </a>
+        {% endif %}
+        {% if current_tenant.branding.youtube_url %}
+          <a href="{{ current_tenant.branding.youtube_url }}" target="_blank" class="hover:text-red-400 transition-colors" title="YouTube Channel">
+            <span>🎥 ইউটিউব</span>
+          </a>
+        {% endif %}
+        {% if current_tenant.branding.telegram_url %}
+          <a href="{{ current_tenant.branding.telegram_url }}" target="_blank" class="hover:text-sky-400 transition-colors" title="Telegram Channel">
+            <span>✈️ টেলিগ্রাম</span>
+          </a>
+        {% endif %}
+        {% if current_tenant.branding.whatsapp_number %}
+          <a href="https://wa.me/{{ current_tenant.branding.whatsapp_number }}" target="_blank" class="hover:text-emerald-400 transition-colors font-bold text-emerald-400">
+            <span>💬 হোয়াটসঅ্যাপ</span>
+          </a>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 2. Bottom Tier: Brand Logo, Main Navigation & Action -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 py-3 flex items-center justify-between gap-4">
+    
+    <!-- Brand Logo & Motto -->
+    <div class="flex items-center gap-3">
+      <a href="{% url 'home' %}" class="flex items-center gap-3 group">
+        {% if current_tenant and current_tenant.get_logo_url %}
+          <img 
+            src="{{ current_tenant.get_logo_url }}" 
+            alt="{{ current_tenant.name }}" 
+            class="h-12 max-w-[160px] object-contain rounded-lg group-hover:scale-105 transition-transform"
+          >
+        {% else %}
+          <div class="w-12 h-12 rounded-xl bg-slate-900 border-2 border-amber-500 flex items-center justify-center font-black text-amber-400 text-xl shadow-md">
+            {% if current_tenant %}
+              {{ current_tenant.name|slice:":1"|upper }}
+            {% else %}
+              🎓
+            {% endif %}
+          </div>
+        {% endif %}
+        <div>
+          <span class="font-black text-xl tracking-tight text-slate-900 dark:text-white block group-hover:text-amber-500 transition-colors">
+            {{ current_tenant.name|default:"কোর্স একাডেমি" }}
+          </span>
+          <span class="text-[11px] text-slate-500 dark:text-slate-400 block font-medium">
+            {{ current_tenant.branding.tagline|default:"স্বপ্ন হোক সফলতার সূচনা" }}
+          </span>
+        </div>
+      </a>
+    </div>
+
+    <!-- Center Navigation Links (Classic Coaching Bar) -->
+    {% if current_tenant %}
+      <nav class="hidden lg:flex items-center gap-2">
+        {% for item in tenant_menu_items %}
+          <a 
+            href="{{ item.url }}" 
+            {% if item.open_in_new_tab %}target="_blank" rel="noopener noreferrer"{% endif %}
+            class="px-4 py-2 rounded-xl text-sm font-bold text-slate-800 dark:text-slate-100 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 border border-transparent hover:border-amber-200 dark:hover:border-amber-800 transition-all"
+          >
+            {{ item.title }}
+          </a>
+        {% endfor %}
+      </nav>
+    {% endif %}
+
+    <!-- Right Action Items & Theme Switcher -->
+    <div class="flex items-center gap-2 sm:gap-3">
+      {% if user.is_authenticated %}
+        <a href="{% url 'dashboard' %}" class="px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-md font-sans">
+          ⚡ ড্যাশবোর্ড
+        </a>
+
+        {% if current_tenant and current_tenant.owner == user or user.is_superuser %}
+          <a href="{% url 'courses:manage_dashboard' %}" class="hidden sm:inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            🛠️ স্টুডিও
+          </a>
+          <a href="/tenants/settings/?tab=header_footer" class="hidden sm:inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20">
+            🎨 কাস্টমাইজ
+          </a>
+        {% endif %}
+
+        <a href="{% url 'users:logout' %}" class="text-xs text-slate-500 hover:text-rose-500 px-2 py-1 hidden sm:block">
+          লগআউট
+        </a>
+      {% else %}
+        <a href="{% url 'users:login' %}" class="px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 text-xs font-bold">
+          লগইন
+        </a>
+        <a 
+          href="{{ current_tenant.branding.header_cta_link|default:'/courses/' }}" 
+          class="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 dark:bg-amber-500 hover:bg-slate-800 dark:hover:bg-amber-600 text-amber-400 dark:text-slate-950 text-xs font-extrabold shadow-md border border-amber-500/30"
+        >
+          <span>{{ current_tenant.branding.header_cta_text|default:"ভর্তি তথ্য ও ফরম" }}</span>
+          <span>🎓</span>
+        </a>
+      {% endif %}
+
+      <!-- Theme Toggle -->
+      <button 
+        type="button"
+        @click="
+          isDark = !isDark;
+          if (isDark) {
+            document.documentElement.classList.add('dark');
+            localStorage.theme = 'dark';
+          } else {
+            document.documentElement.classList.remove('dark');
+            localStorage.theme = 'light';
+          }
+        "
+        class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-amber-400 hover:text-amber-500"
+      >
+        <svg x-show="isDark" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: none;">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+        </svg>
+        <svg x-show="!isDark" class="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+        </svg>
+      </button>
+
+      <!-- Mobile Hamburger Button -->
+      <button 
+        type="button"
+        @click="mobileMenuOpen = !mobileMenuOpen"
+        class="lg:hidden p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+      </button>
+
+    </div>
+
+  </div>
+
+</header>
+

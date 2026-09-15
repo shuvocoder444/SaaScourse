@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}{{ post.title }} - {{ current_tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10">
+
+  <!-- Breadcrumb -->
+  <div class="flex items-center gap-2 text-xs text-slate-500">
+    <a href="{% url 'home' %}" class="hover:text-slate-900 dark:hover:text-white">হোম</a>
+    <span>/</span>
+    <a href="{% url 'blog' %}" class="hover:text-slate-900 dark:hover:text-white">ব্লগ</a>
+    <span>/</span>
+    <span class="text-slate-900 dark:text-white font-semibold truncate">{{ post.title }}</span>
+  </div>
+
+  <!-- Article Header -->
+  <div class="space-y-4">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+      {{ post.category }}
+    </div>
+
+    <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 dark:text-white leading-tight">
+      {{ post.title }}
+    </h1>
+
+    <div class="flex items-center justify-between py-3 border-y border-slate-200 dark:border-slate-800 text-xs text-slate-500">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-xs">
+          {{ post.author_name|slice:":1" }}
+        </div>
+        <div>
+          <strong class="text-slate-900 dark:text-white block">{{ post.author_name }}</strong>
+          <span class="text-[11px]">{{ post.created_at|date:"F d, Y" }}</span>
+        </div>
+      </div>
+      <div class="font-mono">
+        👁️ {{ post.views_count }} ভিউ
+      </div>
+    </div>
+  </div>
+
+  <!-- Featured Cover Image -->
+  {% if post.get_cover_url %}
+    <div class="rounded-3xl overflow-hidden max-h-96 shadow-lg">
+      <img src="{{ post.get_cover_url }}" alt="{{ post.title }}" class="w-full h-full object-cover">
+    </div>
+  {% endif %}
+
+  <!-- Article Body -->
+  <article class="prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 text-base sm:text-lg leading-relaxed space-y-4">
+    {{ post.content|linebreaks }}
+  </article>
+
+  <!-- Share / Back -->
+  <div class="pt-8 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+    <a href="{% url 'blog' %}" class="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold hover:bg-slate-100 transition-all">
+      ← ব্লগে ফিরে যান
+    </a>
+    <a href="#courses" class="px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-all">
+      আমাদের কোর্সসমূহ দেখুন 🎓
+    </a>
+  </div>
+
+  <!-- Recent Posts -->
+  {% if recent_posts %}
+    <div class="pt-10 border-t border-slate-200 dark:border-slate-800">
+      <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-6">অন্যান্য সাম্প্রতিক পোস্ট</h3>
+      <div class="grid sm:grid-cols-3 gap-6">
+        {% for r_post in recent_posts %}
+          <a href="{% url 'blog_detail' r_post.slug %}" class="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 hover:border-emerald-500 transition-all block group">
+            <div class="text-[10px] text-slate-400 font-mono mb-1">{{ r_post.created_at|date:"d M, Y" }}</div>
+            <h4 class="text-sm font-bold text-slate-900 dark:text-white group-hover:text-emerald-500 line-clamp-2">{{ r_post.title }}</h4>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+

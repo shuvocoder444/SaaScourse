@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}ফলাফল ও মার্কশিট — {{ exam.title }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 py-8 px-4 sm:px-8">
+  <div class="max-w-4xl mx-auto space-y-6">
+
+    <!-- Top Breadcrumbs -->
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2 text-xs font-mono text-slate-500">
+        <a href="{% url 'dashboard' %}?tab=results" class="hover:text-brand-primary">← আমার ড্যাশবোর্ড</a>
+        <span>/</span>
+        <span class="text-slate-900 dark:text-white font-bold">পরীক্ষার ফলাফল</span>
+      </div>
+      <a href="{% url 'courses:exam_take' exam.slug %}" class="px-3.5 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold transition-all">
+        পুনরায় পরীক্ষা দিন 🔄
+      </a>
+    </div>
+
+    <!-- Alert Messages -->
+    {% if messages %}
+      <div class="space-y-2">
+        {% for message in messages %}
+          <div class="p-4 rounded-2xl border text-xs font-bold flex items-center gap-2 shadow-sm {% if message.tags == 'error' %}bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400{% else %}bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400{% endif %}">
+            <span>{% if message.tags == 'error' %}⚠️{% else %}✓{% endif %}</span>
+            <span>{{ message }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- Scorecard Master Header Card -->
+    <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-xl p-6 sm:p-8 space-y-6">
+      
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-6">
+        <div>
+          <span class="text-[11px] font-mono uppercase tracking-wider text-indigo-600 dark:text-cyan-400 font-bold block mb-1">
+            {{ exam.tenant.name }} • অফিসিয়াল স্কোরকার্ড
+          </span>
+          <h1 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">{{ exam.title }}</h1>
+          <p class="text-xs text-slate-500 mt-1">জমা দেওয়ার সময়: {{ attempt.submitted_at|date:"d M Y, h:i A" }}</p>
+        </div>
+
+        <div>
+          {% if attempt.is_passed %}
+            <div class="px-5 py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-black text-base text-center shadow-lg shadow-emerald-500/10">
+              🎉 PASSED / উত্তীর্ণ
+            </div>
+          {% else %}
+            <div class="px-5 py-2.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 font-black text-base text-center shadow-lg shadow-rose-500/10">
+              ⚠️ FAILED / অনুত্তীর্ণ
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Performance Metrics 4-Grid -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+        
+        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-100 dark:border-slate-800/80">
+          <span class="text-[10px] font-mono uppercase text-slate-400 block mb-1">প্রাপ্ত নম্বর</span>
+          <div class="text-2xl sm:text-3xl font-black text-brand-primary">
+            {{ attempt.score }}
+          </div>
+          <span class="text-[10px] font-mono text-slate-400">মোট: {{ attempt.total_marks }}</span>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-100 dark:border-slate-800/80">
+          <span class="text-[10px] font-mono uppercase text-slate-400 block mb-1">সঠিক উত্তর</span>
+          <div class="text-2xl sm:text-3xl font-black text-emerald-500">
+            {{ attempt.correct_count }}
+          </div>
+          <span class="text-[10px] font-mono text-slate-400">প্রশ্ন</span>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-100 dark:border-slate-800/80">
+          <span class="text-[10px] font-mono uppercase text-slate-400 block mb-1">ভুল উত্তর</span>
+          <div class="text-2xl sm:text-3xl font-black text-rose-500">
+            {{ attempt.wrong_count }}
+          </div>
+          <span class="text-[10px] font-mono text-slate-400">মাইনাস: -{{ exam.negative_mark_per_question }}</span>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-100 dark:border-slate-800/80">
+          <span class="text-[10px] font-mono uppercase text-slate-400 block mb-1">সঠিকতার হার</span>
+          <div class="text-2xl sm:text-3xl font-black text-amber-500">
+            {{ attempt.percentage }}%
+          </div>
+          <span class="text-[10px] font-mono text-slate-400">পাস মার্ক: {{ exam.pass_mark }}%</span>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Solution Sheet & Question Breakdown -->
+    <div class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <span>📖</span>
+          <span>প্রশ্নভিত্তিক সমাধান ও বিশদ ব্যাখ্যা</span>
+        </h2>
+        <span class="text-xs font-mono text-slate-400">{{ question_reviews|length }}টি প্রশ্ন</span>
+      </div>
+
+      <div class="space-y-4">
+        {% for item in question_reviews %}
+          <div class="p-5 rounded-3xl bg-white dark:bg-slate-900/90 border {% if item.is_correct %}border-emerald-500/30{% elif item.is_wrong %}border-rose-500/30{% else %}border-slate-200 dark:border-slate-800{% endif %} shadow-sm space-y-4">
+            
+            <div class="flex items-start justify-between gap-4">
+              <div class="flex items-start gap-3">
+                <span class="w-7 h-7 rounded-xl flex items-center justify-center font-mono font-bold text-xs shrink-0 mt-0.5 {% if item.is_correct %}bg-emerald-500/20 text-emerald-500 border border-emerald-500/30{% elif item.is_wrong %}bg-rose-500/20 text-rose-500 border border-rose-500/30{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500{% endif %}">
+                  {{ item.question.order }}
+                </span>
+                <div>
+                  <h3 class="font-bold text-sm text-slate-900 dark:text-white">{{ item.question.question_text }}</h3>
+                  {% if item.question.image_url %}
+                    <div class="mt-2">
+                      <img src="{{ item.question.image_url }}" alt="Question Figure" class="max-h-48 rounded-xl border border-slate-200 dark:border-slate-800">
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div>
+                {% if item.is_correct %}
+                  <span class="px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-500 text-xs font-bold border border-emerald-500/20">
+                    ✓ সঠিক (+{{ item.question.marks }})
+                  </span>
+                {% elif item.is_wrong %}
+                  <span class="px-2.5 py-1 rounded-xl bg-rose-500/10 text-rose-500 text-xs font-bold border border-rose-500/20">
+                    ✗ ভুল (-{{ exam.negative_mark_per_question }})
+                  </span>
+                {% else %}
+                  <span class="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 text-xs font-bold">
+                    ⚪ উত্তরহীন (০)
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Options Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              
+              <!-- Option A -->
+              <div class="p-3 rounded-2xl border flex items-center gap-2.5 {% if item.question.correct_option == 'A' %}bg-emerald-500/15 border-emerald-500/40 text-emerald-800 dark:text-emerald-200 font-bold{% elif item.user_choice == 'A' and item.is_wrong %}bg-rose-500/15 border-rose-500/40 text-rose-700 dark:text-rose-300 font-bold{% else %}bg-slate-50 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400{% endif %}">
+                <span class="w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] {% if item.question.correct_option == 'A' %}bg-emerald-500 text-white{% elif item.user_choice == 'A' and item.is_wrong %}bg-rose-500 text-white{% else %}bg-slate-200 dark:bg-slate-800 text-slate-500{% endif %}">A</span>
+                <span>ক) {{ item.question.option_a }}</span>
+                {% if item.question.correct_option == 'A' %}<span class="ml-auto text-emerald-500 font-bold">✓ সঠিক উত্তর</span>{% endif %}
+                {% if item.user_choice == 'A' and item.is_wrong %}<span class="ml-auto text-rose-500 font-bold">আপনার উত্তর</span>{% endif %}
+              </div>
+
+              <!-- Option B -->
+              <div class="p-3 rounded-2xl border flex items-center gap-2.5 {% if item.question.correct_option == 'B' %}bg-emerald-500/15 border-emerald-500/40 text-emerald-800 dark:text-emerald-200 font-bold{% elif item.user_choice == 'B' and item.is_wrong %}bg-rose-500/15 border-rose-500/40 text-rose-700 dark:text-rose-300 font-bold{% else %}bg-slate-50 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400{% endif %}">
+                <span class="w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] {% if item.question.correct_option == 'B' %}bg-emerald-500 text-white{% elif item.user_choice == 'B' and item.is_wrong %}bg-rose-500 text-white{% else %}bg-slate-200 dark:bg-slate-800 text-slate-500{% endif %}">B</span>
+                <span>খ) {{ item.question.option_b }}</span>
+                {% if item.question.correct_option == 'B' %}<span class="ml-auto text-emerald-500 font-bold">✓ সঠিক উত্তর</span>{% endif %}
+                {% if item.user_choice == 'B' and item.is_wrong %}<span class="ml-auto text-rose-500 font-bold">আপনার উত্তর</span>{% endif %}
+              </div>
+
+              <!-- Option C -->
+              <div class="p-3 rounded-2xl border flex items-center gap-2.5 {% if item.question.correct_option == 'C' %}bg-emerald-500/15 border-emerald-500/40 text-emerald-800 dark:text-emerald-200 font-bold{% elif item.user_choice == 'C' and item.is_wrong %}bg-rose-500/15 border-rose-500/40 text-rose-700 dark:text-rose-300 font-bold{% else %}bg-slate-50 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400{% endif %}">
+                <span class="w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] {% if item.question.correct_option == 'C' %}bg-emerald-500 text-white{% elif item.user_choice == 'C' and item.is_wrong %}bg-rose-500 text-white{% else %}bg-slate-200 dark:bg-slate-800 text-slate-500{% endif %}">C</span>
+                <span>গ) {{ item.question.option_c }}</span>
+                {% if item.question.correct_option == 'C' %}<span class="ml-auto text-emerald-500 font-bold">✓ সঠিক উত্তর</span>{% endif %}
+                {% if item.user_choice == 'C' and item.is_wrong %}<span class="ml-auto text-rose-500 font-bold">আপনার উত্তর</span>{% endif %}
+              </div>
+
+              <!-- Option D -->
+              <div class="p-3 rounded-2xl border flex items-center gap-2.5 {% if item.question.correct_option == 'D' %}bg-emerald-500/15 border-emerald-500/40 text-emerald-800 dark:text-emerald-200 font-bold{% elif item.user_choice == 'D' and item.is_wrong %}bg-rose-500/15 border-rose-500/40 text-rose-700 dark:text-rose-300 font-bold{% else %}bg-slate-50 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400{% endif %}">
+                <span class="w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] {% if item.question.correct_option == 'D' %}bg-emerald-500 text-white{% elif item.user_choice == 'D' and item.is_wrong %}bg-rose-500 text-white{% else %}bg-slate-200 dark:bg-slate-800 text-slate-500{% endif %}">D</span>
+                <span>ঘ) {{ item.question.option_d }}</span>
+                {% if item.question.correct_option == 'D' %}<span class="ml-auto text-emerald-500 font-bold">✓ সঠিক উত্তর</span>{% endif %}
+                {% if item.user_choice == 'D' and item.is_wrong %}<span class="ml-auto text-rose-500 font-bold">আপনার উত্তর</span>{% endif %}
+              </div>
+
+            </div>
+
+            <!-- Explanation -->
+            {% if item.question.explanation %}
+              <div class="p-3.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 text-xs text-indigo-900 dark:text-indigo-300 flex items-start gap-2">
+                <span>💡</span>
+                <div>
+                  <span class="font-bold">ব্যাখ্যা ও সমাধান:</span>
+                  <span>{{ item.question.explanation }}</span>
+                </div>
+              </div>
+            {% endif %}
+
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

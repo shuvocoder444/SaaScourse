@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}{{ exam.title }} — লাইভ পরীক্ষা{% endblock %}
+
+{% block content %}
+<div 
+  x-data="{
+    timeLeft: {{ exam.duration_minutes }} * 60,
+    timeTaken: 0,
+    timerInterval: null,
+    answeredCount: 0,
+    totalQuestions: {{ questions.count }},
+    init() {
+      this.timerInterval = setInterval(() => {
+        if (this.timeLeft > 0) {
+          this.timeLeft--;
+          this.timeTaken++;
+        } else {
+          clearInterval(this.timerInterval);
+          alert('পরীক্ষার নির্ধারিত সময় শেষ হয়ে গেছে! স্বয়ংক্রিয়ভাবে উত্তরপত্র জমা নেওয়া হচ্ছে।');
+          document.getElementById('exam-submit-form').submit();
+        }
+      }, 1000);
+    },
+    formatTime(seconds) {
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    },
+    updateAnswered() {
+      let count = 0;
+      const form = document.getElementById('exam-submit-form');
+      const inputs = form.querySelectorAll('input[type=radio]:checked');
+      this.answeredCount = inputs.length;
+    }
+  }" 
+  class="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 py-6 px-4 sm:px-6"
+>
+  <div class="max-w-4xl mx-auto space-y-6">
+
+    <!-- Sticky Exam Top Status Bar -->
+    <div class="sticky top-16 z-30 p-4 rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2 text-[11px] font-mono text-slate-500 mb-0.5">
+          <span>📝 {{ exam.tenant.name }}</span>
+          <span>•</span>
+          <span>{{ exam.course.title|default:"একাডেমি ওপেন এক্সাম" }}</span>
+        </div>
+        <h1 class="text-base sm:text-lg font-black text-slate-900 dark:text-white">{{ exam.title }}</h1>
+      </div>
+
+      <!-- Real-time Timer & Answered Tracker -->
+      <div class="flex items-center gap-4">
+        <div class="px-3.5 py-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-xs font-mono">
+          <span class="text-slate-400">উত্তর সম্পন্ন:</span>
+          <span class="font-bold text-emerald-500 ml-1" x-text="`${answeredCount}/${totalQuestions}`">0/{{ questions.count }}</span>
+        </div>
+
+        <div class="flex items-center gap-2 px-4 py-2 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400">
+          <span class="text-sm animate-pulse">⏱️</span>
+          <div class="text-right">
+            <span class="text-[9px] font-mono uppercase tracking-wider block leading-none text-slate-400">বাকি সময়</span>
+            <span class="text-lg font-mono font-black" x-text="formatTime(timeLeft)">--:--</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Exam Instructions Box -->
+    {% if exam.description %}
+      <div class="p-4 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400 space-y-1">
+        <span class="font-bold text-slate-900 dark:text-white">📌 নির্দেশিকা:</span>
+        <p>{{ exam.description }}</p>
+        <div class="text-[10px] font-mono text-slate-400 pt-1">
+          মোট প্রশ্ন: {{ questions.count }}টি • পাস মার্ক: {{ exam.pass_mark }}% • ভুল উত্তরে কাটা যাবে: -{{ exam.negative_mark_per_question }} নম্বর।
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Exam Submit Form -->
+    <form id="exam-submit-form" method="POST" action="{% url 'courses:exam_submit' exam.slug %}" class="space-y-6">
+      {% csrf_token %}
+      <input type="hidden" name="time_taken_seconds" :value="timeTaken">
+
+      <!-- Questions List -->
+      {% for q in questions %}
+        <div class="p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4" id="question-card-{{ q.id }}">
+          
+          <div class="flex items-start gap-3">
+            <span class="w-8 h-8 rounded-xl bg-brand-primary/10 text-brand-primary border border-brand-primary/20 flex items-center justify-center font-mono font-black text-xs shrink-0">
+              {{ q.order }}
+            </span>
+            <div class="space-y-2 flex-1">
+              <h3 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-relaxed">
+                {{ q.question_text }}
+              </h3>
+              {% if q.image_url %}
+                <div class="pt-2">
+                  <img src="{{ q.image_url }}" alt="Question Figure" class="max-h-56 rounded-2xl border border-slate-200 dark:border-slate-800">
+                </div>
+              {% endif %}
+            </div>
+            <span class="text-[10px] font-mono font-bold text-slate-400 shrink-0">
+              {{ q.marks }} মার্ক
+            </span>
+          </div>
+
+          <!-- Options List (Radio Buttons) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            
+            <!-- Option A -->
+            <label class="flex items-center gap-3 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition-all has-[:checked]:bg-emerald-500/10 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-700 dark:has-[:checked]:text-emerald-300">
+              <input 
+                type="radio" 
+                name="q_{{ q.id }}" 
+                value="A" 
+                @change="updateAnswered()" 
+                class="w-4 h-4 text-emerald-600 focus:ring-emerald-500"
+              >
+              <span class="text-xs font-semibold">ক) {{ q.option_a }}</span>
+            </label>
+
+            <!-- Option B -->
+            <label class="flex items-center gap-3 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition-all has-[:checked]:bg-emerald-500/10 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-700 dark:has-[:checked]:text-emerald-300">
+              <input 
+                type="radio" 
+                name="q_{{ q.id }}" 
+                value="B" 
+                @change="updateAnswered()" 
+                class="w-4 h-4 text-emerald-600 focus:ring-emerald-500"
+              >
+              <span class="text-xs font-semibold">খ) {{ q.option_b }}</span>
+            </label>
+
+            <!-- Option C -->
+            <label class="flex items-center gap-3 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition-all has-[:checked]:bg-emerald-500/10 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-700 dark:has-[:checked]:text-emerald-300">
+              <input 
+                type="radio" 
+                name="q_{{ q.id }}" 
+                value="C" 
+                @change="updateAnswered()" 
+                class="w-4 h-4 text-emerald-600 focus:ring-emerald-500"
+              >
+              <span class="text-xs font-semibold">গ) {{ q.option_c }}</span>
+            </label>
+
+            <!-- Option D -->
+            <label class="flex items-center gap-3 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition-all has-[:checked]:bg-emerald-500/10 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-700 dark:has-[:checked]:text-emerald-300">
+              <input 
+                type="radio" 
+                name="q_{{ q.id }}" 
+                value="D" 
+                @change="updateAnswered()" 
+                class="w-4 h-4 text-emerald-600 focus:ring-emerald-500"
+              >
+              <span class="text-xs font-semibold">ঘ) {{ q.option_d }}</span>
+            </label>
+
+          </div>
+
+        </div>
+      {% endfor %}
+
+      <!-- Bottom Submission Bar -->
+      <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <span class="text-xs font-bold text-slate-900 dark:text-white block">সবগুলো প্রশ্নের উত্তর দিয়ে নিশ্চিত হয়ে সাবমিট করুন</span>
+          <span class="text-[11px] text-slate-400">সাবমিট করার সাথে সাথেই তাৎক্ষণিক মার্কশিট ও সঠিক উত্তরের ব্যাখ্যা দেখতে পাবেন।</span>
+        </div>
+
+        <button 
+          type="submit" 
+          onclick="return confirm('আপনি কি নিশ্চিত যে পরীক্ষাটি সাবমিট করতে চান?');"
+          class="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black text-sm hover:opacity-90 shadow-lg shadow-emerald-500/30 transition-all text-center"
+        >
+          ✓ পরীক্ষা সাবমিট করুন
+        </button>
+      </div>
+
+    </form>
+
+  </div>
+</div>
+{% endblock %}
+
