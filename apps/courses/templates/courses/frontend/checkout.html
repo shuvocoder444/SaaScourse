@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+
+{% block title %}কোর্স ভর্তি ও চেকআউট — {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 dark:bg-slate-950 py-10 px-4 sm:px-6 lg:px-8 transition-colors" x-data="{ mode: '{% if prompt_login %}login{% else %}signup{% endif %}', paymentMethod: 'bKash Online' }">
+  
+  <div class="max-w-5xl mx-auto space-y-8">
+    
+    <!-- Top Breadcrumb & Title -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
+      <div>
+        <div class="flex items-center gap-2 text-xs font-mono text-slate-500 dark:text-slate-400 mb-1">
+          <a href="{% url 'courses:detail' course.slug %}" class="hover:text-brand-primary">← {{ course.title|truncatechars:30 }}</a>
+          <span>/</span>
+          <span>চেকআউট ও ভর্তি</span>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+          <span>🛒</span>
+          <span>কোর্স ভর্তি ও রেজিস্ট্রেশন</span>
+        </h1>
+      </div>
+
+      <div class="flex items-center gap-2 text-xs font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-full self-start">
+        <span>🔒</span>
+        <span>SSL সিকিউর ও ইনস্ট্যান্ট অ্যাক্টিভেশন</span>
+      </div>
+    </div>
+
+    <!-- Alert Messages -->
+    {% if messages %}
+      <div class="space-y-2">
+        {% for message in messages %}
+          <div class="p-4 rounded-2xl border text-xs font-bold flex items-center gap-2 shadow-sm {% if message.tags == 'error' %}bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400{% else %}bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400{% endif %}">
+            <span>{% if message.tags == 'error' %}⚠️{% else %}✓{% endif %}</span>
+            <span>{{ message }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- 2-Column Grid Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      
+      <!-- LEFT COLUMN: Course Summary & Pricing (5 cols) -->
+      <div class="lg:col-span-5 space-y-6">
+        <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-6 sm:p-7 shadow-sm space-y-5">
+          
+          <!-- Thumbnail / Preview -->
+          {% if course.thumbnail %}
+            <div class="aspect-video w-full rounded-2xl overflow-hidden shadow border border-slate-200 dark:border-slate-800">
+              <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}" class="w-full h-full object-cover">
+            </div>
+          {% else %}
+            <div class="aspect-video w-full rounded-2xl bg-gradient-to-tr from-brand-primary to-cyan-500 flex items-center justify-center text-white text-3xl font-black shadow">
+              {{ course.title|slice:":1"|upper }}
+            </div>
+          {% endif %}
+
+          <div>
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-brand-primary/10 text-brand-primary border border-brand-primary/20">
+              {{ current_tenant.name }}
+            </span>
+            <h2 class="text-xl font-extrabold text-slate-900 dark:text-white mt-2 leading-snug">
+              {{ course.title }}
+            </h2>
+            <p class="text-xs text-slate-600 dark:text-slate-400 mt-2 line-clamp-2 leading-relaxed">
+              {{ course.description|default:"কোর্সের সকল লেকচার, লাইভ ক্লাস, মডেল টেস্ট ও স্টাডি ম্যাটেরিয়াল অন্তর্ভুক্ত।" }}
+            </p>
+          </div>
+
+          <!-- Included Features Checklist -->
+          <div class="pt-4 border-t border-slate-100 dark:border-slate-800/80 space-y-2.5 text-xs text-slate-700 dark:text-slate-300 font-medium">
+            <div class="flex items-center gap-2">
+              <span class="text-emerald-500 font-bold">✓</span>
+              <span>সকল ভিডিও ক্লাস ও লাইভ ক্লাসের ফুল অ্যাক্সেস</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-emerald-500 font-bold">✓</span>
+              <span>লেকচার শিট, হ্যান্ডনোট ও PDF রিসোর্স</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-emerald-500 font-bold">✓</span>
+              <span>অধ্যায়ভিত্তিক অনলাইন MCQ মডেল টেস্ট ও ফলাফল</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-emerald-500 font-bold">✓</span>
+              <span>২৪/৭ ডাউট সলভিং ও স্টুডেন্ট ক্লাব সাপোর্ট</span>
+            </div>
+          </div>
+
+          <!-- Total Bill Breakdown -->
+          <div class="pt-4 border-t border-slate-100 dark:border-slate-800/80 space-y-2">
+            <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-mono">
+              <span>কোর্স ফি:</span>
+              <span>{% if course.is_free %}৳0{% else %}৳{{ course.price }}{% endif %}</span>
+            </div>
+            <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-mono">
+              <span>ভ্যাট ও অ্যাডমিশন চার্জ:</span>
+              <span class="text-emerald-600 font-bold">ফ্রি (৳0)</span>
+            </div>
+            <div class="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between font-bold text-base text-slate-900 dark:text-white">
+              <span>মোট পরিশোধযোগ্য:</span>
+              <span class="text-2xl text-brand-primary">
+                {% if course.is_free %}ফ্রি (Free){% else %}৳{{ course.price }}{% endif %}
+              </span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: Registration / Login & Payment Form (7 cols) -->
+      <div class="lg:col-span-7">
+        <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-6 sm:p-8 shadow-sm space-y-6">
+          
+          {% if user.is_authenticated %}
+            <!-- Authenticated Student Banner -->
+            <div class="p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-800/60 flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-brand-primary text-white flex items-center justify-center font-bold shadow">
+                  {{ user.first_name|default:user.email|slice:":1"|upper }}
+                </div>
+                <div>
+                  <h4 class="font-extrabold text-sm text-slate-900 dark:text-white">{{ user.get_full_name|default:user.email }}</h4>
+                  <span class="text-xs font-mono text-slate-500">{{ user.email }}</span>
+                </div>
+              </div>
+              <span class="px-2.5 py-1 rounded-full text-[10px] font-mono bg-emerald-500/10 text-emerald-600 font-bold">
+                ✓ লগইন করা আছেন
+              </span>
+            </div>
+          {% else %}
+            <!-- Guest Student: Mode Switch Tabs -->
+            <div class="flex rounded-2xl bg-slate-100 dark:bg-slate-950 p-1 border border-slate-200 dark:border-slate-800">
+              <button 
+                type="button" 
+                @click="mode = 'signup'" 
+                class="flex-1 py-2 rounded-xl text-xs font-bold transition-all text-center"
+                :class="mode === 'signup' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'"
+              >
+                ✨ নতুন শিক্ষার্থী (Sign Up)
+              </button>
+              <button 
+                type="button" 
+                @click="mode = 'login'" 
+                class="flex-1 py-2 rounded-xl text-xs font-bold transition-all text-center"
+                :class="mode === 'login' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'"
+              >
+                🔑 পূর্বে অ্যাকাউন্ট আছে? (Login)
+              </button>
+            </div>
+          {% endif %}
+
+          <form method="POST" class="space-y-6 text-xs">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="checkout">
+            <input type="hidden" name="checkout_mode" :value="mode">
+
+            {% if not user.is_authenticated %}
+              <!-- Guest Form Fields -->
+              <div class="space-y-4">
+                
+                <!-- Sign Up Full Name -->
+                <div x-show="mode === 'signup'">
+                  <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">আপনার পূর্ণ নাম *</label>
+                  <input 
+                    type="text" 
+                    name="full_name" 
+                    placeholder="যেমন: সাকিব আল হাসান" 
+                    class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-brand-primary/20"
+                    :required="mode === 'signup'"
+                  >
+                </div>
+
+                <!-- Mobile / Email Identifier -->
+                <div>
+                  <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    মোবাইল নম্বর অথবা ইমেইল অ্যাড্রেস *
+                  </label>
+                  <input 
+                    type="text" 
+                    name="identifier" 
+                    value="{{ identifier|default:'' }}"
+                    required 
+                    placeholder="যেমন: 01712345678 বা student@gmail.com" 
+                    class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-xs font-mono focus:ring-2 focus:ring-brand-primary/20"
+                  >
+                  <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+                    💡 এই নম্বরেই আপনার অ্যাকাউন্ট তৈরি হবে এবং পরবর্তীতে লগইন করতে পারবেন।
+                  </p>
+                </div>
+
+                <!-- Password -->
+                <div>
+                  <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    <span x-text="mode === 'signup' ? 'পাসওয়ার্ড সেট করুন *' : 'অ্যাকাউন্ট পাসওয়ার্ড লিখুন *'"></span>
+                  </label>
+                  <input 
+                    type="password" 
+                    name="password" 
+                    required 
+                    placeholder="কমপক্ষে ৪-৬ সংখ্যার পাসওয়ার্ড" 
+                    class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-xs font-mono focus:ring-2 focus:ring-brand-primary/20"
+                  >
+                </div>
+
+              </div>
+            {% endif %}
+
+            {% if not course.is_free %}
+              <!-- Step 2: Payment Method Selection -->
+              <div class="space-y-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+                <label class="font-bold text-slate-900 dark:text-white block text-sm">
+                  💳 পেমেন্ট মাধ্যম বেছে নিন
+                </label>
+                
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  
+                  <!-- bKash -->
+                  <label class="p-3.5 rounded-2xl border cursor-pointer transition-all flex flex-col items-center justify-center gap-1.5 text-center"
+                    :class="paymentMethod === 'bKash Online' ? 'border-pink-500 bg-pink-500/10 dark:bg-pink-950/20 ring-2 ring-pink-500/20' : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40'"
+                  >
+                    <input type="radio" name="payment_method" value="bKash Online" x-model="paymentMethod" class="sr-only">
+                    <span class="text-xl">🌸</span>
+                    <span class="font-bold text-xs text-slate-900 dark:text-white">bKash Online</span>
+                    <span class="text-[9px] text-pink-600 font-mono font-bold">ইনস্ট্যান্ট পেমেন্ট</span>
+                  </label>
+
+                  <!-- Nagad -->
+                  <label class="p-3.5 rounded-2xl border cursor-pointer transition-all flex flex-col items-center justify-center gap-1.5 text-center"
+                    :class="paymentMethod === 'Nagad Gateway' ? 'border-orange-500 bg-orange-500/10 dark:bg-orange-950/20 ring-2 ring-orange-500/20' : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40'"
+                  >
+                    <input type="radio" name="payment_method" value="Nagad Gateway" x-model="paymentMethod" class="sr-only">
+                    <span class="text-xl">🔥</span>
+                    <span class="font-bold text-xs text-slate-900 dark:text-white">Nagad</span>
+                    <span class="text-[9px] text-orange-600 font-mono font-bold">ইনস্ট্যান্ট পেমেন্ট</span>
+                  </label>
+
+                  <!-- Rocket / Manual -->
+                  <label class="p-3.5 rounded-2xl border cursor-pointer transition-all flex flex-col items-center justify-center gap-1.5 text-center"
+                    :class="paymentMethod === 'Rocket / Bank' ? 'border-purple-500 bg-purple-500/10 dark:bg-purple-950/20 ring-2 ring-purple-500/20' : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40'"
+                  >
+                    <input type="radio" name="payment_method" value="Rocket / Bank" x-model="paymentMethod" class="sr-only">
+                    <span class="text-xl">🚀</span>
+                    <span class="font-bold text-xs text-slate-900 dark:text-white">Rocket / Bank</span>
+                    <span class="text-[9px] text-purple-600 font-mono font-bold">ম্যানুয়াল / ব্যাংক</span>
+                  </label>
+
+                </div>
+
+                <!-- Optional TRX ID field -->
+                <div class="pt-2">
+                  <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    ট্রানজেকশন আইডি (ঐচ্ছিক / ডেমো)
+                  </label>
+                  <input 
+                    type="text" 
+                    name="trx_id" 
+                    placeholder="TRX9874521 (ফাঁকা রাখলে স্বয়ংক্রিয়ভাবে জেনারেট হবে)" 
+                    class="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-xs font-mono"
+                  >
+                </div>
+              </div>
+            {% endif %}
+
+            <!-- Submit Button -->
+            <div class="pt-4">
+              <button 
+                type="submit" 
+                class="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-brand-primary to-cyan-500 text-white font-black text-sm shadow-xl shadow-brand-primary/25 hover:opacity-95 hover:shadow-2xl transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+              >
+                <span>🚀</span>
+                <span>ভর্তি নিশ্চিত করুন ও ক্লাসে প্রবেশ করুন →</span>
+              </button>
+              
+              <p class="text-[11px] text-center text-slate-500 dark:text-slate-400 mt-3 flex items-center justify-center gap-1">
+                <span>🛡️ ১০০% নিরাপদ লেনদেন • পেমেন্টের সাথে সাথেই পুরো কোর্সের অ্যাক্সেস পাবেন</span>
+              </p>
+            </div>
+
+          </form>
+
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

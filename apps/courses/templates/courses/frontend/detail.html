@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}{{ course.title }} - {{ current_tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="py-12 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+  
+  <!-- Breadcrumb -->
+  <nav class="mb-6 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-mono">
+    <a href="{% url 'courses:list' %}" class="hover:text-slate-900 dark:hover:text-white transition-colors">Courses</a>
+    <span>/</span>
+    <span class="text-slate-900 dark:text-slate-200 font-semibold truncate">{{ course.title }}</span>
+  </nav>
+
+  <!-- Course Header -->
+  <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 p-8 sm:p-10 mb-10 shadow-sm">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div class="max-w-2xl">
+        <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-4">
+          {{ course.title }}
+        </h1>
+        <p class="text-sm sm:text-base text-slate-600 dark:text-slate-400 leading-relaxed">
+          {{ course.description }}
+        </p>
+        <div class="mt-6 flex flex-wrap items-center gap-4 text-xs text-slate-500 dark:text-slate-400 font-mono">
+          <span>Instructor: <strong class="text-slate-800 dark:text-slate-200">{{ course.instructor.get_full_name|default:course.instructor.email }}</strong></span>
+          <span>•</span>
+          <span>Status: <span class="text-emerald-600 dark:text-emerald-400 font-bold uppercase">{{ course.status }}</span></span>
+        </div>
+      </div>
+      <div class="text-right flex flex-col items-start md:items-end gap-2">
+        <div class="text-3xl font-black text-slate-900 dark:text-white">
+          {% if course.is_free %}ফ্রি (Free){% else %}৳{{ course.price }}{% endif %}
+        </div>
+        
+        {% if is_enrolled %}
+          <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+            ✓ আপনি এই কোর্সে ভর্তি আছেন
+          </span>
+          <div class="flex flex-wrap items-center gap-2 mt-2">
+            {% if first_lesson %}
+              <a 
+                href="{% url 'courses:player' course.slug first_lesson.slug %}"
+                class="px-6 py-3 rounded-2xl text-xs sm:text-sm font-black bg-gradient-to-r from-emerald-500 to-teal-500 hover:opacity-95 text-slate-950 shadow-xl shadow-emerald-500/25 transition-all transform hover:-translate-y-0.5 flex items-center gap-2"
+              >
+                <span>▶</span>
+                <span>ক্লাসে প্রবেশ করুন</span>
+              </a>
+            {% endif %}
+            <a 
+              href="/dashboard/?tab=my_courses"
+              class="px-4 py-3 rounded-2xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all border border-slate-300 dark:border-slate-700"
+            >
+              🎓 কোর্স ড্যাশবোর্ড
+            </a>
+          </div>
+        {% else %}
+          <span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            ⚡ ইনস্ট্যান্ট কোর্স অ্যাক্সেস
+          </span>
+          <div class="flex flex-wrap items-center gap-2 mt-2">
+            <a 
+              href="{% url 'courses:checkout' course.slug %}"
+              class="px-6 py-3 rounded-2xl text-xs sm:text-sm font-black bg-gradient-to-r from-brand-primary to-cyan-500 hover:opacity-95 text-white shadow-xl shadow-brand-primary/25 transition-all transform hover:-translate-y-0.5 flex items-center gap-2"
+            >
+              <span>🛒</span>
+              <span>কোর্সটিতে ভর্তি হোন</span>
+            </a>
+            {% if first_lesson %}
+              <a 
+                href="{% url 'courses:player' course.slug first_lesson.slug %}"
+                class="px-4 py-3 rounded-2xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all border border-slate-300 dark:border-slate-700"
+              >
+                ▶ প্রিভিউ ক্লাস
+              </a>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if course.intro_video_url %}
+      <!-- Course Intro / Live Class Video Player with Custom Poster & LMS Title Bar -->
+      <div class="mt-8 pt-8 border-t border-slate-200 dark:border-slate-800">
+        <div class="flex items-center gap-2 mb-3 text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+          <span>🎥</span>
+          <span>কোর্স প্রিভিউ ও ওরিয়েন্টেশন ক্লাস</span>
+        </div>
+        <div 
+          class="aspect-video w-full rounded-2xl overflow-hidden bg-black shadow-lg border border-slate-200 dark:border-slate-800 relative select-none group"
+          oncontextmenu="return false;"
+          x-data="{ hasStarted: false }"
+        >
+          <!-- Cropped & Scaled Video Frame -->
+          <div class="absolute inset-0 overflow-hidden">
+            <iframe 
+              src="{{ course.embed_intro_video_url }}" 
+              class="w-[108%] h-[126%] -top-[12%] -left-[4%] absolute" 
+              frameborder="0" 
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+              referrerpolicy="strict-origin-when-cross-origin"
+              allowfullscreen>
+            </iframe>
+          </div>
+
+          <!-- Custom LMS Header -->
+          <div class="absolute top-0 left-0 right-0 z-20 px-4 py-3 sm:px-6 sm:py-3.5 bg-gradient-to-b from-black/90 via-black/60 to-transparent flex items-center justify-between pointer-events-none">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-primary to-cyan-400 text-white flex items-center justify-center font-black text-xs shadow-md">
+                {{ current_tenant.name|slice:":1"|upper|default:"A" }}
+              </div>
+              <div>
+                <span class="text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-400 block">
+                  {{ course.title }}
+                </span>
+                <h3 class="text-xs sm:text-sm font-extrabold text-white tracking-tight drop-shadow truncate max-w-[240px] sm:max-w-md">
+                  কোর্স প্রিভিউ ও পরিচিতি
+                </h3>
+              </div>
+            </div>
+            <span class="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 backdrop-blur-md">
+              🔒 প্রিভিউ ক্লাস
+            </span>
+          </div>
+
+          <!-- Top and Bottom-right click shields -->
+          <div class="absolute top-0 left-0 right-0 h-14 z-20 pointer-events-auto bg-transparent"></div>
+          <div class="absolute bottom-0 right-0 w-36 h-12 z-20 pointer-events-auto bg-transparent"></div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Curriculum Syllabus -->
+  <div class="space-y-6">
+    <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+      Curriculum Syllabus
+    </h2>
+
+    {% for module in course.modules.all %}
+      <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 overflow-hidden shadow-sm" x-data="{ open: true }">
+        <button 
+          @click="open = !open" 
+          class="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+        >
+          <div>
+            <span class="text-xs font-mono uppercase tracking-wider text-brand-primary block">
+              Module {{ forloop.counter }}
+            </span>
+            <span class="text-base font-bold text-slate-900 dark:text-white">
+              {{ module.title }}
+            </span>
+          </div>
+          <svg class="w-5 h-5 text-slate-400 transform transition-transform" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </button>
+
+        <div x-show="open" class="border-t border-slate-200 dark:border-slate-800/80 divide-y divide-slate-200 dark:divide-slate-800/60">
+          {% for lesson in module.lessons.all %}
+            <div class="px-6 py-3.5 flex items-center justify-between text-sm hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors">
+              <div class="flex items-center gap-3">
+                <span class="text-slate-400 dark:text-slate-500 font-mono text-xs">#{{ lesson.order }}</span>
+                <span class="text-slate-800 dark:text-slate-300 font-medium">{{ lesson.title }}</span>
+                {% if lesson.is_preview %}
+                  <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border border-cyan-500/20">
+                    PREVIEW
+                  </span>
+                {% endif %}
+              </div>
+              <div class="flex items-center gap-4">
+                <span class="text-xs text-slate-500 font-mono">{{ lesson.duration_minutes }} mins</span>
+                <a 
+                  href="{% url 'courses:player' course.slug lesson.slug %}" 
+                  class="px-3 py-1 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-brand-primary hover:text-white transition-all"
+                >
+                  Start Lesson →
+                </a>
+              </div>
+            </div>
+          {% empty %}
+            <div class="px-6 py-4 text-xs text-slate-500">No lessons uploaded for this module yet.</div>
+          {% endfor %}
+        </div>
+      </div>
+    {% empty %}
+      <div class="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 p-8 text-center text-slate-500 text-sm shadow-sm">
+        Curriculum modules are currently being prepared.
+      </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

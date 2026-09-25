@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+
+{% block title %}কারিকুলাম ও লেসন বিল্ডার — {{ course.title }}{% endblock %}
+
+{% block content %}
+<div 
+  x-data="{ 
+    sidebarOpen: false,
+    moduleModalOpen: false,
+    editModuleModalOpen: false,
+    activeModule: { id: null, title: '', description: '', order: 1 },
+    lessonModalOpen: false,
+    editLessonModalOpen: false,
+    targetModuleId: null,
+    activeLesson: { id: null, title: '', content_type: 'VIDEO', video_url: '', content_text: '', duration_minutes: 15, is_preview: false, order: 1 }
+  }" 
+  class="min-h-[calc(100vh-4rem)] flex flex-col lg:flex-row bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors"
+>
+
+  <!-- Mobile Off-Canvas Drawer Backdrop -->
+  <div 
+    x-show="sidebarOpen" 
+    x-cloak 
+    @click="sidebarOpen = false" 
+    class="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden transition-opacity"
+  ></div>
+
+  {% include "includes/instructor_sidebar.html" %}
+
+  <!-- Main Content Area -->
+  <main class="flex-1 p-6 sm:p-10 max-w-7xl overflow-y-auto space-y-6">
+
+    <!-- Top Breadcrumbs & Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
+      <div>
+        <div class="flex items-center gap-2 text-xs font-mono text-slate-500 dark:text-slate-400 mb-2">
+          <a href="{% url 'courses:manage_dashboard' %}?tab=courses" class="hover:text-brand-primary">← কোর্স তালিকা</a>
+          <span>/</span>
+          <span class="text-slate-900 dark:text-white font-bold">{{ course.title }}</span>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white flex items-center gap-3">
+          <span>📚</span>
+          <span>কারিকুলাম ও লেসন বিল্ডার</span>
+        </h1>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">মডিউল তৈরি করুন এবং প্রতিটি মডিউলের ভেতর ভিডিও, টেক্সট নোট বা কুইজ লেসন যোগ ও সাজিয়ে নিন।</p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <a href="{% url 'courses:detail' course.slug %}" target="_blank" class="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold transition-all">
+          প্রিভিউ দেখুন ↗
+        </a>
+        <button 
+          type="button" 
+          @click="moduleModalOpen = true" 
+          class="px-4 py-2.5 rounded-xl bg-brand-primary text-white text-xs font-bold hover:opacity-90 shadow-lg shadow-brand-primary/25 transition-all flex items-center gap-2"
+        >
+          <span>➕ নতুন মডিউল তৈরি</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Alert Messages -->
+    {% if messages %}
+      <div class="space-y-2">
+        {% for message in messages %}
+          <div class="p-4 rounded-2xl border text-xs font-bold flex items-center gap-2 shadow-sm {% if message.tags == 'error' %}bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400{% else %}bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400{% endif %}">
+            <span>{% if message.tags == 'error' %}⚠️{% else %}✓{% endif %}</span>
+            <span>{{ message }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- Modules List -->
+    <div class="space-y-6">
+      {% for module in course.modules.all %}
+        <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-sm overflow-hidden">
+          
+          <!-- Module Header Bar -->
+          <div class="p-5 bg-slate-100/70 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <span class="w-8 h-8 rounded-xl bg-brand-primary/10 text-brand-primary border border-brand-primary/20 flex items-center justify-center font-mono font-bold text-xs">
+                #{{ module.order }}
+              </span>
+              <div>
+                <h3 class="font-bold text-base text-slate-900 dark:text-white">{{ module.title }}</h3>
+                {% if module.description %}
+                  <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ module.description }}</p>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Module Actions -->
+            <div class="flex items-center gap-2">
+              <button 
+                type="button" 
+                @click="targetModuleId = {{ module.id }}; lessonModalOpen = true"
+                class="px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold hover:bg-emerald-500/20 transition-all flex items-center gap-1.5"
+              >
+                <span>➕ লেসন যোগ করুন</span>
+              </button>
+              <button 
+                type="button" 
+                @click="activeModule = { id: {{ module.id }}, title: '{{ module.title|escapejs }}', description: '{{ module.description|escapejs }}', order: {{ module.order }} }; editModuleModalOpen = true"
+                class="p-2 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-xs transition-all"
+                title="এডিট মডিউল"
+              >
+                ✏️
+              </button>
+              <form method="POST" class="inline" onsubmit="return confirm('আপনি কি নিশ্চিত এই মডিউল এবং এর ভিতরের সব লেসন ডিলিট করতে চান?');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete_module">
+                <input type="hidden" name="module_id" value="{{ module.id }}">
+                <button type="submit" class="p-2 rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/20 hover:bg-rose-500/20 text-xs transition-all" title="ডিলিট মডিউল">
+                  🗑️
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Lessons Table inside Module -->
+          <div class="divide-y divide-slate-100 dark:divide-slate-800/60">
+            {% for lesson in module.lessons.all %}
+              <div class="p-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/60 dark:hover:bg-slate-800/30 transition-colors">
+                <div class="flex items-center gap-3">
+                  <span class="text-xs font-mono text-slate-400 w-5 text-center">{{ lesson.order }}</span>
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="font-bold text-xs text-slate-900 dark:text-white">{{ lesson.title }}</span>
+                      <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold {% if lesson.content_type == 'VIDEO' %}bg-indigo-500/10 text-indigo-500 border border-indigo-500/20{% elif lesson.content_type == 'PDF' %}bg-amber-500/10 text-amber-500 border border-amber-500/20{% else %}bg-slate-100 dark:bg-slate-800 text-slate-400{% endif %}">
+                        {{ lesson.get_content_type_display }}
+                      </span>
+                      {% if lesson.is_preview %}
+                        <span class="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 text-[9px] font-bold">ফ্রি প্রিভিউ</span>
+                      {% endif %}
+                    </div>
+                    <div class="text-[11px] text-slate-400 font-mono mt-0.5 flex items-center gap-3">
+                      {% if lesson.duration_seconds %}
+                        <span>⏱️ {{ lesson.duration_seconds|divisibleby:60|yesno:"Mins," }}{{ lesson.duration_seconds }} সেকেন্ড</span>
+                      {% endif %}
+                      {% if lesson.video_url %}
+                        <span class="truncate max-w-[200px] text-slate-500">🔗 {{ lesson.video_url }}</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Lesson Actions -->
+                <div class="flex items-center gap-2 self-end sm:self-center">
+                  <button 
+                    type="button" 
+                    @click="activeLesson = { id: {{ lesson.id }}, title: '{{ lesson.title|escapejs }}', content_type: '{{ lesson.content_type }}', video_url: '{{ lesson.video_url|escapejs }}', content_text: '{{ lesson.content|escapejs }}', duration_minutes: {{ lesson.duration_minutes|default:15 }}, is_preview: {{ lesson.is_preview|yesno:'true,false' }}, order: {{ lesson.order }} }; editLessonModalOpen = true"
+                    class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                  >
+                    ✏️ এডিট
+                  </button>
+                  <form method="POST" class="inline" onsubmit="return confirm('এই লেসনটি ডিলিট করতে চান?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete_lesson">
+                    <input type="hidden" name="lesson_id" value="{{ lesson.id }}">
+                    <button type="submit" class="px-2.5 py-1 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-semibold">
+                      🗑️
+                    </button>
+                  </form>
+                </div>
+              </div>
+            {% empty %}
+              <div class="p-6 text-center text-xs text-slate-400 italic">
+                এই মডিউলে এখনো কোনো লেসন যোগ করা হয়নি। "লেসন যোগ করুন" বাটনে ক্লিক করুন।
+              </div>
+            {% endfor %}
+          </div>
+
+        </div>
+      {% empty %}
+        <div class="rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 p-12 text-center text-slate-400 space-y-3">
+          <span class="text-4xl block">📦</span>
+          <h3 class="text-base font-bold text-slate-700 dark:text-slate-200">কোনো মডিউল তৈরি করা হয়নি</h3>
+          <p class="text-xs max-w-sm mx-auto">কোর্সের কারিকুলাম সাজাতে প্রথমে মডিউল তৈরি করুন, এরপর মডিউলের ভেতরে ভিডিও লেসন যুক্ত করুন।</p>
+          <button 
+            type="button" 
+            @click="moduleModalOpen = true"
+            class="px-5 py-2.5 rounded-xl bg-brand-primary text-white text-xs font-bold hover:opacity-90 transition-all shadow-md shadow-brand-primary/20"
+          >
+            ➕ প্রথম মডিউল তৈরি করুন
+          </button>
+        </div>
+      {% endfor %}
+    </div>
+
+  </main>
+
+  <!-- MODAL 1: ADD MODULE -->
+  <div x-show="moduleModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div @click.away="moduleModalOpen = false" class="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+        <h3 class="text-base font-black text-slate-900 dark:text-white">➕ নতুন মডিউল যুক্ত করুন</h3>
+        <button @click="moduleModalOpen = false" class="text-slate-400 hover:text-slate-900 dark:hover:text-white">✕</button>
+      </div>
+      <form method="POST" class="space-y-4 text-xs">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create_module">
+        <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">মডিউলের নাম *</label>
+          <input type="text" name="title" required placeholder="যেমন: মডিউল ০১: ভেক্টর ও স্থানাঙ্ক জ্যামিতি" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500">
+        </div>
+        <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">বিবরণ (ঐচ্ছিক)</label>
+          <textarea name="description" rows="2" placeholder="মডিউলে কি কি পড়ানো হবে..." class="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"></textarea>
+        </div>
+        <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">ক্রম নম্বর (Order)</label>
+          <input type="number" name="order" value="{{ course.modules.count|add:1 }}" class="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" @click="moduleModalOpen = false" class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 font-bold">বাতিল</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-brand-primary text-white font-bold hover:opacity-90">মডিউল সেভ করুন</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 2: EDIT MODULE -->
+  <div x-show="editModuleModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div @click.away="editModuleModalOpen = false" class="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+        <h3 class="text-base font-black text-slate-900 dark:text-white">✏️ মডিউল এডিট করুন</h3>
+        <button @click="editModuleModalOpen = false" class="text-slate-400 hover:text-slate-900 dark:hover:text-white">✕</button>
+      </div>
+      <form method="POST" class="space-y-4 text-xs">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_module">
+        <input type="hidden" name="module_id" :value="activeModule.id">
+        <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">মডিউলের নাম *</label>
+          <input type="text" name="title" required x-model="activeModule.title" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+        </div>
+        <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">বিবরণ (ঐচ্ছিক)</label>
+          <textarea name="description" rows="2" x-model="activeModule.description" class="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white"></textarea>
+        </div>
+        <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">ক্রম নম্বর (Order)</label>
+          <input type="number" name="order" x-model="activeModule.order" class="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" @click="editModuleModalOpen = false" class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 font-bold">বাতিল</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-brand-primary text-white font-bold hover:opacity-90">আপডেট সেভ করুন</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 3: ADD LESSON -->
+  <div x-show="lessonModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div @click.away="lessonModalOpen = false" class="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+        <h3 class="text-base font-black text-slate-900 dark:text-white">➕ নতুন লেসন যুক্ত করুন</h3>
+        <button @click="lessonModalOpen = false" class="text-slate-400 hover:text-slate-900 dark:hover:text-white">✕</button>
+      </div>
+      <form method="POST" class="space-y-4 text-xs">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create_lesson">
+        <input type="hidden" name="module_id" :value="targetModuleId">
+        
+        <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">লেসনের শিরোনাম *</label>
+          <input type="text" name="title" required placeholder="যেমন: লেকচার ০১: ভেক্টর বিভাজন ও নদী-নৌকা সমস্যা" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">কন্টেন্ট টাইপ</label>
+            <select name="content_type" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+              {% for val, label in content_types %}
+                <option value="{{ val }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">সময়কাল (মিনিট)</label>
+            <input type="number" name="duration_minutes" value="25" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+          </div>
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1 flex items-center justify-between">
+            <span>ভিডিও লিংক (YouTube Unlisted / Live / Vimeo / MP4)</span>
+            <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-bold">✓ গোপন ও লাইভ সাপোর্ট</span>
+          </label>
+          <input type="text" name="video_url" placeholder="https://www.youtube.com/watch?v=... বা YouTube Live বা গোপন আনলিস্টেড লিঙ্ক" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-mono text-xs">
+          <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">💡 ইউটিউবে ভিডিও <strong>Unlisted (তালিকাভুক্ত নয় / গোপন লিঙ্ক)</strong> বা <strong>Live Stream</strong> করে এখানে লিংক দিলে নিরাপদ প্লেয়ারে স্বয়ংক্রিয়ভাবে চলবে।</p>
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">ক্লাস নোট / বিবরণ</label>
+          <textarea name="content_text" rows="3" placeholder="লেসনের সাথে কোনো ফর্মুলা বা গুরুত্বপূর্ণ নোট থাকলে লিখুন..." class="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white"></textarea>
+        </div>
+
+        <div class="flex items-center gap-2 pt-1">
+          <input type="checkbox" id="is_preview" name="is_preview" class="rounded text-brand-primary">
+          <label for="is_preview" class="font-semibold text-slate-700 dark:text-slate-300">ফ্রি ডেমো প্রিভিউ (সবাই দেখতে পাবে)</label>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+          <button type="button" @click="lessonModalOpen = false" class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 font-bold">বাতিল</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-brand-primary text-white font-bold hover:opacity-90">লেসন সেভ করুন</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 4: EDIT LESSON -->
+  <div x-show="editLessonModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div @click.away="editLessonModalOpen = false" class="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+        <h3 class="text-base font-black text-slate-900 dark:text-white">✏️ লেসন এডিট করুন</h3>
+        <button @click="editLessonModalOpen = false" class="text-slate-400 hover:text-slate-900 dark:hover:text-white">✕</button>
+      </div>
+      <form method="POST" class="space-y-4 text-xs">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_lesson">
+        <input type="hidden" name="lesson_id" :value="activeLesson.id">
+        
+        <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">লেসনের শিরোনাম *</label>
+          <input type="text" name="title" required x-model="activeLesson.title" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">কন্টেন্ট টাইপ</label>
+            <select name="content_type" x-model="activeLesson.content_type" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+              {% for val, label in content_types %}
+                <option value="{{ val }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">সময়কাল (মিনিট)</label>
+            <input type="number" name="duration_minutes" x-model="activeLesson.duration_minutes" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+          </div>
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1 flex items-center justify-between">
+            <span>ভিডিও লিংক (YouTube Unlisted / Live / Vimeo / MP4)</span>
+            <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-bold">✓ গোপন ও লাইভ সাপোর্ট</span>
+          </label>
+          <input type="text" name="video_url" x-model="activeLesson.video_url" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-mono text-xs">
+          <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">💡 ইউটিউবে ভিডিও <strong>Unlisted</strong> বা <strong>Live Stream</strong> লিংক দিলে এখানে সরাসরি কাজ করবে।</p>
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">ক্লাস নোট / বিবরণ</label>
+          <textarea name="content_text" rows="3" x-model="activeLesson.content_text" class="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white"></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 pt-1">
+          <div class="flex items-center gap-2">
+            <input type="checkbox" id="edit_is_preview" name="is_preview" x-model="activeLesson.is_preview" class="rounded text-brand-primary">
+            <label for="edit_is_preview" class="font-semibold text-slate-700 dark:text-slate-300">ফ্রি ডেমো প্রিভিউ</label>
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">ক্রম নম্বর</label>
+            <input type="number" name="order" x-model="activeLesson.order" class="w-full px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+          <button type="button" @click="editLessonModalOpen = false" class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 font-bold">বাতিল</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-brand-primary text-white font-bold hover:opacity-90">আপডেট করুন</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

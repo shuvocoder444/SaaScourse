@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block title %}{{ current_tenant.name }} - Professional Tech & Skill Academy{% endblock %}
+
+{% block content %}
+<div class="space-y-20 pb-20">
+
+  <!-- 1. Modern SaaS Gradient Hero with Video/Platform Mockup -->
+  <section class="relative overflow-hidden py-16 lg:py-24 border-b border-slate-200 dark:border-slate-800">
+    <div class="absolute -top-32 left-1/2 -translate-x-1/2 w-[900px] h-[450px] bg-gradient-to-tr from-brand-primary/25 to-cyan-400/25 blur-3xl opacity-70 pointer-events-none"></div>
+
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold bg-brand-primary/10 text-brand-primary border border-brand-primary/25 mb-6">
+        <span class="w-2 h-2 rounded-full bg-brand-primary animate-pulse"></span>
+        {{ current_tenant.name }} • Next-Gen Learning
+      </div>
+
+      <h1 class="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight max-w-4xl mx-auto">
+        {{ branding.hero_headline|default:"Level Up Your Skills with Hands-On, Practical Curriculums" }}
+      </h1>
+
+      <p class="mt-6 text-base sm:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
+        {{ branding.hero_subheadline|default:"Master real-world technologies with guided video lessons, source code access, and direct mentorship." }}
+      </p>
+
+      <div class="mt-10 flex flex-wrap items-center justify-center gap-4">
+        <a 
+          href="#courses"
+          class="px-8 py-4 rounded-2xl text-sm font-bold bg-brand-primary text-white shadow-xl shadow-brand-primary/25 hover:opacity-90 transition-all transform hover:-translate-y-0.5"
+        >
+          {{ branding.cta_text|default:"Explore All Courses" }} ↓
+        </a>
+        <a 
+          href="{% url 'resources' %}"
+          class="px-7 py-4 rounded-2xl text-sm font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm transition-all"
+        >
+          ফ্রি রিসোর্স ও নোট 🎁
+        </a>
+      </div>
+
+      <!-- Live Academy Stats -->
+      <div class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6 p-6 rounded-3xl bg-white/70 dark:bg-slate-850/70 border border-slate-200 dark:border-slate-800 backdrop-blur-md shadow-sm max-w-4xl mx-auto">
+        <div>
+          <div class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">{{ courses.count }}+</div>
+          <div class="text-xs text-slate-500 mt-1">কোর্স ও ওয়ার্কশপ</div>
+        </div>
+        <div>
+          <div class="text-2xl sm:text-3xl font-extrabold text-brand-primary">১০০%</div>
+          <div class="text-xs text-slate-500 mt-1">প্র্যাকটিক্যাল লার্নিং</div>
+        </div>
+        <div>
+          <div class="text-2xl sm:text-3xl font-extrabold text-emerald-500">৪.৯/৫</div>
+          <div class="text-xs text-slate-500 mt-1">স্টুডেন্ট স্যাটিসফ্যাকশন</div>
+        </div>
+        <div>
+          <div class="text-2xl sm:text-3xl font-extrabold text-cyan-500">২৪/৭</div>
+          <div class="text-xs text-slate-500 mt-1">ডাউট সলভিং সাপোর্ট</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 2. Course Catalog -->
+  <section id="courses" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-10 border-b border-slate-200 dark:border-slate-800 pb-4">
+      <div>
+        <h2 class="text-xs font-mono uppercase tracking-wider text-brand-primary mb-1">প্রোগ্রাম ডিরেক্টরি</h2>
+        <h3 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">জনপ্রিয় কোর্সসমূহ</h3>
+      </div>
+      <a href="{% url 'courses:list' %}" class="text-xs font-bold text-slate-500 hover:text-brand-primary transition-colors mt-2 sm:mt-0">
+        সব কোর্স দেখুন →
+      </a>
+    </div>
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+      {% for course in courses %}
+        <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 overflow-hidden hover:border-brand-primary/40 hover:shadow-xl transition-all duration-300 flex flex-col group">
+          <div class="h-48 bg-gradient-to-tr from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 relative overflow-hidden flex items-center justify-center">
+            {% if course.thumbnail %}
+              <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+            {% else %}
+              <div class="w-16 h-16 rounded-2xl bg-brand-primary/20 flex items-center justify-center text-brand-primary text-3xl font-bold">
+                🚀
+              </div>
+            {% endif %}
+
+            <div class="absolute top-3 right-3">
+              {% if course.is_free %}
+                <span class="px-2.5 py-1 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                  FREE
+                </span>
+              {% else %}
+                <span class="px-2.5 py-1 rounded-xl text-xs font-bold bg-white/90 dark:bg-slate-900/90 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 shadow-sm">
+                  ৳{{ course.price }}
+                </span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="p-6 flex-1 flex flex-col justify-between">
+            <div>
+              <div class="text-[11px] font-mono text-slate-500 mb-1">
+                ইন্সট্রাক্টর: {{ course.instructor.get_full_name|default:course.instructor.email }}
+              </div>
+              <h4 class="text-lg font-bold text-slate-900 dark:text-white group-hover:text-brand-primary transition-colors line-clamp-2 mb-2">
+                <a href="{% url 'courses:detail' course.slug %}">
+                  {{ course.title }}
+                </a>
+              </h4>
+              <p class="text-xs text-slate-600 dark:text-slate-400 line-clamp-3 leading-relaxed">
+                {{ course.description|default:"প্র্যাকটিক্যাল প্রজেক্ট ও রিয়েল-ওয়ার্ল্ড কেস স্টাডির সমন্বয়ে তৈরি।" }}
+              </p>
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <span class="text-xs text-slate-500 font-mono">
+                {{ course.modules.count }} মডিউল
+              </span>
+              {% if course.id in enrolled_course_ids %}
+                <a 
+                  href="{% if course.first_lesson %}{% url 'courses:player' course.slug course.first_lesson.slug %}{% else %}{% url 'courses:detail' course.slug %}{% endif %}" 
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-primary text-white text-xs font-bold shadow-md hover:opacity-90 transition-all"
+                >
+                  <span>▶ ক্লাসে যান</span>
+                </a>
+              {% else %}
+                <a 
+                  href="{% url 'courses:detail' course.slug %}" 
+                  class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-primary hover:opacity-80 transition-colors"
+                >
+                  <span>বিস্তারিত ও ভর্তি →</span>
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      {% empty %}
+        <div class="col-span-full rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 p-12 text-center text-slate-500">
+          <p class="text-sm">নতুন কোর্স শীঘ্রই প্রকাশিত হচ্ছে।</p>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- 3. Free Resources & Publications Grid -->
+  {% if resources or books %}
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid lg:grid-cols-2 gap-8">
+        <!-- Free Resources Column -->
+        <div class="p-6 sm:p-8 rounded-3xl bg-slate-100/70 dark:bg-slate-850/60 border border-slate-200 dark:border-slate-800">
+          <div class="flex items-center justify-between mb-6">
+            <h4 class="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+              <span>🎁 ফ্রি লার্নিং রিসোর্স</span>
+            </h4>
+            <a href="{% url 'resources' %}" class="text-xs font-bold text-brand-primary">সব দেখুন →</a>
+          </div>
+
+          <div class="space-y-3">
+            {% for res in resources|slice:":4" %}
+              <a href="{% url 'resource_download' res.slug %}" class="p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 flex items-center justify-between hover:border-brand-primary transition-all group shadow-sm">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-xl bg-brand-primary/10 text-brand-primary flex items-center justify-center text-sm font-bold">📄</div>
+                  <div>
+                    <div class="text-xs font-bold text-slate-900 dark:text-white group-hover:text-brand-primary">{{ res.title }}</div>
+                    <div class="text-[10px] text-slate-400">{{ res.category }} • {{ res.download_count }} ডাউনলোড</div>
+                  </div>
+                </div>
+                <span class="text-xs text-brand-primary font-bold">ডাউনলোড ↓</span>
+              </a>
+            {% empty %}
+              <p class="text-xs text-slate-500 text-center py-6">কোনো ফ্রি রিসোর্স পাওয়া যায়নি।</p>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Books Column -->
+        <div class="p-6 sm:p-8 rounded-3xl bg-slate-100/70 dark:bg-slate-850/60 border border-slate-200 dark:border-slate-800">
+          <div class="flex items-center justify-between mb-6">
+            <h4 class="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+              <span>📚 পাবলিকেশন্স ও বইসমূহ</span>
+            </h4>
+            <a href="{% url 'books' %}" class="text-xs font-bold text-brand-primary">সব বই →</a>
+          </div>
+
+          <div class="space-y-3">
+            {% for book in books|slice:":4" %}
+              <a href="{% url 'book_detail' book.slug %}" class="p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 flex items-center justify-between hover:border-brand-primary transition-all group shadow-sm">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center text-sm font-bold">📖</div>
+                  <div>
+                    <div class="text-xs font-bold text-slate-900 dark:text-white group-hover:text-brand-primary">{{ book.title }}</div>
+                    <div class="text-[10px] text-slate-400">{{ book.author }} • ৳{{ book.price }}</div>
+                  </div>
+                </div>
+                <span class="text-xs font-bold text-slate-700 dark:text-slate-300">অর্ডার →</span>
+              </a>
+            {% empty %}
+              <p class="text-xs text-slate-500 text-center py-6">কোনো বই পাওয়া যায়নি।</p>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </section>
+  {% endif %}
+
+  <!-- 4. Academy Value Proposition -->
+  <section class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <h3 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-4">
+      {{ branding.about_heading|default:"কেন আমাদের সাথে শিখবেন?" }}
+    </h3>
+    <p class="text-sm sm:text-base text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+      {{ branding.about_text|default:"প্র্যাকটিক্যাল প্রজেক্ট ও রিয়েল-ওয়ার্ল্ড কেস স্টাডির মাধ্যমে আমরা শিক্ষার্থীদের দক্ষ করে গড়ে তুলি।" }}
+    </p>
+
+    <div class="grid sm:grid-cols-3 gap-6 text-left">
+      <div class="p-6 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850/60 shadow-sm">
+        <div class="text-2xl mb-2">⚡</div>
+        <h5 class="font-bold text-slate-900 dark:text-white text-sm mb-1">রিয়েল-টাইম ফিডব্যাক</h5>
+        <p class="text-xs text-slate-600 dark:text-slate-400">প্রতিটি অ্যাসাইনমেন্ট ও প্রজেক্টে ইন্সট্রাক্টরের রিভিউ পান।</p>
+      </div>
+      <div class="p-6 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850/60 shadow-sm">
+        <div class="text-2xl mb-2">🎯</div>
+        <h5 class="font-bold text-slate-900 dark:text-white text-sm mb-1">ইন্ডাস্ট্রি-রেডি সিলেবাস</h5>
+        <p class="text-xs text-slate-600 dark:text-slate-400">মার্কেট ডিমান্ড অনুযায়ী আধুনিক প্রযুক্তি শেখানো হয়।</p>
+      </div>
+      <div class="p-6 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850/60 shadow-sm">
+        <div class="text-2xl mb-2">🚀</div>
+        <h5 class="font-bold text-slate-900 dark:text-white text-sm mb-1">লাইফটাইম সাপোর্ট</h5>
+        <p class="text-xs text-slate-600 dark:text-slate-400">কোর্স শেষ হলেও আমাদের প্রাইভেট কমিউনিটি সাপোর্ট পাবেন।</p>
+      </div>
+    </div>
+  </section>
+
+</div>
+{% endblock %}

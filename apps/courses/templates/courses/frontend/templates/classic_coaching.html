@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}{{ current_tenant.name }} - কোচিং সেন্টার ও এডুকেশন পোর্টাল{% endblock %}
+
+{% block content %}
+<div class="space-y-16 pb-20">
+
+  <!-- 1. Notice Marquee Banner -->
+  <div class="bg-amber-500 text-slate-950 text-xs sm:text-sm font-bold py-2 px-4 shadow-sm">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      <div class="flex items-center gap-2 overflow-hidden">
+        <span class="px-2 py-0.5 rounded bg-slate-950 text-amber-400 text-[10px] uppercase font-mono shrink-0">
+          ভর্তি বিজ্ঞপ্তি
+        </span>
+        <span class="truncate">
+          {{ branding.notice_text|default:"📢 আগামী ব্যাচের ভর্তি চলছে! ক্লাসে যুক্ত হতে দ্রুত যোগাযোগ করুন।" }}
+        </span>
+      </div>
+      <a href="tel:{{ branding.contact_phone|default:'+8801800123456' }}" class="shrink-0 text-xs font-extrabold underline hover:text-white transition-colors hidden sm:block">
+        হটলাইন: {{ branding.contact_phone|default:'+880 1800-123456' }}
+      </a>
+    </div>
+  </div>
+
+  <!-- 2. Coaching Center Hero with Admission Highlights -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-8 lg:p-14 border border-indigo-900/40 shadow-xl relative overflow-hidden">
+      <div class="grid lg:grid-cols-12 gap-8 items-center relative z-10">
+        <div class="lg:col-span-8 space-y-6">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+            🏛️ {{ current_tenant.name }} • অফিশিয়াল কোচিং পোর্টাল
+          </div>
+
+          <h1 class="text-3xl sm:text-5xl font-extrabold leading-tight">
+            {{ branding.hero_headline|default:"সর্বোচ্চ প্রস্তুতি ও ধারাবাহিক মূল্যায়নে নিশ্চিত সফলতা" }}
+          </h1>
+
+          <p class="text-sm sm:text-base text-indigo-200 leading-relaxed max-w-xl">
+            {{ branding.hero_subheadline|default:"প্রতিদিনের ক্লাস, নিয়মিত মডেল টেস্ট ও অভিজ্ঞ শিক্ষকদের নিবিড় তত্ত্বাবধানে গড়ে তুলুন আপনার উজ্জ্বল ভবিষ্যৎ।" }}
+          </p>
+
+          <div class="flex flex-wrap gap-4 pt-2">
+            <a 
+              href="#batches"
+              class="px-7 py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs shadow-lg transition-all"
+            >
+              চলমান ব্যাচসমূহ ↓
+            </a>
+            <a 
+              href="{% url 'resources' %}"
+              class="px-6 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition-all"
+            >
+              ফ্রি শিট ও সাজেশন 📥
+            </a>
+          </div>
+        </div>
+
+        <!-- Right Quick Contact / Hotline Box -->
+        <div class="lg:col-span-4 p-6 rounded-3xl bg-white/10 backdrop-blur-md border border-white/20 space-y-4 text-center">
+          <span class="text-3xl block">☎️</span>
+          <h4 class="text-lg font-bold">ভর্তি ও তথ্য সেবা</h4>
+          <p class="text-xs text-indigo-200">সরাসরি কথা বলতে ফোন করুন অথবা অফিসে চলে আসুন।</p>
+          <div class="p-3 rounded-2xl bg-white/10 font-mono text-sm font-bold text-amber-400">
+            {{ branding.contact_phone|default:'+880 1800-123456' }}
+          </div>
+          <div class="text-[11px] text-indigo-300">
+            📍 {{ branding.contact_address|default:'ফার্মগেট, ঢাকা' }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Batches & Courses Directory -->
+  <section id="batches" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between mb-8 border-b border-slate-200 dark:border-slate-800 pb-4">
+      <div>
+        <h2 class="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1">একাডেমিক প্রোগ্রাম</h2>
+        <h3 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">চলমান ও আসন্ন ব্যাচসমূহ</h3>
+      </div>
+      <a href="{% url 'courses:list' %}" class="text-xs font-bold text-slate-500 hover:text-amber-500">
+        সকল ব্যাচ →
+      </a>
+    </div>
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {% for course in courses %}
+        <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 p-6 flex flex-col justify-between hover:shadow-lg hover:border-amber-500/50 transition-all group">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between text-xs">
+              <span class="px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold">
+                লাইভ ব্যাচ
+              </span>
+              <span class="font-extrabold text-slate-900 dark:text-white">
+                {% if course.is_free %}ফ্রি{% else %}৳{{ course.price }}{% endif %}
+              </span>
+            </div>
+
+            <h4 class="text-lg font-bold text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors line-clamp-2">
+              <a href="{% url 'courses:detail' course.slug %}">{{ course.title }}</a>
+            </h4>
+
+            <p class="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
+              {{ course.description|default:"নিয়মিত ক্লাস, ডেইলি কুইজ ও লেকচার শিট প্রদান করা হবে।" }}
+            </p>
+
+            <div class="text-[11px] text-slate-500">
+              👨‍🏫 মেন্টর: {{ course.instructor.get_full_name|default:course.instructor.email }}
+            </div>
+          </div>
+
+          <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between mt-4">
+            <span class="text-xs text-slate-500 font-mono">{{ course.modules.count }} টি চ্যাপ্টার</span>
+            {% if course.id in enrolled_course_ids %}
+              <a href="{% if course.first_lesson %}{% url 'courses:player' course.slug course.first_lesson.slug %}{% else %}{% url 'courses:detail' course.slug %}{% endif %}" class="px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 hover:opacity-90 shadow-md transition-all">
+                ▶ ক্লাসে যান
+              </a>
+            {% else %}
+              <a href="{% url 'courses:detail' course.slug %}" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 dark:bg-slate-700 hover:bg-amber-500 hover:text-slate-950 text-white transition-all">
+                সিলেবাস ও ভর্তি →
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      {% empty %}
+        <div class="col-span-full rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 p-8 text-center text-slate-500">
+          <p class="text-xs">কোনো ব্যাচ পাওয়া যায়নি।</p>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- 4. Free Resources & Latest Blog Articles -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="grid lg:grid-cols-2 gap-8">
+      <!-- Free Downloads -->
+      <div class="p-6 rounded-3xl bg-slate-100 dark:bg-slate-850 border border-slate-200 dark:border-slate-800">
+        <div class="flex items-center justify-between mb-4">
+          <h4 class="text-base font-bold text-slate-900 dark:text-white">📥 ফ্রি লেকচার শিট ও প্রশ্নব্যাংক</h4>
+          <a href="{% url 'resources' %}" class="text-xs font-bold text-amber-600">সব দেখুন →</a>
+        </div>
+        <div class="space-y-2.5">
+          {% for res in resources|slice:":4" %}
+            <a href="{% url 'resource_download' res.slug %}" class="p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between hover:border-amber-500 transition-all">
+              <span class="text-xs font-bold text-slate-800 dark:text-slate-200 truncate max-w-[240px]">{{ res.title }}</span>
+              <span class="text-[11px] font-bold text-amber-600">ডাউনলোড</span>
+            </a>
+          {% empty %}
+            <p class="text-xs text-slate-500 py-4 text-center">শীঘ্রই শিট আপলোড করা হবে।</p>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Latest Blog Posts -->
+      <div class="p-6 rounded-3xl bg-slate-100 dark:bg-slate-850 border border-slate-200 dark:border-slate-800">
+        <div class="flex items-center justify-between mb-4">
+          <h4 class="text-base font-bold text-slate-900 dark:text-white">📝 ভর্তি প্রস্তুতি ও পরামর্শ ব্লগ</h4>
+          <a href="{% url 'blog' %}" class="text-xs font-bold text-amber-600">সব ব্লগ →</a>
+        </div>
+        <div class="space-y-2.5">
+          {% for post in blog_posts|slice:":4" %}
+            <a href="{% url 'blog_detail' post.slug %}" class="p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between hover:border-amber-500 transition-all">
+              <span class="text-xs font-bold text-slate-800 dark:text-slate-200 truncate max-w-[240px]">{{ post.title }}</span>
+              <span class="text-[11px] font-bold text-slate-400">পড়ুন →</span>
+            </a>
+          {% empty %}
+            <p class="text-xs text-slate-500 py-4 text-center">নতুন আর্টিকেল শীঘ্রই আসছে।</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+{% endblock %}
