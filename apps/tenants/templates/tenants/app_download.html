@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tenant.name }} - মোবাইল অ্যাপ ইনস্টল ও ব্যবহার{% endblock %}
+{% block meta_description %}{{ tenant.name }} এর অফিসিয়াল মোবাইল অ্যাপ সরাসরি আপনার ফোনে ইনস্টল করুন। এক ক্লিকেই লাইভ ক্লাস, মডেল টেস্ট ও স্টাডি মেটেরিয়ালস উপভোগ করুন।{% endblock %}
+
+{% block content %}
+<div class="min-h-[85vh] py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col justify-center">
+
+  <!-- Top Hero Header -->
+  <div class="text-center max-w-3xl mx-auto mb-10 space-y-3">
+    <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-primary/10 text-brand-primary border border-brand-primary/20 text-xs font-bold uppercase tracking-wider">
+      <span>📲</span>
+      <span>অফিসিয়াল মোবাইল অ্যাপ সংস্করণ</span>
+    </div>
+    
+    <h1 class="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight">
+      {{ tenant.name }} এর <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-700">স্মার্ট মোবাইল অ্যাপ</span>
+    </h1>
+    
+    <p class="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl mx-auto">
+      প্লে-স্টোরের ঝামেলা ছাড়াই সরাসরি আপনার ফোনের হোমস্ক্রিনে ইনস্টল করে নিন। যেকোনো স্থান থেকে সবচেয়ে দ্রুতগতিতে ক্লাস ও পরীক্ষায় অংশ নিন।
+    </p>
+  </div>
+
+  <!-- Main Card Grid (Left: App Details & Install Buttons, Right: Interactive Mockup) -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center max-w-5xl mx-auto w-full">
+    
+    <!-- Left Column: Actions & App Identity (7 cols) -->
+    <div class="lg:col-span-7 space-y-6">
+      <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-6 sm:p-8 shadow-xl space-y-6">
+        
+        <!-- App Info Header -->
+        <div class="flex items-center gap-4 border-b border-slate-100 dark:border-slate-800 pb-6">
+          <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-brand-primary to-teal-500 shadow-lg shadow-brand-primary/30 flex items-center justify-center text-white overflow-hidden p-1.5 shrink-0">
+            {% if tenant.get_logo_url %}
+              <img src="{{ tenant.get_logo_url }}" alt="{{ tenant.name }}" class="w-full h-full object-contain">
+            {% else %}
+              <span class="text-2xl font-black">{{ tenant.name|slice:":1"|upper }}</span>
+            {% endif %}
+          </div>
+          
+          <div class="min-w-0">
+            <h2 class="text-xl font-extrabold text-slate-900 dark:text-white truncate">{{ tenant.name }}</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">{{ branding.tagline|default:"অনলাইন লার্নিং ও লাইভ ক্লাস প্ল্যাটফর্ম" }}</p>
+            <div class="flex items-center gap-3 mt-2 text-xs">
+              <span class="text-amber-500 font-bold flex items-center gap-1">
+                <span>⭐</span> 4.9 (৫,০০০+ রেটিং)
+              </span>
+              <span class="text-slate-300 dark:text-slate-700">•</span>
+              <span class="text-emerald-600 dark:text-emerald-400 font-semibold font-mono">⚡ ফাস্ট মোবাইল অ্যাপ ইঞ্জিন</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- App Features 4-Grid -->
+        <div class="grid grid-cols-2 gap-3 text-xs">
+          <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200/70 dark:border-slate-800 flex items-start gap-2.5">
+            <span class="text-base">🎥</span>
+            <div>
+              <span class="font-bold text-slate-900 dark:text-white block">লাইভ ও ভিডিও ক্লাস</span>
+              <span class="text-[10px] text-slate-500 dark:text-slate-400">ফুল-স্ক্রিন মোড</span>
+            </div>
+          </div>
+
+          <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200/70 dark:border-slate-800 flex items-start gap-2.5">
+            <span class="text-base">📝</span>
+            <div>
+              <span class="font-bold text-slate-900 dark:text-white block">অনলাইন মডেল টেস্ট</span>
+              <span class="text-[10px] text-slate-500 dark:text-slate-400">ইনস্ট্যান্ট রেজাল্ট ও র‍্যাংক</span>
+            </div>
+          </div>
+
+          <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200/70 dark:border-slate-800 flex items-start gap-2.5">
+            <span class="text-base">📥</span>
+            <div>
+              <span class="font-bold text-slate-900 dark:text-white block">পিডিএফ শিট ও নোট</span>
+              <span class="text-[10px] text-slate-500 dark:text-slate-400">অফলাইন স্টাডি সেভ</span>
+            </div>
+          </div>
+
+          <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200/70 dark:border-slate-800 flex items-start gap-2.5">
+            <span class="text-base">🔔</span>
+            <div>
+              <span class="font-bold text-slate-900 dark:text-white block">ক্লাস নোটিফিকেশন</span>
+              <span class="text-[10px] text-slate-500 dark:text-slate-400">রুটিন ও পরীক্ষার এলার্ট</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="space-y-3 pt-2">
+          
+          <!-- Primary: 1-Tap Instant Native Android / iOS Install Button -->
+          <button 
+            type="button" 
+            onclick="triggerAppInstall()" 
+            id="app-install-btn"
+            class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-sm shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-3 transition-all transform hover:-translate-y-0.5 active:scale-95"
+          >
+            <span class="text-2xl">📱</span>
+            <div class="text-left leading-tight">
+              <div class="text-[10px] font-bold uppercase tracking-wider text-emerald-100">1-TAP APP INSTALL</div>
+              <div class="text-sm sm:text-base font-black">সরাসরি অ্যাপ ইনস্টল করুন</div>
+            </div>
+          </button>
+
+          <!-- Support Contact -->
+          <div class="pt-2 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-1">
+            <span>ইনস্টল করতে সমস্যা হচ্ছে?</span>
+            <a href="{{ tenant.whatsapp_url }}" target="_blank" class="text-emerald-600 dark:text-emerald-400 font-bold hover:underline flex items-center gap-1">
+              <span>💬 WhatsApp হেল্পলাইন</span>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Right Column: Mobile App Frame Preview (5 cols) -->
+    <div class="lg:col-span-5 flex justify-center">
+      <div class="w-72 sm:w-80 rounded-[3rem] border-8 border-slate-800 dark:border-slate-700 bg-slate-950 p-3 shadow-2xl shadow-emerald-950/40 relative">
+        <!-- Top Camera Notch -->
+        <div class="w-24 h-4 bg-slate-800 rounded-full mx-auto mb-3 flex items-center justify-center gap-2">
+          <div class="w-2 h-2 rounded-full bg-slate-900"></div>
+          <div class="w-1.5 h-1.5 rounded-full bg-slate-700"></div>
+        </div>
+
+        <!-- Phone Screen Simulator -->
+        <div class="rounded-[2.2rem] bg-slate-900 border border-slate-800 p-4 space-y-4 text-white overflow-hidden">
+          
+          <!-- Mock Status Bar -->
+          <div class="flex items-center justify-between text-[11px] text-slate-400 px-1">
+            <span class="font-mono">10:30 PM</span>
+            <div class="flex items-center gap-1.5 text-xs">
+              <span>📶</span>
+              <span>🔋 98%</span>
+            </div>
+          </div>
+
+          <!-- Mock App Header -->
+          <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-lg bg-emerald-600 flex items-center justify-center font-black text-xs">
+                {{ tenant.name|slice:":1"|upper }}
+              </div>
+              <span class="font-extrabold text-xs text-white truncate max-w-[120px]">{{ tenant.name }}</span>
+            </div>
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          </div>
+
+          <!-- Mock Featured Live Banner -->
+          <div class="p-3.5 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-emerald-800 space-y-1.5 shadow-lg">
+            <span class="px-2 py-0.5 rounded-md bg-white/20 text-[9px] font-bold text-white uppercase tracking-wider">আজকের লাইভ ক্লাস</span>
+            <h4 class="text-xs font-black leading-snug">ভর্তি পরীক্ষা ও রিভিশন স্পেশাল লাইভ</h4>
+            <div class="text-[10px] text-emerald-100 flex items-center gap-1">
+              <span>●</span> রাত ৮:৩০ মিনিট
+            </div>
+          </div>
+
+          <!-- Mock Grid Menu -->
+          <div class="grid grid-cols-2 gap-2 text-center">
+            <div class="p-2.5 rounded-xl bg-slate-800/90 border border-slate-700/60">
+              <span class="text-lg">📚</span>
+              <div class="text-[10px] font-bold text-slate-200 mt-1">আমার কোর্স</div>
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-800/90 border border-slate-700/60">
+              <span class="text-lg">📝</span>
+              <div class="text-[10px] font-bold text-slate-200 mt-1">মডেল টেস্ট</div>
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-800/90 border border-slate-700/60">
+              <span class="text-lg">📥</span>
+              <div class="text-[10px] font-bold text-slate-200 mt-1">লেকচার শিট</div>
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-800/90 border border-slate-700/60">
+              <span class="text-lg">💬</span>
+              <div class="text-[10px] font-bold text-slate-200 mt-1">ডাউট সলভ</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Bottom Home Indicator -->
+        <div class="w-28 h-1 bg-slate-700 rounded-full mx-auto mt-3"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Step-by-Step Installation Guide in Bangla -->
+  <div class="mt-16 max-w-4xl mx-auto w-full">
+    <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 p-6 sm:p-8 backdrop-blur-md">
+      <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-6 text-center">
+        💡 ফোনে যেভাবে সরাসরি অ্যাপটি ইনস্টল করবেন (৩টি সহজ ধাপ)
+      </h3>
+
+      <div class="grid sm:grid-cols-3 gap-6 text-xs">
+        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
+          <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-extrabold flex items-center justify-center text-sm">
+            ১
+          </div>
+          <h4 class="font-bold text-slate-900 dark:text-white text-sm">ইনস্টল বাটনে চাপুন</h4>
+          <p class="text-slate-600 dark:text-slate-400 leading-relaxed">
+            উপরের <strong>"সরাসরি অ্যাপ ইনস্টল করুন"</strong> বাটনে ক্লিক করুন।
+          </p>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
+          <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-extrabold flex items-center justify-center text-sm">
+            ২
+          </div>
+          <h4 class="font-bold text-slate-900 dark:text-white text-sm">কনফার্ম করুন</h4>
+          <p class="text-slate-600 dark:text-slate-400 leading-relaxed">
+            ব্রাউজারের পপআপে আসা <strong>"Install"</strong> বা <strong>"Add to Home screen"</strong> অপশনে চাপুন।
+          </p>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
+          <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-extrabold flex items-center justify-center text-sm">
+            ৩
+          </div>
+          <h4 class="font-bold text-slate-900 dark:text-white text-sm">হোমস্ক্রিনে পেয়ে যাবেন</h4>
+          <p class="text-slate-600 dark:text-slate-400 leading-relaxed">
+            আপনার মোবাইলের স্ক্রিনে {{ tenant.name }} এর নিজস্ব লোগোসহ স্বতন্ত্র অ্যাপ আইকন যুক্ত হয়ে যাবে।
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  let deferredPrompt = null;
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+  });
+
+  function triggerAppInstall() {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User accepted app install');
+        }
+        deferredPrompt = null;
+      });
+    } else if (isIOS) {
+      alert('iPhone/iPad এ ইনস্টল করার নিয়ম:\n১. Safari ব্রাউজারের নিচে "Share" (📤) আইকনে চাপুন।\n২. স্ক্রল করে "Add to Home Screen" (➕) অপশনটি নির্বাচন করুন।');
+    } else {
+      alert('আপনার ব্রাউজার মেনুর (উপরে ডানে ৩-ডট ⋮) "Install App" বা "Add to Home screen" এ ক্লিক করে অ্যাপটি ইনস্টল করুন।');
+    }
+  }
+</script>
+{% endblock %}

@@ -15,22 +15,22 @@
               {% if current_tenant %}{{ current_tenant.name|slice:":1"|upper }}{% else %}⚡{% endif %}
             </div>  
           {% endif %}
-          <span class="text-xl font-bold text-white">{{ current_tenant.name|default:"CourseFlow" }}</span>
+          <span class="text-xl font-bold text-white">{% if current_tenant %}{{ current_tenant.name }}{% else %}CourseFlow{% endif %}</span>
         </div>
  
         <p class="text-xs text-slate-400 leading-relaxed">
-          {{ current_tenant.branding.footer_about|default:"বাংলাদেশের শীর্ষস্থানীয় অনলাইন এডুকেশন প্ল্যাটফর্ম। আধুনিক কারিকুলাম ও অভিজ্ঞ শিক্ষক মণ্ডলীর তত্ত্বাবধানে প্রতিটি শিক্ষার্থীর পূর্ণাঙ্গ প্রস্তুতি নিশ্চিত করাই আমাদের লক্ষ্য।" }}
+          {% if current_tenant %}{{ current_tenant.branding.footer_about|default:"বাংলাদেশের শীর্ষস্থানীয় অনলাইন এডুকেশন প্ল্যাটফর্ম। আধুনিক কারিকুলাম ও অভিজ্ঞ শিক্ষক মণ্ডলীর তত্ত্বাবধানে প্রতিটি শিক্ষার্থীর পূর্ণাঙ্গ প্রস্তুতি নিশ্চিত করাই আমাদের লক্ষ্য।" }}{% else %}বাংলাদেশের শীর্ষস্থানীয় অনলাইন এডুকেশন প্ল্যাটফর্ম। আধুনিক কারিকুলাম ও অভিজ্ঞ শিক্ষক মণ্ডলীর তত্ত্বাবধানে প্রতিটি শিক্ষার্থীর পূর্ণাঙ্গ প্রস্তুতি নিশ্চিত করাই আমাদের লক্ষ্য।{% endif %}
         </p>
 
         <!-- Govt Reg & Trade License Info -->
         <div class="pt-2 text-[11px] text-slate-400 space-y-1">
-          {% if current_tenant.branding.trade_license %}
+          {% if current_tenant and current_tenant.branding.trade_license %}
             <div class="flex items-center gap-1.5">
               <span class="text-emerald-400">🏛️ ট্রেড লাইসেন্স:</span>
               <span class="font-mono text-slate-300">{{ current_tenant.branding.trade_license }}</span>
             </div>
           {% endif %}
-          {% if current_tenant.branding.govt_reg_no %}
+          {% if current_tenant and current_tenant.branding.govt_reg_no %}
             <div class="flex items-center gap-1.5">
               <span class="text-emerald-400">📜 নিবন্ধন:</span>
               <span class="font-mono text-slate-300">{{ current_tenant.branding.govt_reg_no }}</span>
@@ -40,23 +40,23 @@
 
         <!-- Social Media Icons -->
         <div class="flex items-center gap-3 pt-2">
-          {% if current_tenant.branding.facebook_url %}
+          {% if current_tenant and current_tenant.branding.facebook_url %}
             <a href="{{ current_tenant.branding.facebook_url }}" target="_blank" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-blue-600 text-slate-300 hover:text-white flex items-center justify-center text-xs transition-colors" title="Facebook">
               📘
             </a>
           {% endif %}
-          {% if current_tenant.branding.youtube_url %}
+          {% if current_tenant and current_tenant.branding.youtube_url %}
             <a href="{{ current_tenant.branding.youtube_url }}" target="_blank" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-red-600 text-slate-300 hover:text-white flex items-center justify-center text-xs transition-colors" title="YouTube">
               🎥
             </a>
           {% endif %}
-          {% if current_tenant.branding.telegram_url %}
+          {% if current_tenant and current_tenant.branding.telegram_url %}
             <a href="{{ current_tenant.branding.telegram_url }}" target="_blank" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-sky-500 text-slate-300 hover:text-white flex items-center justify-center text-xs transition-colors" title="Telegram">
               ✈️
             </a>
           {% endif %}
-          {% if current_tenant.branding.whatsapp_number %}
-            <a href="https://wa.me/{{ current_tenant.branding.whatsapp_number }}" target="_blank" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white flex items-center justify-center text-xs transition-colors" title="WhatsApp">
+          {% if current_tenant and current_tenant.branding.whatsapp_number %}
+            <a href="{{ current_tenant.whatsapp_url }}" target="_blank" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-emerald-600 text-slate-300 hover:text-white flex items-center justify-center text-xs transition-colors" title="WhatsApp">
               💬
             </a>
           {% endif %} 
@@ -123,20 +123,22 @@
         
         {% if current_tenant.branding.show_footer_apps|default:True %}
           <div class="space-y-2 pt-1">
-            <a href="{{ current_tenant.branding.play_store_url|default:'#' }}" target="_blank" class="flex items-center gap-3 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-700 text-white transition-all">
-              <span class="text-lg">▶️</span>
+            <a href="{% url 'tenants:download_app' %}" class="flex items-center gap-3 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-700 text-white transition-all group">
+              <span class="text-lg group-hover:scale-110 transition-transform">📱</span>
               <div class="text-left">
-                <div class="text-[9px] uppercase text-slate-400 font-semibold">GET IT ON</div>
-                <div class="text-xs font-bold">Google Play</div>
+                <div class="text-[9px] uppercase text-emerald-400 font-semibold">1-TAP INSTALL</div>
+                <div class="text-xs font-bold">মোবাইল অ্যাপ (Mobile App)</div>
               </div>
             </a>
-            <a href="{{ current_tenant.branding.app_store_url|default:'#' }}" target="_blank" class="flex items-center gap-3 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-700 text-white transition-all">
+            {% if current_tenant.branding.app_store_url and current_tenant.branding.app_store_url != '#' %}
+            <a href="{{ current_tenant.branding.app_store_url }}" target="_blank" class="flex items-center gap-3 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-700 text-white transition-all">
               <span class="text-lg">🍏</span>
               <div class="text-left">
                 <div class="text-[9px] uppercase text-slate-400 font-semibold">DOWNLOAD ON</div>
                 <div class="text-xs font-bold">App Store</div>
               </div>
             </a>
+            {% endif %}
           </div>
         {% endif %}
       </div>
@@ -181,8 +183,8 @@
     <!-- 3. Bottom Copyright Bar -->
     <div class="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
       <div>
-        {{ current_tenant.branding.footer_copyright|default:"© 2026 সর্বস্বত্ব সংরক্ষিত।" }} 
-        <span class="text-slate-300 font-bold ml-1">{{ current_tenant.name|default:"CourseFlow" }}</span>
+        {% if current_tenant %}{{ current_tenant.branding.footer_copyright|default:"© 2026 সর্বস্বত্ব সংরক্ষিত।" }}{% else %}© 2026 সর্বস্বত্ব সংরক্ষিত।{% endif %} 
+        <span class="text-slate-300 font-bold ml-1">{% if current_tenant %}{{ current_tenant.name }}{% else %}CourseFlow{% endif %}</span>
       </div>
       <div class="flex items-center gap-4 text-[11px] font-mono">
         <a href="#" class="hover:underline">প্রাইভেসি পলিসি</a>

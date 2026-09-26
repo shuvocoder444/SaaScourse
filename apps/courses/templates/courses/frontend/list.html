@@ -18,14 +18,16 @@
       </p>
     </div>
     
-    <div>
-      <a 
-        href="{% url 'courses:manage_dashboard' %}"
-        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition-all shadow-sm"
-      >
-        <span>Instructor Studio (Backend) →</span>
-      </a>
-    </div>
+    {% if user.is_authenticated and current_tenant.owner == user or user.is_authenticated and user.is_superuser %}
+      <div>
+        <a 
+          href="/dashboard/"
+          class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-brand-primary text-white hover:opacity-90 transition-all shadow-md shadow-brand-primary/20"
+        >
+          <span>🛠️ স্টুডিও ড্যাশবোর্ড →</span>
+        </a>
+      </div>
+    {% endif %}
   </div>
 
   <!-- Course Grid -->
@@ -94,8 +96,8 @@
       </div>
     {% empty %}
       <div class="sm:col-span-3 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 p-12 text-center text-slate-500 shadow-sm">
-        <p class="text-sm font-medium">No published courses available for this academy yet.</p>
-        <p class="text-xs mt-1">Check back soon or add courses in the instructor studio.</p>
+        <p class="text-sm font-bold text-slate-700 dark:text-slate-300">এখনো কোনো কোর্স যুক্ত করা হয়নি।</p>
+        <p class="text-xs mt-1 text-slate-500">নতুন কোর্স ও আপডেটের জন্য অনুগ্রহ করে অপেক্ষা করুন।</p>
       </div>
     {% endfor %}
   </div>

@@ -1,293 +1,968 @@
 {% extends "base.html" %}
 
-{% block title %}Instructor Studio — {{ current_tenant.name }}{% endblock %}
+{% block title %}Course Management Studio — {{ current_tenant.name }}{% endblock %}
+
+{% block header %}
+  {% include "includes/dashboard_header.html" %}
+{% endblock header %}
 
 {% block content %}
+<style>
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-in-up {
+    animation: fadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.25);
+    border-radius: 9999px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.45);
+  }
+</style>
+
 <div 
   x-data="{ 
     sidebarOpen: false, 
     activeTab: new URLSearchParams(window.location.search).get('tab') || 'overview',
     createCourseModalOpen: false,
     editCourseModalOpen: false,
-    activeCourse: { id: null, title: '', description: '', price: '0', is_free: false, status: 'PUBLISHED' }
+    addTransactionModalOpen: false,
+    scheduleLiveModalOpen: false,
+    renewModalOpen: false,
+    subscriptionExpiredModalOpen: {% if is_subscription_expired %}true{% else %}false{% endif %},
+    selectedRenewPlan: { id: {{ subscription.plan.id|default:1 }}, name: '{{ subscription.plan.name|escapejs }}', price: '{{ subscription.plan.price_monthly|default:500|floatformat:0 }}' },
+    studentModalOpen: false,
+    selectedStudent: null,
+    activeCourse: { id: null, title: '', description: '', intro_video_url: '', price: '0', is_free: false, status: 'PUBLISHED' }
   }" 
-  class="min-h-[calc(100vh-4rem)] flex flex-col lg:flex-row bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors"
+  @toggle-sidebar.window="sidebarOpen = !sidebarOpen"
+  @close-sidebar.window="sidebarOpen = false"
+  @switch-tab.window="activeTab = $event.detail; sidebarOpen = false; window.scrollTo({top: 0, behavior: 'smooth'});"
+  class="min-h-[calc(100vh-3.5rem)] flex flex-col lg:flex-row bg-slate-50/50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors relative"
 >
-
-  <!-- Mobile Top Bar for Sidebar Toggle -->
-  <div class="lg:hidden flex items-center justify-between px-4 py-3 bg-white/90 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800">
-    <div class="flex items-center gap-2">
-      <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-brand-primary to-cyan-400 flex items-center justify-center font-bold text-white text-xs">
-        {{ current_tenant.name|slice:":1"|upper }}
-      </div>
-      <span class="text-sm font-bold text-slate-900 dark:text-white truncate max-w-[200px]">{{ current_tenant.name }} Studio</span>
-    </div>
-    <button 
-      @click="sidebarOpen = !sidebarOpen"
-      class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-slate-700 focus:outline-none"
-    >
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-      </svg>
-    </button>
-  </div>
 
   <!-- Mobile Off-Canvas Drawer Backdrop -->
   <div 
     x-show="sidebarOpen" 
     x-cloak 
     @click="sidebarOpen = false" 
-    class="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden transition-opacity"
+    class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden transition-opacity"
   ></div>
 
   {% include "includes/instructor_sidebar.html" %}
 
-  <!-- Main Studio Content Area (Changes smoothly based on activeTab) -->
-  <main class="flex-1 p-6 sm:p-10 max-w-7xl overflow-y-auto">
+  <!-- Main Studio Content Area (pb-24 ensures bottom mobile dock never covers controls) -->
+  <main class="flex-1 p-4 sm:p-8 lg:p-10 max-w-7xl overflow-y-auto pb-24 lg:pb-10">
 
     {% if messages %}
-      <div class="mb-6 space-y-2">
+      <div class="mb-6 space-y-2 animate-fade-in-up">
         {% for message in messages %}
-          <div class="p-4 rounded-xl border text-xs font-semibold flex items-center gap-2 shadow-sm {% if message.tags == 'error' %}bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400{% else %}bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400{% endif %}">
-            <span>{% if message.tags == 'error' %}⚠️{% else %}✓{% endif %}</span>
-            <span>{{ message }}</span>
+          <div class="p-4 rounded-2xl border text-xs font-bold flex items-center justify-between gap-3 shadow-md {% if message.tags == 'error' %}bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400{% else %}bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300{% endif %}">
+            <div class="flex items-center gap-2">
+              <span class="text-base">{% if message.tags == 'error' %}⚠️{% else %}✓{% endif %}</span>
+              <span>{{ message }}</span>
+            </div>
           </div>
         {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- Subscription Expiration Warning Alert Banner (If Expired) -->
+    {% if is_subscription_expired %}
+      <div class="mb-8 p-5 rounded-3xl bg-gradient-to-r from-rose-500/15 via-amber-500/15 to-rose-500/15 border-2 border-rose-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg animate-fade-in-up">
+        <div class="flex items-center gap-3.5">
+          <div class="w-12 h-12 rounded-2xl bg-rose-500 text-white flex items-center justify-center text-2xl shadow-md shadow-rose-500/30 shrink-0">
+            ⚠️
+          </div>
+          <div>
+            <span class="text-[11px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-400 block">সাবস্ক্রিপশন অ্যালার্ট</span>
+            <h4 class="text-base font-black text-slate-900 dark:text-white">আপনার একাডেমির সাবস্ক্রিপশন / ফ্রি ট্রায়ালের মেয়াদ শেষ হয়েছে!</h4>
+            <p class="text-xs text-slate-600 dark:text-slate-300 mt-0.5">সব ফিচার ও লাইভ স্টোরফ্রন্ট নিরবচ্ছিন্ন রাখতে এখনই রিনিউ বা প্যাকেজ অ্যাক্টিভেট করুন।</p>
+          </div>
+        </div>
+        <button 
+          type="button" 
+          @click="subscriptionExpiredModalOpen = true" 
+          class="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white text-xs font-black shadow-lg shadow-rose-600/30 transition-all shrink-0 hover:scale-105"
+        >
+          💳 এখনই সাবস্ক্রিপশন রিনিউ করুন →
+        </button>
       </div>
     {% endif %}
 
     <!-- ========================================== -->
     <!-- TAB 1: STUDIO OVERVIEW                    -->
     <!-- ========================================== -->
-    <div x-show="activeTab === 'overview'" x-cloak class="space-y-8">
+    <div x-show="activeTab === 'overview'" x-cloak class="space-y-8 animate-fade-in-up">
+      
+      <!-- Studio Hero Header Banner -->
+      <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-850 to-slate-950 text-white p-6 sm:p-8 shadow-xl border border-slate-800/80">
+        <div class="absolute -right-16 -bottom-16 w-64 h-64 rounded-full bg-brand-primary/15 blur-3xl pointer-events-none"></div>
+        <div class="absolute -left-16 -top-16 w-64 h-64 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none"></div>
+
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div class="space-y-2">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[11px] font-bold text-emerald-400">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>{{ current_tenant.name }} • লাইভ স্টুডিও ড্যাশবোর্ড</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white">
+              কোর্স ও একাডেমি ম্যানেজমেন্ট প্যানেল
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+              অনলাইন কোর্স বিক্রি, লাইভ ক্লাস পরিচালনা, শিক্ষার্থী তালিকা এবং আয়-ব্যয়ের পুঙ্খানুপুঙ্খ হিসাব এক জায়গা থেকেই নিয়ন্ত্রণ করুন।
+            </p>
+          </div>
+
+          <!-- Quick Actions in Hero -->
+          <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+            <button 
+              type="button"
+              @click="createCourseModalOpen = true" 
+              class="px-4 py-2.5 rounded-xl text-xs font-black bg-brand-primary hover:opacity-90 text-white shadow-lg shadow-brand-primary/30 transition-all flex items-center gap-2 hover:scale-[1.02]"
+            >
+              <span>➕ নতুন কোর্স তৈরি</span>
+            </button>
+            <button 
+              type="button"
+              @click="scheduleLiveModalOpen = true" 
+              class="px-4 py-2.5 rounded-xl text-xs font-black bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-600/30 transition-all flex items-center gap-2 hover:scale-[1.02]"
+            >
+              <span>🔴 লাইভ শিডিউল</span>
+            </button>
+            <button 
+              type="button"
+              @click="addTransactionModalOpen = true" 
+              class="px-4 py-2.5 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/30 transition-all flex items-center gap-2 hover:scale-[1.02]"
+            >
+              <span>💰 আয়/ব্যয় এন্ট্রি</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4 Top Modern Metric Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        
+        <!-- Card 1: Total Courses -->
+        <div 
+          @click="activeTab = 'courses'" 
+          class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-sm hover:shadow-xl hover:border-brand-primary/50 transition-all duration-300 cursor-pointer group hover:-translate-y-0.5"
+        >
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl font-black group-hover:scale-110 transition-transform">
+              🎓
+            </div>
+            <span class="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              {{ published_count }} প্রকাশিত
+            </span>
+          </div>
+          <span class="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">মোট কোর্স সংখ্যা</span>
+          <div class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{{ courses.count }}<span class="text-sm font-semibold text-slate-400 ml-1">টি</span></div>
+          <div class="mt-3 flex items-center justify-between text-[11px] font-semibold text-indigo-600 dark:text-cyan-400">
+            <span>কারিকুলাম ও মডিউল সাজান</span>
+            <span class="group-hover:translate-x-1 transition-transform">➔</span>
+          </div>
+        </div>
+
+        <!-- Card 2: Total Enrollments -->
+        <div 
+          @click="activeTab = 'students'" 
+          class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-sm hover:shadow-xl hover:border-emerald-500/50 transition-all duration-300 cursor-pointer group hover:-translate-y-0.5"
+        >
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl font-black group-hover:scale-110 transition-transform">
+              👨‍🎓
+            </div>
+            <span class="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+              {{ unique_students_count }} স্বতন্ত্র
+            </span>
+          </div>
+          <span class="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">মোট শিক্ষার্থী ভর্তি</span>
+          <div class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{{ total_enrollments }}<span class="text-sm font-semibold text-slate-400 ml-1">জন</span></div>
+          <div class="mt-3 flex items-center justify-between text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+            <span>ভর্তি তালিকা ও তথ্য দেখুন</span>
+            <span class="group-hover:translate-x-1 transition-transform">➔</span>
+          </div>
+        </div>
+
+        <!-- Card 3: Net Balance / Accounts -->
+        <div 
+          @click="activeTab = 'finance'" 
+          class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-sm hover:shadow-xl hover:border-emerald-500/50 transition-all duration-300 cursor-pointer group hover:-translate-y-0.5"
+        >
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl font-black group-hover:scale-110 transition-transform">
+              💰
+            </div>
+            <span class="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              ক্যাশ লেজার
+            </span>
+          </div>
+          <span class="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">বর্তমান নিট ক্যাশ ফান্ড</span>
+          <div class="text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">৳{{ net_balance }}</div>
+          <div class="mt-3 flex items-center justify-between text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+            <span>আয়: ৳{{ total_income }} • ব্যয়: ৳{{ total_expense }}</span>
+            <span class="group-hover:translate-x-1 transition-transform">➔</span>
+          </div>
+        </div>
+
+        <!-- Card 4: Live Sessions -->
+        <div 
+          @click="activeTab = 'live'" 
+          class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-sm hover:shadow-xl hover:border-rose-500/50 transition-all duration-300 cursor-pointer group hover:-translate-y-0.5"
+        >
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-12 h-12 rounded-2xl bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center text-xl font-black group-hover:scale-110 transition-transform">
+              🔴
+            </div>
+            <span class="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-rose-500 text-white animate-pulse">
+              LIVE
+            </span>
+          </div>
+          <span class="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">লাইভ ক্লাস শিডিউল</span>
+          <div class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{{ live_sessions.count }}<span class="text-sm font-semibold text-slate-400 ml-1">টি</span></div>
+          <div class="mt-3 flex items-center justify-between text-[11px] font-semibold text-rose-600 dark:text-rose-400">
+            <span>Zoom / Meet ক্লাসরুম</span>
+            <span class="group-hover:translate-x-1 transition-transform">➔</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Live Class Notification Bar (If any live session exists) -->
+      {% if live_sessions %}
+        {% with next_session=live_sessions.first %}
+          <div class="p-5 rounded-3xl bg-gradient-to-r from-rose-500/10 via-pink-500/10 to-indigo-500/10 border border-rose-500/20 dark:border-rose-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5">
+              <div class="w-10 h-10 rounded-2xl bg-rose-500 text-white flex items-center justify-center text-lg shadow-md shadow-rose-500/30 shrink-0">
+                🔴
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-rose-500 text-white">পরবর্তী লাইভ ক্লাস</span>
+                  <span class="text-xs font-mono font-bold text-slate-700 dark:text-slate-300">{{ next_session.scheduled_at|date:"d M Y, h:i A" }}</span>
+                </div>
+                <h4 class="text-sm font-black text-slate-900 dark:text-white mt-0.5">{{ next_session.title }}</h4>
+              </div>
+            </div>
+            <a 
+              href="{{ next_session.meeting_url }}" 
+              target="_blank" 
+              class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white text-xs font-black shadow-lg shadow-rose-600/25 transition-all shrink-0 hover:scale-105"
+            >
+              ▶ ক্লাসে জয়েন করুন ↗
+            </a>
+          </div>
+        {% endwith %}
+      {% endif %}
+
+      <!-- Section: Course Management Quick Grid -->
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">আপনার কোর্স তালিকা</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">কোর্সের কারিকুলাম, লেসন এবং ভিডিও লিঙ্ক ম্যানেজ করুন।</p>
+          </div>
+          <button 
+            @click="activeTab = 'courses'" 
+            class="text-xs font-bold text-indigo-600 hover:text-indigo-700 dark:text-cyan-400 hover:underline flex items-center gap-1"
+          >
+            <span>সকল কোর্স দেখুন ({{ courses.count }})</span>
+            <span>→</span>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          {% for course in courses|slice:":4" %}
+            <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-sm hover:shadow-lg transition-all space-y-4 flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between gap-2 mb-2">
+                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold {% if course.status == 'PUBLISHED' %}bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20{% else %}bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400{% endif %}">
+                    {% if course.status == 'PUBLISHED' %}✓ প্রকাশিত{% else %}খসড়া (Draft){% endif %}
+                  </span>
+                  <span class="text-xs font-mono font-black text-emerald-600 dark:text-emerald-400">
+                    {% if course.is_free %}সম্পূর্ণ ফ্রি{% elif course.price %}৳{{ course.price }}{% else %}Free{% endif %}
+                  </span>
+                </div>
+                <h3 class="text-base font-extrabold text-slate-900 dark:text-white line-clamp-1">
+                  {{ course.title }}
+                </h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
+                  {{ course.description|default:"কোর্সের কোনো বিবরণ এখনো দেওয়া হয়নি।" }}
+                </p>
+              </div>
+
+              <!-- Stats & Actions Bar -->
+              <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                <div class="text-[11px] font-mono text-slate-500 space-x-2">
+                  <span>📚 {{ course.modules.count }}টি মডিউল</span>
+                  <span>•</span>
+                  <span>👨‍🎓 {{ course.enrollments.count }} জন</span>
+                </div>
+
+                <div class="flex items-center gap-1.5">
+                  <a 
+                    href="{% url 'courses:course_curriculum' course.id %}" 
+                    class="px-3 py-1.5 rounded-xl bg-brand-primary text-white text-xs font-bold hover:opacity-90 shadow-sm transition-all"
+                  >
+                    কারিকুলাম ⚙️
+                  </a>
+                  <button 
+                    type="button" 
+                    @click="activeCourse = { id: {{ course.id }}, title: '{{ course.title|escapejs }}', description: '{{ course.description|escapejs }}', intro_video_url: '{{ course.intro_video_url|default:''|escapejs }}', price: '{{ course.price|default:0 }}', is_free: {{ course.is_free|yesno:'true,false' }}, status: '{{ course.status }}' }; editCourseModalOpen = true"
+                    class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-colors"
+                    title="এডিট করুন"
+                  >
+                    ✏️
+                  </button>
+                  <a 
+                    href="{% url 'courses:detail' course.slug %}" 
+                    target="_blank" 
+                    class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold transition-colors"
+                    title="প্রিভিউ দেখুন"
+                  >
+                    ↗
+                  </a>
+                </div>
+              </div>
+            </div>
+          {% empty %}
+            <div class="col-span-full p-10 rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 text-center space-y-3 bg-white dark:bg-slate-900/40">
+              <div class="text-4xl">🎓</div>
+              <h4 class="font-black text-slate-900 dark:text-white text-base">আপনার একাডেমিতে এখনো কোনো কোর্স তৈরি করা হয়নি</h4>
+              <p class="text-xs text-slate-500 max-w-sm mx-auto">নতুন কোর্স তৈরি করে ভিডিও লেসন এবং মডিউল যুক্ত করুন।</p>
+              <button 
+                type="button" 
+                @click="createCourseModalOpen = true" 
+                class="px-5 py-2.5 rounded-xl bg-brand-primary text-white text-xs font-bold hover:opacity-90 shadow-md"
+              >
+                ➕ প্রথম কোর্স তৈরি করুন
+              </button>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Domain & White-Label Access Widget -->
+      <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-cyan-400 block mb-1">
+            🌐 একাডেমি ওয়েব এড্রেস ও ডোমেন
+          </span>
+          <h3 class="text-lg font-black text-slate-900 dark:text-white font-mono">
+            {{ current_tenant.primary_domain }}
+          </h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            আপনার সাবডোমেন বা নিজস্ব কাস্টম ডোমেন (যেমন: <code class="font-mono text-indigo-600 dark:text-cyan-400">academy.yourname.com</code>) দিয়ে সরাসরি স্টোরফ্রন্ট চালান।
+          </p>
+        </div>
+        <button 
+          @click="activeTab = 'domain'" 
+          class="px-5 py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-black hover:opacity-90 shadow-md transition-all shrink-0"
+        >
+          ডোমেন সেটিংস →
+        </button>
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB: STUDENTS & ENROLLMENTS               -->
+    <!-- ========================================== -->
+    <div x-show="activeTab === 'students'" x-cloak class="space-y-6 animate-fade-in-up" x-data="{ studentSearch: '' }">
       <!-- Header -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
         <div>
           <div class="flex items-center gap-2 mb-1">
-            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-50 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-500/20">
-              Active Studio Context
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
+              Student Directory
             </span>
-            <span class="text-xs text-slate-500 font-mono">Domain: {{ current_tenant.primary_domain }}</span>
+            <span class="text-xs text-slate-500 font-mono">মোট এনরোলমেন্ট: {{ total_enrollments }} জন</span>
           </div>
-          <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-            Course Management Studio — {{ current_tenant.name }}
-          </h1>
-        </div>
-
-        <div class="flex items-center gap-3">
-          <button 
-            @click="activeTab = 'domain'" 
-            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm transition-all"
-          >
-            <span>🌐 Change Domain</span>
-          </button>
-          <a 
-            href="/admin/courses/course/add/" 
-            target="_blank"
-            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-brand-primary text-white hover:opacity-90 shadow-md shadow-brand-primary/20 transition-all"
-          >
-            <span>➕ New Course</span>
-          </a>
-        </div>
-      </div>
-
-      <!-- Overview Stats Grid -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
-        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-sm">
-          <span class="text-xs font-mono text-slate-500 dark:text-slate-400 block mb-1">Published Courses</span>
-          <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ published_count }}</div>
-          <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">Live on Storefront</span>
-        </div>
-
-        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-sm">
-          <span class="text-xs font-mono text-slate-500 dark:text-slate-400 block mb-1">Total Enrollments</span>
-          <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ total_enrollments }}</div>
-          <span class="text-[10px] text-indigo-600 dark:text-cyan-400 font-mono">Active Students</span>
-        </div>
-
-        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-sm">
-          <span class="text-xs font-mono text-slate-500 dark:text-slate-400 block mb-1">Curriculum Modules</span>
-          <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ total_modules }}</div>
-          <span class="text-[10px] text-slate-500 dark:text-slate-400 font-mono">Structured Units</span>
-        </div>
-
-        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-sm">
-          <span class="text-xs font-mono text-slate-500 dark:text-slate-400 block mb-1">Plan Quota</span>
-          <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ courses.count }}/{{ max_courses }}</div>
-          <span class="text-[10px] text-amber-600 dark:text-amber-400 font-mono">{{ course_usage_percent }}% capacity</span>
-        </div>
-      </div>
-
-      <!-- Domain & Storefront Quick Access Card -->
-      <div class="p-6 rounded-3xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-        <div>
-          <span class="text-xs font-mono uppercase tracking-wider text-indigo-600 dark:text-cyan-400 font-bold block mb-1">
-            Academy Web Address & Domains
-          </span>
-          <h3 class="text-lg font-bold text-slate-900 dark:text-white">
-            {{ current_tenant.primary_domain }}
-          </h3>
+          <h2 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+            👨‍🎓 শিক্ষার্থী ও এনরোলমেন্ট তালিকা
+          </h2>
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            {% if current_tenant.custom_domain and current_tenant.custom_domain_verified %}
-              Custom CNAME active: <code class="font-mono text-indigo-600 dark:text-cyan-400">{{ current_tenant.custom_domain }}</code> (Fallback subdomain: <code class="font-mono text-slate-500">{{ current_tenant.slug }}.{{ platform_root }}</code>)
-            {% elif current_tenant.custom_domain %}
-              Custom domain <code class="font-mono text-amber-500">{{ current_tenant.custom_domain }}</code> pending DNS verification. Default subdomain: <code class="font-mono text-indigo-600 dark:text-cyan-400">{{ current_tenant.slug }}.{{ platform_root }}</code>
-            {% else %}
-              Operating on default subdomain: <code class="font-mono text-indigo-600 dark:text-cyan-400">{{ current_tenant.slug }}.{{ platform_root }}</code>. You can change your subdomain or bind your custom domain anytime.
-            {% endif %}
+            আপনার একাডেমির সকল কোর্সে ভর্তি হওয়া শিক্ষার্থীদের তালিকা ও অ্যাক্সেস হিস্টোরি।
           </p>
         </div>
 
+        <div class="flex items-center gap-3">
+          <div class="relative w-full sm:w-72">
+            <input 
+              type="text" 
+              x-model="studentSearch" 
+              placeholder="শিক্ষার্থীর নাম, ইমেইল বা কোর্স..." 
+              class="w-full pl-9 pr-4 py-2.5 rounded-2xl text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm"
+            >
+            <span class="absolute left-3 top-3 text-slate-400 text-xs">🔍</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-sm">
+          <span class="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">মোট কোর্স রেজিস্ট্রেশন</span>
+          <div class="text-3xl font-black text-slate-900 dark:text-white">{{ total_enrollments }}</div>
+          <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">Total Registrations</span>
+        </div>
+
+        <div class="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-sm">
+          <span class="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">স্বতন্ত্র শিক্ষার্থী (Unique Users)</span>
+          <div class="text-3xl font-black text-indigo-600 dark:text-cyan-400">{{ unique_students_count }}</div>
+          <span class="text-[10px] text-slate-500 font-mono">Individual Registered Accounts</span>
+        </div>
+
+        <div class="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-sm">
+          <span class="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">অ্যাক্টিভ অ্যাক্সেস রেট</span>
+          <div class="text-3xl font-black text-emerald-600 dark:text-emerald-400">100%</div>
+          <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">Active Student Access</span>
+        </div>
+      </div>
+
+      <!-- Enrolled Students Table -->
+      <div class="rounded-3xl border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/40">
+          <h3 class="font-extrabold text-sm text-slate-900 dark:text-white">এনরোল করা শিক্ষার্থীদের বিস্তারিত তালিকা ({{ enrollments.count }})</h3>
+          <span class="text-xs text-slate-500 font-mono">রিয়েল-টাইম</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-100/70 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 font-mono text-slate-500 uppercase">
+              <tr>
+                <th class="p-4"># ID</th>
+                <th class="p-4">শিক্ষার্থীর নাম ও তথ্য</th>
+                <th class="p-4">ভর্তিকৃত কোর্স</th>
+                <th class="p-4">ভর্তির তারিখ</th>
+                <th class="p-4">স্ট্যাটাস</th>
+                <th class="p-4 text-right">অ্যাকশন</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+              {% for enr in enrollments %}
+                <tr 
+                  x-show="!studentSearch || '{{ enr.user.get_full_name|default:enr.user.email|lower }}'.includes(studentSearch.toLowerCase()) || '{{ enr.user.email|lower }}'.includes(studentSearch.toLowerCase()) || '{{ enr.course.title|lower }}'.includes(studentSearch.toLowerCase())"
+                  class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+                >
+                  <td class="p-4 font-mono font-bold text-slate-400">
+                    #{{ enr.user.id }}
+                  </td>
+                  <td class="p-4">
+                    <div class="flex items-center gap-3">
+                      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-primary to-emerald-400 flex items-center justify-center font-black text-white text-xs shadow-sm shrink-0">
+                        {{ enr.user.first_name|default:enr.user.email|slice:":1"|upper }}
+                      </div>
+                      <div>
+                        <span class="font-bold text-slate-900 dark:text-white block">
+                          {{ enr.user.get_full_name|default:"Student" }}
+                        </span>
+                        <span class="text-[11px] font-mono text-slate-500 dark:text-slate-400 block">
+                          {{ enr.user.email }}
+                        </span>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="p-4">
+                    <div class="font-bold text-slate-900 dark:text-white">
+                      {{ enr.course.title }}
+                    </div>
+                    <span class="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                      {% if enr.course.is_free %}ফ্রি কোর্স{% elif enr.course.price %}৳{{ enr.course.price }}{% else %}Free{% endif %}
+                    </span>
+                  </td>
+                  <td class="p-4 font-mono text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                    {{ enr.enrolled_at|date:"d M Y, h:i A" }}
+                  </td>
+                  <td class="p-4">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      {{ enr.status }}
+                    </span>
+                  </td>
+                  <td class="p-4 text-right space-x-2 whitespace-nowrap">
+                    <button 
+                      type="button" 
+                      @click="selectedStudent = { id: '{{ enr.user.id }}', name: '{{ enr.user.get_full_name|default:enr.user.email|escapejs }}', email: '{{ enr.user.email|escapejs }}', course: '{{ enr.course.title|escapejs }}', enrolled_at: '{{ enr.enrolled_at|date:"d M Y, h:i A"|escapejs }}', status: '{{ enr.status|escapejs }}', enrollment_id: '{{ enr.id }}' }; studentModalOpen = true;"
+                      class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-primary/10 hover:bg-brand-primary text-brand-primary hover:text-white text-xs font-bold transition-all shadow-sm"
+                      title="শিক্ষার্থীর প্রোফাইল ও পাসওয়ার্ড রিসেট করুন"
+                    >
+                      <span>👤 প্রোফাইল ও পাসওয়ার্ড</span>
+                    </button>
+                    <a 
+                      href="{% url 'courses:detail' enr.course.slug %}" 
+                      target="_blank" 
+                      class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-xs font-bold"
+                      title="কোর্স প্রিভিউ"
+                    >
+                      <span>↗</span>
+                    </a>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="6" class="p-12 text-center text-slate-500 space-y-2">
+                    <div class="text-4xl">👨‍🎓</div>
+                    <div class="font-bold text-slate-700 dark:text-slate-300 text-sm">এখনো কোনো শিক্ষার্থী ভর্তি হয়নি।</div>
+                    <p class="text-xs text-slate-400 max-w-sm mx-auto">
+                      শিক্ষার্থীরা যখন কোর্স চেকআউট বা এনরোল করবেন, তাদের নাম, মোবাইল/ইমেইল এবং কোর্সের তথ্য এখানে স্বয়ংক্রিয়ভাবে দেখতে পাবেন।
+                    </p>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB: FINANCIAL LEDGER & ACCOUNTS           -->
+    <!-- ========================================== -->
+    <div x-show="activeTab === 'finance'" x-cloak class="space-y-6 animate-fade-in-up" x-data="{ txFilter: 'all', txSearch: '' }">
+      <!-- Header -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
+              Accounts & Cash Ledger
+            </span>
+            <span class="text-xs text-slate-500 font-mono">বর্তমান নিট ব্যালেন্স: ৳{{ net_balance }}</span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+            💰 আয়-ব্যয় ও আর্থিক খতিয়ান (Ledger)
+          </h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            কোর্স বিক্রয়, ছাত্র ভর্তি ফি, শিক্ষক সম্মানী এবং খরচের স্বয়ংক্রিয় হিসাব ও ক্যাশ লেজার।
+          </p>
+        </div>
 
         <div class="flex items-center gap-3">
           <button 
-            @click="activeTab = 'domain'" 
-            class="px-4 py-2.5 rounded-xl bg-brand-primary text-white text-xs font-bold hover:opacity-90 shadow-md shadow-brand-primary/20 transition-all"
+            type="button" 
+            @click="addTransactionModalOpen = true" 
+            class="px-5 py-2.5 rounded-2xl text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/25 transition-all flex items-center gap-2 hover:scale-[1.02]"
           >
-            Manage Domain Settings →
+            <span>➕ নতুন আয় / ব্যয় এন্ট্রি</span>
           </button>
         </div>
       </div>
 
-      <!-- Recent Courses Preview -->
-      <div class="space-y-4">
-        <div class="flex items-center justify-between">
-          <h2 class="text-lg font-bold text-slate-900 dark:text-white">Your Courses</h2>
-          <button @click="activeTab = 'courses'" class="text-xs font-semibold text-indigo-600 hover:text-indigo-700 dark:text-cyan-400">View All ({{ courses.count }}) →</button>
+      <!-- Financial Stat Cards Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+        <!-- Total Income -->
+        <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-emerald-200/80 dark:border-emerald-900/40 shadow-sm space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">মোট অর্জিত আয় (Total Income)</span>
+            <span class="text-xs text-emerald-600 font-black bg-emerald-500/10 px-2.5 py-0.5 rounded-full">📈 ক্রেডিট</span>
+          </div>
+          <div class="text-3xl font-black text-emerald-600 dark:text-emerald-400">৳{{ total_income }}</div>
+          <span class="text-[11px] text-slate-500 font-mono block">কোর্স বিক্রয় ও অন্যান্য ফি</span>
         </div>
-        <div class="divide-y divide-slate-200 dark:divide-slate-800 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900/40 shadow-sm">
-          {% for course in courses|slice:":4" %}
-            <div class="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-              <div>
-                <div class="flex items-center gap-2">
-                  <h4 class="font-bold text-slate-900 dark:text-white text-sm">{{ course.title }}</h4>
-                  <span class="px-2 py-0.5 rounded-full text-[10px] font-mono {% if course.status == 'PUBLISHED' %}bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20{% else %}bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400{% endif %}">
-                    {{ course.status }}
-                  </span>
-                </div>
-                <div class="text-xs font-mono text-slate-500 mt-1">
-                  {{ course.modules.count }} Modules • {{ course.enrollments.count }} Students • ৳{{ course.price|default:"Free" }}
-                </div>
-              </div>
-              <div class="flex items-center gap-2">
-                <a href="{% url 'courses:detail' course.slug %}" target="_blank" class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white">
-                  Preview ↗
-                </a>
-                <a href="/admin/courses/course/{{ course.id }}/change/" target="_blank" class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700">
-                  Edit ⚙️
-                </a>
-              </div>
+
+        <!-- Total Expense -->
+        <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-rose-200/80 dark:border-rose-900/40 shadow-sm space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">মোট খরচ ও ব্যয় (Total Expense)</span>
+            <span class="text-xs text-rose-600 font-black bg-rose-500/10 px-2.5 py-0.5 rounded-full">📉 ডেবিট</span>
+          </div>
+          <div class="text-3xl font-black text-rose-600 dark:text-rose-400">৳{{ total_expense }}</div>
+          <span class="text-[11px] text-slate-500 font-mono block">শিক্ষক সম্মানী, অ্যাড ও ইউটিলিটি</span>
+        </div>
+
+        <!-- Net Cash Balance -->
+        <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-indigo-200/80 dark:border-indigo-900/40 shadow-sm space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">নিট ফান্ড / ব্যালেন্স (Net Balance)</span>
+            <span class="text-xs text-indigo-600 dark:text-cyan-400 font-black bg-indigo-500/10 px-2.5 py-0.5 rounded-full">🏦 ক্যাশ ফান্ড</span>
+          </div>
+          <div class="text-3xl font-black text-indigo-600 dark:text-cyan-400">৳{{ net_balance }}</div>
+          <span class="text-[11px] text-emerald-600 dark:text-emerald-400 font-mono block">আয় - ব্যয় = অবশিষ্ট ফান্ড</span>
+        </div>
+      </div>
+
+      <!-- Ledger Filter & Search -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm">
+        <div class="flex items-center gap-1.5 w-full sm:w-auto">
+          <button 
+            type="button" 
+            @click="txFilter = 'all'" 
+            :class="txFilter === 'all' ? 'bg-brand-primary text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'"
+            class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all"
+          >
+            সকল হিসাব ({{ transactions.count }})
+          </button>
+          <button 
+            type="button" 
+            @click="txFilter = 'income'" 
+            :class="txFilter === 'income' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'"
+            class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all"
+          >
+            🟢 শুধুমাত্র আয়
+          </button>
+          <button 
+            type="button" 
+            @click="txFilter = 'expense'" 
+            :class="txFilter === 'expense' ? 'bg-rose-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'"
+            class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all"
+          >
+            🔴 শুধুমাত্র ব্যয়
+          </button>
+        </div>
+
+        <div class="relative w-full sm:w-72">
+          <input 
+            type="text" 
+            x-model="txSearch" 
+            placeholder="বিবরণ, ক্যাটাগরি বা TrxID..." 
+            class="w-full pl-9 pr-4 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm"
+          >
+          <span class="absolute left-3 top-2.5 text-slate-400 text-xs">🔍</span>
+        </div>
+      </div>
+
+      <!-- Financial Ledger Table -->
+      <div class="rounded-3xl border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-100/70 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 font-mono text-slate-500 uppercase">
+              <tr>
+                <th class="p-4">তারিখ</th>
+                <th class="p-4">বিবরণ / শিরোনাম</th>
+                <th class="p-4">ধরন ও ক্যাটাগরি</th>
+                <th class="p-4">পেমেন্ট মেথড</th>
+                <th class="p-4">পরিমাণ (টাকা)</th>
+                <th class="p-4 text-right">অ্যাকশন</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+              {% for tx in transactions %}
+                <tr 
+                  x-show="(txFilter === 'all' || txFilter === '{{ tx.transaction_type }}') && (!txSearch || '{{ tx.title|lower }}'.includes(txSearch.toLowerCase()) || '{{ tx.reference_no|lower }}'.includes(txSearch.toLowerCase()) || '{{ tx.get_category_display|lower }}'.includes(txSearch.toLowerCase()))"
+                  class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+                >
+                  <td class="p-4 font-mono text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                    {{ tx.transaction_date|date:"d M Y" }}
+                  </td>
+                  <td class="p-4">
+                    <div class="font-bold text-slate-900 dark:text-white">
+                      {{ tx.title }}
+                    </div>
+                    {% if tx.reference_no %}
+                      <span class="text-[10px] font-mono text-slate-500 dark:text-slate-400 block">
+                        Ref/Trx: {{ tx.reference_no }}
+                      </span>
+                    {% endif %}
+                    {% if tx.notes %}
+                      <span class="text-[10px] text-slate-400 block italic">
+                        {{ tx.notes }}
+                      </span>
+                    {% endif %}
+                  </td>
+                  <td class="p-4">
+                    <div class="flex items-center gap-1.5">
+                      {% if tx.transaction_type == 'income' %}
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                          + আয়
+                        </span>
+                      {% else %}
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                          - ব্যয়
+                        </span>
+                      {% endif %}
+                      <span class="text-xs text-slate-600 dark:text-slate-400 font-semibold">
+                        {{ tx.get_category_display }}
+                      </span>
+                    </div>
+                  </td>
+                  <td class="p-4 font-mono text-slate-600 dark:text-slate-400">
+                    <span class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-semibold">
+                      {{ tx.payment_method }}
+                    </span>
+                  </td>
+                  <td class="p-4 font-mono font-black text-sm whitespace-nowrap">
+                    {% if tx.transaction_type == 'income' %}
+                      <span class="text-emerald-600 dark:text-emerald-400">+৳{{ tx.amount }}</span>
+                    {% else %}
+                      <span class="text-rose-600 dark:text-rose-400">-৳{{ tx.amount }}</span>
+                    {% endif %}
+                  </td>
+                  <td class="p-4 text-right whitespace-nowrap">
+                    <form method="POST" class="inline" onsubmit="return confirm('আপনি কি এই লেনদেন রেকর্ডটি মুছে ফেলতে চান?');">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="delete_transaction">
+                      <input type="hidden" name="transaction_id" value="{{ tx.id }}">
+                      <button type="submit" class="p-2 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-bold transition-colors" title="রেকর্ড ডিলিট">
+                        🗑️
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="6" class="p-12 text-center text-slate-500 space-y-2">
+                    <div class="text-4xl">💰</div>
+                    <div class="font-bold text-slate-700 dark:text-slate-300 text-sm">লেজারে এখনো কোনো লেনদেন যুক্ত করা হয়নি।</div>
+                    <p class="text-xs text-slate-400 max-w-sm mx-auto">
+                      'নতুন আয় / ব্যয় এন্ট্রি' বাটনে ক্লিক করে কোর্স বিক্রয়, অফলাইন ফি বা যে কোনো খরচের হিসাব সংরক্ষণ করুন।
+                    </p>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB: LIVE ONLINE CLASSES STUDIO            -->
+    <!-- ========================================== -->
+    <div x-show="activeTab === 'live'" x-cloak class="space-y-6 animate-fade-in-up">
+      <!-- Header -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20">
+              Live Classroom Studio
+            </span>
+            <span class="text-xs text-slate-500 font-mono">শিডিউলকৃত ক্লাস: {{ live_sessions.count }}টি</span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+            🔴 লাইভ অনলাইন ক্লাস স্টুডিও
+          </h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Zoom, Google Meet, YouTube Live বা Facebook Live এর মাধ্যমে শিক্ষার্থীদের সাথে সরাসরি লাইভ ক্লাস নিন।
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button 
+            type="button" 
+            @click="scheduleLiveModalOpen = true" 
+            class="px-5 py-2.5 rounded-2xl text-xs font-black bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-600/25 transition-all flex items-center gap-2 hover:scale-[1.02]"
+          >
+            <span>➕ নতুন লাইভ ক্লাস শিডিউল করুন</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Sessions Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+        {% for session in live_sessions %}
+          <div class="p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-sm space-y-4 relative overflow-hidden hover:shadow-lg transition-all">
+            <!-- Platform & Status Badges -->
+            <div class="flex items-center justify-between">
+              <span class="px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60">
+                {% if session.platform == 'zoom' %}📹 Zoom Meeting{% elif session.platform == 'meet' %}🎥 Google Meet{% elif session.platform == 'youtube_live' %}▶ YouTube Live{% elif session.platform == 'facebook_live' %}📘 Facebook Live{% else %}🔗 লাইভ রুম{% endif %}
+              </span>
+
+              {% if session.status == 'live_now' %}
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-500 text-white animate-pulse">
+                  <span class="w-2 h-2 rounded-full bg-white"></span>
+                  🔴 লাইভ চলছে
+                </span>
+              {% elif session.status == 'upcoming' %}
+                <span class="px-3 py-1 rounded-full text-xs font-mono font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                  ⏳ আসন্ন ক্লাস
+                </span>
+              {% else %}
+                <span class="px-3 py-1 rounded-full text-xs font-mono bg-slate-100 dark:bg-slate-800 text-slate-500 font-semibold">
+                  ✓ সম্পন্ন
+                </span>
+              {% endif %}
             </div>
-          {% empty %}
-            <div class="p-8 text-center text-xs text-slate-500">No courses created yet.</div>
-          {% endfor %}
-        </div>
+
+            <div>
+              <h3 class="text-base font-black text-slate-900 dark:text-white">
+                {{ session.title }}
+              </h3>
+              {% if session.course %}
+                <span class="text-xs font-mono text-emerald-600 dark:text-emerald-400 block mt-0.5 font-bold">
+                  📚 কোর্স: {{ session.course.title }}
+                </span>
+              {% endif %}
+            </div>
+
+            <!-- Schedule & Details -->
+            <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-100 dark:border-slate-800/80 text-xs font-mono space-y-2">
+              <div class="flex items-center justify-between text-slate-700 dark:text-slate-300">
+                <span>🗓️ সময়:</span>
+                <span class="font-bold">{{ session.scheduled_at|date:"d M Y, h:i A" }}</span>
+              </div>
+              <div class="flex items-center justify-between text-slate-700 dark:text-slate-300">
+                <span>⏱️ ডিউরেশন:</span>
+                <span>{{ session.duration_minutes }} মিনিট</span>
+              </div>
+              <div class="flex items-center justify-between text-slate-700 dark:text-slate-300">
+                <span>👨‍🏫 মেন্টর:</span>
+                <span>{{ session.instructor_name }}</span>
+              </div>
+              {% if session.meeting_id %}
+                <div class="flex items-center justify-between text-slate-500 text-[11px] pt-1.5 border-t border-slate-200 dark:border-slate-800">
+                  <span>Meeting ID: {{ session.meeting_id }}</span>
+                  {% if session.passcode %}<span>Passcode: {{ session.passcode }}</span>{% endif %}
+                </div>
+              {% endif %}
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center justify-between gap-3 pt-2">
+              <a 
+                href="{{ session.meeting_url }}" 
+                target="_blank" 
+                class="flex-1 text-center py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white text-xs font-black shadow-md shadow-rose-600/20 transition-all hover:scale-[1.02]"
+              >
+                ▶ লাইভ ক্লাসে যুক্ত হোন ↗
+              </a>
+
+              <form method="POST" onsubmit="return confirm('আপনি কি নিশ্চিত এই লাইভ ক্লাস শিডিউলটি মুছে ফেলতে চান?');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete_live_class">
+                <input type="hidden" name="session_id" value="{{ session.id }}">
+                <button type="submit" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs transition-colors font-bold" title="শিডিউল ডিলিট">
+                  🗑️
+                </button>
+              </form>
+            </div>
+          </div>
+        {% empty %}
+          <div class="col-span-full p-12 rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900/60 text-center space-y-3">
+            <div class="text-4xl">🔴</div>
+            <h4 class="font-black text-base text-slate-900 dark:text-white">এখনো কোনো লাইভ ক্লাস শিডিউল করা হয়নি</h4>
+            <p class="text-xs text-slate-500 max-w-md mx-auto">
+              Zoom বা Google Meet মিটিং লিংক দিয়ে শিক্ষার্থীদের জন্য সরাসরি লাইভ ক্লাসের শিডিউল তৈরি করুন।
+            </p>
+            <button 
+              type="button" 
+              @click="scheduleLiveModalOpen = true" 
+              class="px-5 py-2.5 rounded-xl text-xs font-black bg-rose-600 text-white hover:opacity-90 shadow-md"
+            >
+              ➕ প্রথম লাইভ ক্লাস তৈরি করুন
+            </button>
+          </div>
+        {% endfor %}
       </div>
     </div>
 
     <!-- ========================================== -->
     <!-- TAB 2: COURSES & CURRICULUM                -->
     <!-- ========================================== -->
-    <div x-show="activeTab === 'courses'" x-cloak class="space-y-6">
+    <div x-show="activeTab === 'courses'" x-cloak class="space-y-6 animate-fade-in-up">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
         <div>
-          <h2 class="text-2xl font-extrabold text-slate-900 dark:text-white">🎓 কোর্স ম্যানেজমেন্ট ও কারিকুলাম বিল্ডার</h2>
+          <h2 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">🎓 কোর্স ম্যানেজমেন্ট ও কারিকুলাম বিল্ডার</h2>
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">কোর্স তৈরি, এডিট ও ডিলিট করুন এবং প্রতিটি কোর্সের জন্য মডিউল ও ভিডিও লেসন সাজান।</p>
         </div>
         <button 
           type="button" 
           @click="createCourseModalOpen = true" 
-          class="px-5 py-2.5 rounded-xl text-xs font-bold bg-brand-primary text-white hover:opacity-90 shadow-lg shadow-brand-primary/25 transition-all flex items-center gap-2"
+          class="px-5 py-2.5 rounded-2xl text-xs font-black bg-brand-primary text-white hover:opacity-90 shadow-lg shadow-brand-primary/25 transition-all flex items-center gap-2 hover:scale-[1.02]"
         >
           <span>➕ নতুন কোর্স তৈরি করুন</span>
         </button>
       </div>
 
       <!-- Course Table -->
-      <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm overflow-hidden">
-        <table class="w-full text-left text-xs">
-          <thead class="bg-slate-100/70 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 font-mono text-slate-500 uppercase">
-            <tr>
-              <th class="p-4">Course Title</th>
-              <th class="p-4">Status</th>
-              <th class="p-4">Price</th>
-              <th class="p-4">Curriculum</th>
-              <th class="p-4">Students</th>
-              <th class="p-4 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
-            {% for course in courses %}
-              <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                <td class="p-4 font-semibold text-slate-900 dark:text-white">
-                  {{ course.title }}
-                  <span class="block text-[10px] font-mono text-slate-400">/courses/{{ course.slug }}/</span>
-                </td>
-                <td class="p-4">
-                  <span class="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold {% if course.status == 'PUBLISHED' %}bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20{% else %}bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400{% endif %}">
-                    {{ course.status }}
-                  </span>
-                </td>
-                <td class="p-4 font-mono font-bold text-slate-900 dark:text-white">
-                  {% if course.is_free %}ফ্রি (Free){% elif course.price %}৳{{ course.price }}{% else %}Free{% endif %}
-                </td>
-                <td class="p-4">
-                  <a 
-                    href="{% url 'courses:course_curriculum' course.id %}"
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-500/20 transition-all"
-                  >
-                    <span>📚 কারিকুলাম বিল্ডার</span>
-                    <span class="bg-indigo-500 text-white px-1.5 py-0.2 rounded text-[10px] font-mono">{{ course.modules.count }}টি</span>
-                  </a>
-                </td>
-                <td class="p-4 font-mono text-slate-600 dark:text-slate-400">
-                  {{ course.enrollments.count }} Enrolled
-                </td>
-                <td class="p-4 text-right space-x-1.5">
-                  <a href="{% url 'courses:detail' course.slug %}" target="_blank" class="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold" title="প্রিভিউ">
-                    👁️
-                  </a>
-                  <button 
-                    type="button" 
-                    @click="activeCourse = { id: {{ course.id }}, title: '{{ course.title|escapejs }}', description: '{{ course.description|escapejs }}', intro_video_url: '{{ course.intro_video_url|default:''|escapejs }}', price: '{{ course.price|default:0 }}', is_free: {{ course.is_free|yesno:'true,false' }}, status: '{{ course.status }}' }; editCourseModalOpen = true"
-                    class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 font-semibold" 
-                    title="কোর্স এডিট"
-                  >
-                    ✏️ এডিট
-                  </button>
-                  <form method="POST" class="inline" onsubmit="return confirm('আপনি কি নিশ্চিত এই কোর্সটি এবং এর সকল লেসন মুছে ফেলতে চান?');">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="delete_course">
-                    <input type="hidden" name="course_id" value="{{ course.id }}">
-                    <button type="submit" class="px-2.5 py-1 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-semibold" title="কোর্স ডিলিট">
-                      🗑️
-                    </button>
-                  </form>
-                </td>
-              </tr>
-            {% empty %}
+      <div class="rounded-3xl border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-100/70 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 font-mono text-slate-500 uppercase">
               <tr>
-                <td colspan="6" class="p-8 text-center text-slate-500 font-mono">No courses in academy yet.</td>
+                <th class="p-4">কোর্সের নাম ও স্লাগ</th>
+                <th class="p-4">স্ট্যাটাস</th>
+                <th class="p-4">মূল্য</th>
+                <th class="p-4">কারিকুলাম বিল্ডার</th>
+                <th class="p-4">শিক্ষার্থী</th>
+                <th class="p-4 text-right">অ্যাকশন</th>
               </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+            </thead>
+            <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+              {% for course in courses %}
+                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                  <td class="p-4 font-bold text-slate-900 dark:text-white">
+                    {{ course.title }}
+                    <span class="block text-[10px] font-mono text-slate-400">/courses/{{ course.slug }}/</span>
+                  </td>
+                  <td class="p-4">
+                    <span class="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold {% if course.status == 'PUBLISHED' %}bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20{% else %}bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400{% endif %}">
+                      {{ course.status }}
+                    </span>
+                  </td>
+                  <td class="p-4 font-mono font-bold text-slate-900 dark:text-white">
+                    {% if course.is_free %}ফ্রি (Free){% elif course.price %}৳{{ course.price }}{% else %}Free{% endif %}
+                  </td>
+                  <td class="p-4">
+                    <a 
+                      href="{% url 'courses:course_curriculum' course.id %}"
+                      class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-500/20 transition-all"
+                    >
+                      <span>📚 কারিকুলাম সাজান</span>
+                      <span class="bg-indigo-500 text-white px-1.5 py-0.2 rounded text-[10px] font-mono">{{ course.modules.count }}টি</span>
+                    </a>
+                  </td>
+                  <td class="p-4 font-mono text-slate-600 dark:text-slate-400">
+                    {{ course.enrollments.count }} Enrolled
+                  </td>
+                  <td class="p-4 text-right space-x-1.5 whitespace-nowrap">
+                    <a href="{% url 'courses:detail' course.slug %}" target="_blank" class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold" title="প্রিভিউ">
+                      👁️
+                    </a>
+                    <button 
+                      type="button" 
+                      @click="activeCourse = { id: {{ course.id }}, title: '{{ course.title|escapejs }}', description: '{{ course.description|escapejs }}', intro_video_url: '{{ course.intro_video_url|default:''|escapejs }}', price: '{{ course.price|default:0 }}', is_free: {{ course.is_free|yesno:'true,false' }}, status: '{{ course.status }}' }; editCourseModalOpen = true"
+                      class="px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 font-semibold" 
+                      title="কোর্স এডিট"
+                    >
+                      ✏️ এডিট
+                    </button>
+                    <form method="POST" class="inline" onsubmit="return confirm('আপনি কি নিশ্চিত এই কোর্সটি এবং এর সকল লেসন মুছে ফেলতে চান?');">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="delete_course">
+                      <input type="hidden" name="course_id" value="{{ course.id }}">
+                      <button type="submit" class="px-2.5 py-1.5 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-semibold" title="কোর্স ডিলিট">
+                        🗑️
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="6" class="p-8 text-center text-slate-500 font-mono">No courses in academy yet.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
     <!-- ========================================== -->
-    <!-- TAB 3: DOMAIN MANAGEMENT (CHANGE DOMAIN)   -->
+    <!-- TAB 3: DOMAIN MANAGEMENT                   -->
     <!-- ========================================== -->
-    <div x-show="activeTab === 'domain'" x-cloak class="space-y-8">
+    <div x-show="activeTab === 'domain'" x-cloak class="space-y-8 animate-fade-in-up">
       <div class="border-b border-slate-200 dark:border-slate-800 pb-6">
-        <h2 class="text-2xl font-extrabold text-slate-900 dark:text-white">Academy Domain & Web Address Settings</h2>
+        <h2 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">Academy Domain & Web Address Settings</h2>
         <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
           Here you can change both your Academy Subdomain (e.g. <code class="text-indigo-600 dark:text-cyan-400">{{ current_tenant.slug }}.{{ platform_root }}</code>) and connect your own Custom CNAME Domain (e.g. <code class="text-indigo-600 dark:text-cyan-400">learn.mycompany.com</code>).
         </p>
       </div>
 
       <!-- Card 1: Change Subdomain -->
-      <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 p-6 sm:p-8 shadow-sm space-y-6">
+      <div class="rounded-3xl border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-6">
         <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
             <span class="text-xs font-mono uppercase text-indigo-600 dark:text-cyan-400 font-bold">Primary Subdomain</span>
@@ -336,7 +1011,7 @@
       </div>
 
       <!-- Card 2: Change Custom Domain (CNAME) -->
-      <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/70 p-6 sm:p-8 shadow-sm space-y-6">
+      <div class="rounded-3xl border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-6">
         <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
             <span class="text-xs font-mono uppercase text-indigo-600 dark:text-cyan-400 font-bold">White-Label Custom Domain</span>
@@ -397,7 +1072,6 @@
                 <div class="text-slate-600 dark:text-slate-300 truncate">Target: <strong class="text-indigo-600 dark:text-cyan-400">{{ cname_target }}</strong></div>
               </div>
 
-
               <!-- Record 2: TXT Verification -->
               <div class="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
                 <span class="text-[10px] uppercase text-cyan-600 dark:text-cyan-400 font-bold block mb-1">2. TXT Security Challenge</span>
@@ -432,13 +1106,13 @@
     <!-- ========================================== -->
     <!-- TAB 4: STOREFRONT & BRANDING               -->
     <!-- ========================================== -->
-    <div x-show="activeTab === 'branding'" x-cloak class="space-y-8">
+    <div x-show="activeTab === 'branding'" x-cloak class="space-y-8 animate-fade-in-up">
       <div class="border-b border-slate-200 dark:border-slate-800 pb-6">
-        <h2 class="text-2xl font-extrabold text-slate-900 dark:text-white">Storefront Visual Customizer</h2>
+        <h2 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">Storefront Visual Customizer</h2>
         <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Tailor the visual branding, theme palette, and copy for your public academy landing page.</p>
       </div>
 
-      <form method="POST" action="{% url 'tenants:settings' %}" enctype="multipart/form-data" class="space-y-8 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-6 sm:p-10 shadow-sm">
+      <form method="POST" action="{% url 'tenants:settings' %}" enctype="multipart/form-data" class="space-y-8 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 p-6 sm:p-10 shadow-sm">
         {% csrf_token %}
         <input type="hidden" name="active_tab" value="branding">
 
@@ -618,49 +1292,353 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- TAB 5: PLAN & SUBSCRIPTION                 -->
+    <!-- TAB 5: PLAN & SUBSCRIPTION (3 TIERS)      -->
     <!-- ========================================== -->
-    <div x-show="activeTab === 'subscription'" x-cloak class="space-y-8">
-      <div class="border-b border-slate-200 dark:border-slate-800 pb-6">
-        <h2 class="text-2xl font-extrabold text-slate-900 dark:text-white">SaaS Subscription & Capacity Quotas</h2>
-        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Review your plan tier, quotas, and billing cycle status.</p>
+    <div x-show="activeTab === 'subscription'" x-cloak class="space-y-8 animate-fade-in-up">
+      <!-- Header -->
+      <div class="border-b border-slate-200 dark:border-slate-800 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20">
+              Billing & Packages
+            </span>
+            <span class="text-xs text-slate-500 font-mono">মাসিক সাবস্ক্রিপশন প্ল্যান</span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">💎 একাডেমি সাবস্ক্রিপশন ও প্যাকেজ</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">আপনার একাডেমির বর্তমান প্যাকেজ, মেয়াদ এবং নতুন প্যাকেজে আপগ্রেড বা রিনিউ করুন।</p>
+        </div>
+
+        <button 
+          type="button" 
+          @click="renewModalOpen = true" 
+          class="px-5 py-2.5 rounded-2xl bg-brand-primary hover:opacity-90 text-white text-xs font-black shadow-lg shadow-brand-primary/25 transition-all flex items-center gap-2 shrink-0"
+        >
+          <span>💳 প্যাকেজ রিনিউ / পরিবর্তন</span>
+        </button>
       </div>
 
-      <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-8 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-        <div>
-          <span class="text-xs font-mono uppercase text-slate-500 block mb-1">Current Active Tier</span>
+      <!-- Current Active Tier Status Card -->
+      <div class="rounded-3xl border border-slate-200/80 dark:border-slate-800/80 bg-gradient-to-br from-white via-slate-50 to-indigo-50/20 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950/20 p-6 sm:p-8 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div class="space-y-2">
+          <span class="text-xs font-mono uppercase text-slate-500 block">বর্তমান সক্রিয় প্যাকেজ (Active Plan)</span>
           <div class="flex items-center gap-3">
-            <h3 class="text-3xl font-black text-slate-900 dark:text-white">{{ current_tenant.subscription.plan.name }} Plan</h3>
-            <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-              {{ current_tenant.subscription.get_status_display }}
-            </span>
-          </div>
-          <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 font-mono">
-            Rate: <strong>৳{{ current_tenant.subscription.plan.price_monthly|floatformat:0 }}/mo</strong> • 
-            {% if current_tenant.subscription.status == 'TRIALING' %}
-              Free Trial valid until: {{ current_tenant.subscription.trial_ends_at|date:"M d, Y" }}
+            <h3 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ current_tenant.subscription.plan.name }}</h3>
+            {% if is_subscription_expired %}
+              <span class="px-3 py-1 rounded-full text-xs font-black bg-rose-500 text-white animate-pulse">
+                ⚠️ মেয়াদ উত্তীর্ণ (Expired)
+              </span>
             {% else %}
-              Next Renewal: {{ current_tenant.subscription.current_period_end|date:"M d, Y" }}
+              <span class="px-3 py-1 rounded-full text-xs font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                ✓ সক্রিয় (Active)
+              </span>
+            {% endif %}
+          </div>
+          <p class="text-xs text-slate-600 dark:text-slate-400 font-mono">
+            রেট: <strong>৳{{ current_tenant.subscription.plan.price_monthly|floatformat:0 }}/মাস</strong> • 
+            {% if current_tenant.subscription.status == 'TRIALING' %}
+              ফ্রি ট্রায়াল মেয়াদ: <strong>{{ current_tenant.subscription.trial_ends_at|date:"d M, Y" }}</strong>
+            {% else %}
+              পরবর্তী রিনিউ তারিখ: <strong>{{ current_tenant.subscription.current_period_end|date:"d M, Y" }}</strong>
+            {% endif %}
+            {% if not is_subscription_expired %}
+              • <span class="text-emerald-600 dark:text-emerald-400 font-bold">({{ current_tenant.subscription.days_remaining }} দিন বাকি)</span>
             {% endif %}
           </p>
         </div>
 
-        <div class="text-xs text-slate-700 dark:text-slate-300 font-mono space-y-1 sm:text-right border-t sm:border-t-0 sm:border-l border-slate-200 dark:border-slate-800 pt-4 sm:pt-0 sm:pl-6">
-          <div>Course Limit: <strong>{{ current_tenant.subscription.plan.max_courses }} courses</strong></div>
-          <div>Student Limit: <strong>{{ current_tenant.subscription.plan.max_students }} students</strong></div>
-          <div>Custom CNAME Domain: <strong>{% if current_tenant.subscription.plan.custom_domain_allowed %}Supported{% else %}Pro Required{% endif %}</strong></div>
+        <div class="text-xs text-slate-700 dark:text-slate-300 font-mono space-y-1.5 md:text-right border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 pt-4 md:pt-0 md:pl-6">
+          <div>কোর্স লিমিট: <strong>{% if current_tenant.subscription.plan.max_courses > 1000 %}আনলিমিটেড (No Limit){% else %}{{ current_tenant.subscription.plan.max_courses }}টি কোর্স{% endif %}</strong></div>
+          <div>শিক্ষার্থী লিমিট: <strong>{% if current_tenant.subscription.plan.max_students > 1000 %}আনলিমিটেড (No Limit){% else %}{{ current_tenant.subscription.plan.max_students }} জন{% endif %}</strong></div>
+          <div>কাস্টম ডোমেন (CNAME): <strong>{% if current_tenant.subscription.plan.custom_domain_allowed %}সাপোর্টেড (SSL সহ){% else %}প্রো/আনলিমিটেড প্যাকেজ প্রয়োজন{% endif %}</strong></div>
+        </div>
+      </div>
+
+      <!-- 3 Subscription Plans Pricing Table Grid (500, 1000, 1500 Unlimited) -->
+      <div>
+        <div class="text-center max-w-xl mx-auto mb-8 space-y-2">
+          <h3 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">আপনার একাডেমির জন্য সেরা প্যাকেজ বেছে নিন</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">সহজ মাসিক পেমেন্ট, ০% হিডেন চার্জ। যেকোনো সময় আপগ্রেড বা রিনিউ করার সুবিধা।</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {% for plan in plans %}
+            <div class="rounded-3xl p-6 sm:p-7 flex flex-col justify-between transition-all duration-300 relative border {% if plan.is_popular %}bg-white dark:bg-slate-900 border-2 border-brand-primary shadow-xl shadow-brand-primary/10 scale-105 z-10{% elif plan.price_monthly == 1500 %}bg-gradient-to-b from-slate-900 to-slate-950 text-white border-slate-800 shadow-xl{% else %}bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800/80 shadow-sm hover:shadow-lg{% endif %}">
+              
+              {% if plan.is_popular %}
+                <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-brand-primary text-white text-[10px] font-black tracking-wider uppercase shadow-md">
+                  ★ সর্বাধিক জনপ্রিয়
+                </div>
+              {% elif plan.price_monthly == 1500 %}
+                <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 text-[10px] font-black tracking-wider uppercase shadow-md">
+                  👑 সেরা ভ্যালু (Unlimited)
+                </div>
+              {% endif %}
+
+              <div class="space-y-4">
+                <div>
+                  <h4 class="text-lg font-black {% if plan.price_monthly == 1500 %}text-white{% else %}text-slate-900 dark:text-white{% endif %}">{{ plan.name }}</h4>
+                  <div class="mt-3 flex items-baseline gap-1">
+                    <span class="text-3xl sm:text-4xl font-black {% if plan.price_monthly == 1500 %}text-amber-400{% else %}text-slate-900 dark:text-white{% endif %}">৳{{ plan.price_monthly|floatformat:0 }}</span>
+                    <span class="text-xs font-mono {% if plan.price_monthly == 1500 %}text-slate-400{% else %}text-slate-500{% endif %}">/ মাস</span>
+                  </div>
+                </div>
+
+                <div class="pt-4 border-t {% if plan.price_monthly == 1500 %}border-slate-800{% else %}border-slate-100 dark:border-slate-800{% endif %} space-y-2.5 text-xs">
+                  {% for feat in plan.features %}
+                    <div class="flex items-start gap-2">
+                      <span class="text-emerald-500 font-bold shrink-0">✓</span>
+                      <span class="{% if plan.price_monthly == 1500 %}text-slate-300{% else %}text-slate-600 dark:text-slate-300{% endif %} font-medium">{{ feat }}</span>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+
+              <div class="pt-6 mt-6 border-t {% if plan.price_monthly == 1500 %}border-slate-800{% else %}border-slate-100 dark:border-slate-800{% endif %}">
+                <button 
+                  type="button" 
+                  @click="selectedRenewPlan = { id: {{ plan.id }}, name: '{{ plan.name|escapejs }}', price: '{{ plan.price_monthly|floatformat:0 }}' }; renewModalOpen = true"
+                  class="w-full py-3 rounded-2xl text-xs font-black text-center transition-all shadow-md {% if plan.is_popular %}bg-brand-primary hover:opacity-90 text-white shadow-brand-primary/25 hover:scale-[1.02]{% elif plan.price_monthly == 1500 %}bg-gradient-to-r from-amber-500 to-amber-600 hover:opacity-90 text-slate-950 font-black shadow-amber-500/20 hover:scale-[1.02]{% else %}bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-white{% endif %}"
+                >
+                  {% if subscription.plan.id == plan.id and not is_subscription_expired %}
+                    ✓ বর্তমান প্ল্যান (রিনিউ করুন)
+                  {% else %}
+                    এই প্যাকেজটি নিন (৳{{ plan.price_monthly|floatformat:0 }}) →
+                  {% endif %}
+                </button>
+              </div>
+            </div>
+          {% endfor %}
         </div>
       </div>
     </div>
 
   </main>
 
+  {% if is_subscription_expired %}
+  <!-- ============================================================== -->
+  <!-- MODAL: SUBSCRIPTION EXPIRY WALL POPUP (MANDATORY RENEWAL POPUP) -->
+  <!-- ============================================================== -->
+  <div 
+    x-show="subscriptionExpiredModalOpen" 
+    x-cloak 
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto"
+  >
+    <div 
+      class="w-full max-w-4xl bg-white dark:bg-slate-900 rounded-3xl border-2 border-rose-500/50 p-6 sm:p-8 shadow-2xl space-y-6 max-h-[95vh] overflow-y-auto animate-fade-in-up"
+    >
+      <!-- Modal Header -->
+      <div class="text-center space-y-2 border-b border-slate-200 dark:border-slate-800 pb-5">
+        <div class="w-16 h-16 rounded-3xl bg-gradient-to-tr from-rose-500 to-pink-500 text-white flex items-center justify-center text-3xl mx-auto shadow-lg shadow-rose-500/30">
+          ⚠️
+        </div>
+        <span class="inline-block px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+          সাবস্ক্রিপশন মেয়াদ শেষ (Subscription Expired)
+        </span>
+        <h2 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+          আপনার একাডেমির সাবস্ক্রিপশন রিনিউ করুন
+        </h2>
+        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-xl mx-auto leading-relaxed">
+          আপনার একাডেমি চালু রাখতে এবং অনলাইন ক্লাস, কোর্স বিক্রি ও ড্যাশবোর্ডের সকল সুবিধা সচল রাখতে নিচের যে কোনো একটি প্যাকেজ নির্বাচন করে পেমেন্ট সম্পন্ন করুন।
+        </p>
+      </div>
+
+      <!-- 3 Packages Quick Select in Popup -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" x-data="{ popupPlanId: {{ plans.first.id|default:1 }} }">
+        {% for plan in plans %}
+          <div 
+            @click="popupPlanId = {{ plan.id }}; selectedRenewPlan = { id: {{ plan.id }}, name: '{{ plan.name|escapejs }}', price: '{{ plan.price_monthly|floatformat:0 }}' }"
+            class="p-5 rounded-2xl border-2 cursor-pointer transition-all duration-200 space-y-3 relative flex flex-col justify-between"
+            :class="popupPlanId === {{ plan.id }} ? 'border-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/30 ring-2 ring-emerald-500/20 shadow-md' : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 hover:border-slate-300 dark:hover:border-slate-700'"
+          >
+            {% if plan.is_popular %}
+              <span class="absolute -top-2.5 right-3 px-2 py-0.5 rounded-full bg-brand-primary text-white text-[9px] font-black uppercase tracking-wider">
+                জনপ্রিয়
+              </span>
+            {% elif plan.price_monthly == 1500 %}
+              <span class="absolute -top-2.5 right-3 px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[9px] font-black uppercase tracking-wider">
+                Unlimited
+              </span>
+            {% endif %}
+
+            <div>
+              <div class="flex items-center justify-between">
+                <span class="font-extrabold text-sm text-slate-900 dark:text-white">{{ plan.name }}</span>
+                <span class="text-xs" x-show="popupPlanId === {{ plan.id }}">🟢</span>
+              </div>
+              <div class="mt-2 text-2xl font-black text-slate-900 dark:text-white">
+                ৳{{ plan.price_monthly|floatformat:0 }}<span class="text-xs font-mono font-normal text-slate-400">/মাস</span>
+              </div>
+              <ul class="mt-3 space-y-1.5 text-[11px] text-slate-600 dark:text-slate-300">
+                {% for feat in plan.features|slice:":4" %}
+                  <li class="flex items-center gap-1.5">
+                    <span class="text-emerald-500 font-bold">✓</span>
+                    <span class="truncate">{{ feat }}</span>
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+
+            <div class="pt-2">
+              <span class="block text-center py-1.5 rounded-xl text-xs font-bold" :class="popupPlanId === {{ plan.id }} ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'">
+                নির্বাচিত করুন
+              </span>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <!-- Payment Gateway & Submission Form -->
+      <form method="POST" class="p-5 sm:p-6 rounded-3xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="renew_subscription">
+        <input type="hidden" name="plan_id" :value="selectedRenewPlan.id">
+
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+          <span class="text-xs font-bold text-slate-700 dark:text-slate-300">
+            নির্বাচিত প্যাকেজ: <strong class="text-slate-900 dark:text-white" x-text="selectedRenewPlan.name"></strong>
+          </span>
+          <span class="text-sm font-black text-emerald-600 dark:text-emerald-400 font-mono">
+            পরিশোধযোগ্য মূল্য: ৳<span x-text="selectedRenewPlan.price"></span> / মাস
+          </span>
+        </div>
+
+        <!-- Payment Instructions Box -->
+        <div class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs space-y-1.5 text-slate-800 dark:text-slate-200">
+          <div class="font-bold flex items-center gap-1.5 text-amber-700 dark:text-amber-400">
+            <span>📱</span> পেমেন্ট নির্দেশিকা (bKash / Nagad / Rocket):
+          </div>
+          <p class="text-[11px] leading-relaxed">
+            বিকাশ বা নগদ থেকে <strong class="font-mono text-slate-900 dark:text-white bg-white/80 dark:bg-slate-900 px-2 py-0.5 rounded">01800-123456</strong> নম্বরে <strong>Send Money / Payment</strong> করুন। পেমেন্ট সম্পন্ন হলে নিচের বক্সে TrxID দিয়ে নিশ্চিত করুন।
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div>
+            <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">পেমেন্ট মেথড *</label>
+            <select name="payment_method" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="bKash" selected>bKash (বিকাশ)</option>
+              <option value="Nagad">Nagad (নগদ)</option>
+              <option value="Rocket">Rocket (রকেট)</option>
+              <option value="Bank Transfer">Bank Transfer / Card</option>
+            </select>
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">TrxID / ভাউচার রেফারেন্স *</label>
+            <input 
+              type="text" 
+              name="reference_no" 
+              required
+              placeholder="যেমন: TRX-983421" 
+              class="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+          </div>
+        </div>
+
+        <div class="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p class="text-[11px] text-slate-500 dark:text-slate-400">
+            ✓ পেমেন্ট কনফার্মেশনের সাথে সাথে ৩০ দিনের নতুন মেয়াদ যুক্ত হবে এবং সমস্ত ফিচার আনলক হয়ে যাবে।
+          </p>
+
+          <button 
+            type="submit" 
+            class="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-black shadow-lg shadow-emerald-600/25 transition-all shrink-0 hover:scale-105"
+          >
+            💳 সাবস্ক্রিপশন সম্পন্ন করুন (৩০ দিন মেয়াদ) →
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ============================================================== -->
+  <!-- MODAL: RENEW / UPGRADE SUBSCRIPTION (FOR NORMAL ACTIVE USERS)  -->
+  <!-- ============================================================== -->
+  <div 
+    x-show="renewModalOpen" 
+    x-cloak 
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-y-auto"
+  >
+    <div 
+      @click.away="renewModalOpen = false" 
+      class="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-7 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto animate-fade-in-up"
+    >
+      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3.5">
+        <div class="flex items-center gap-2.5">
+          <span class="w-8 h-8 rounded-xl bg-brand-primary/15 text-brand-primary flex items-center justify-center font-bold text-sm">💎</span>
+          <h3 class="text-base font-black text-slate-900 dark:text-white">সাবস্ক্রিপশন প্যাকেজ রিনিউ বা আপগ্রেড</h3>
+        </div>
+        <button @click="renewModalOpen = false" class="p-1 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800">✕</button>
+      </div>
+
+      <form method="POST" class="space-y-4 text-xs">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="renew_subscription">
+
+        <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">প্যাকেজ নির্বাচন করুন *</label>
+          <div class="space-y-2">
+            {% for plan in plans %}
+              <label 
+                @click="selectedRenewPlan = { id: {{ plan.id }}, name: '{{ plan.name|escapejs }}', price: '{{ plan.price_monthly|floatformat:0 }}' }"
+                class="flex items-center justify-between p-3 rounded-2xl border cursor-pointer transition-all"
+                :class="selectedRenewPlan.id === {{ plan.id }} ? 'border-emerald-500 bg-emerald-50/15 dark:bg-emerald-950/20 ring-2 ring-emerald-500/20 shadow-sm' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'"
+              >
+                <div class="flex items-center gap-3">
+                  <input type="radio" name="plan_id" value="{{ plan.id }}" :checked="selectedRenewPlan.id === {{ plan.id }}" class="text-brand-primary">
+                  <div>
+                    <span class="font-bold text-slate-900 dark:text-white block">{{ plan.name }}</span>
+                    <span class="text-[10px] text-slate-500 font-mono">
+                      {% if plan.max_courses > 1000 %}আনলিমিটেড কোর্স ও শিক্ষার্থী{% else %}{{ plan.max_courses }}টি কোর্স • {{ plan.max_students }} শিক্ষার্থী{% endif %}
+                    </span>
+                  </div>
+                </div>
+                <div class="font-mono font-black text-sm text-slate-900 dark:text-white">
+                  ৳{{ plan.price_monthly|floatformat:0 }}/মাস
+                </div>
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">পেমেন্ট মেথড</label>
+            <select name="payment_method" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-semibold">
+              <option value="bKash" selected>bKash বিকাশ</option>
+              <option value="Nagad">Nagad নগদ</option>
+              <option value="Rocket">Rocket রকেট</option>
+              <option value="Bank Transfer">Bank Transfer ব্যাংক</option>
+            </select>
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">TrxID / ভাউচার রেফারেন্স</label>
+            <input type="text" name="reference_no" placeholder="TRX-839420" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-mono">
+          </div>
+        </div>
+
+        <div class="p-3.5 rounded-2xl bg-slate-100/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-300 space-y-1">
+          <div class="font-bold">📱 বিকাশ/নগদ মার্চেন্ট নম্বর: <strong class="font-mono text-slate-900 dark:text-white">01800-123456</strong></div>
+          <p>পেমেন্ট কনফার্মেশনের সাথে সাথে ৩০ দিনের মেয়াদ বৃদ্ধি পাবে।</p>
+        </div>
+
+        <div class="flex justify-end gap-2.5 pt-3 border-t border-slate-200 dark:border-slate-800">
+          <button type="button" @click="renewModalOpen = false" class="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">বাতিল</button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-brand-primary text-white font-bold hover:opacity-90 shadow-md shadow-brand-primary/20 transition-all">প্যাকেজ রিনিউ ও মেয়াদ বৃদ্ধি →</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- MODAL 1: CREATE COURSE -->
-  <div x-show="createCourseModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-    <div @click.away="createCourseModalOpen = false" class="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-        <h3 class="text-base font-black text-slate-900 dark:text-white">➕ নতুন কোর্স তৈরি করুন</h3>
-        <button @click="createCourseModalOpen = false" class="text-slate-400 hover:text-slate-900 dark:hover:text-white">✕</button>
+  <div x-show="createCourseModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div @click.away="createCourseModalOpen = false" class="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-7 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto animate-fade-in-up">
+      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3.5">
+        <div class="flex items-center gap-2.5">
+          <span class="w-8 h-8 rounded-xl bg-brand-primary/15 text-brand-primary flex items-center justify-center font-bold text-sm">➕</span>
+          <h3 class="text-base font-black text-slate-900 dark:text-white">নতুন কোর্স তৈরি করুন</h3>
+        </div>
+        <button @click="createCourseModalOpen = false" class="p-1 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800">✕</button>
       </div>
       <form method="POST" enctype="multipart/form-data" class="space-y-4 text-xs">
         {% csrf_token %}
@@ -668,26 +1646,26 @@
 
         <div>
           <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">কোর্সের শিরোনাম *</label>
-          <input type="text" name="title" required placeholder="যেমন: HSC '26 পদার্থবিজ্ঞান ১ম পত্র পূর্ণাঙ্গ কোর্স" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+          <input type="text" name="title" required placeholder="যেমন: HSC '26 পদার্থবিজ্ঞান ১ম পত্র পূর্ণাঙ্গ কোর্স" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-primary/30">
         </div>
 
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">মূল্য (টাকা)</label>
-            <input type="number" step="10" name="price" value="1500" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+            <input type="number" step="10" name="price" value="1500" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-mono font-bold">
           </div>
           <div>
             <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">স্ট্যাটাস</label>
-            <select name="status" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+            <select name="status" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-semibold">
               <option value="PUBLISHED" selected>Published (সক্রিয়)</option>
               <option value="DRAFT">Draft (খসড়া)</option>
             </select>
           </div>
         </div>
 
-        <div class="flex items-center gap-2">
-          <input type="checkbox" id="course_is_free" name="is_free" class="rounded text-brand-primary">
-          <label for="course_is_free" class="font-semibold text-slate-700 dark:text-slate-300">এটি সম্পূর্ণ ফ্রি কোর্স</label>
+        <div class="flex items-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
+          <input type="checkbox" id="course_is_free" name="is_free" class="rounded text-brand-primary w-4 h-4">
+          <label for="course_is_free" class="font-bold text-slate-700 dark:text-slate-300 cursor-pointer">এটি সম্পূর্ণ ফ্রি কোর্স (Free Enrollment)</label>
         </div>
 
         <div>
@@ -716,20 +1694,23 @@
           <input type="file" name="thumbnail" accept="image/*" class="w-full text-slate-500 text-xs">
         </div>
 
-        <div class="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
-          <button type="button" @click="createCourseModalOpen = false" class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 font-bold">বাতিল</button>
-          <button type="submit" class="px-5 py-2 rounded-xl bg-brand-primary text-white font-bold hover:opacity-90">কোর্স তৈরি ও কারিকুলামে যান →</button>
+        <div class="flex justify-end gap-2.5 pt-3 border-t border-slate-200 dark:border-slate-800">
+          <button type="button" @click="createCourseModalOpen = false" class="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">বাতিল</button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-brand-primary text-white font-bold hover:opacity-90 shadow-md shadow-brand-primary/20 transition-all">কোর্স তৈরি ও কারিকুলামে যান →</button>
         </div>
       </form>
     </div>
   </div>
 
   <!-- MODAL 2: EDIT COURSE -->
-  <div x-show="editCourseModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-    <div @click.away="editCourseModalOpen = false" class="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-        <h3 class="text-base font-black text-slate-900 dark:text-white">✏️ কোর্স এডিট করুন</h3>
-        <button @click="editCourseModalOpen = false" class="text-slate-400 hover:text-slate-900 dark:hover:text-white">✕</button>
+  <div x-show="editCourseModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div @click.away="editCourseModalOpen = false" class="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-7 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto animate-fade-in-up">
+      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3.5">
+        <div class="flex items-center gap-2.5">
+          <span class="w-8 h-8 rounded-xl bg-brand-primary/15 text-brand-primary flex items-center justify-center font-bold text-sm">✏️</span>
+          <h3 class="text-base font-black text-slate-900 dark:text-white">কোর্স এডিট করুন</h3>
+        </div>
+        <button @click="editCourseModalOpen = false" class="p-1 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800">✕</button>
       </div>
       <form method="POST" enctype="multipart/form-data" class="space-y-4 text-xs">
         {% csrf_token %}
@@ -738,26 +1719,26 @@
 
         <div>
           <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">কোর্সের শিরোনাম *</label>
-          <input type="text" name="title" required x-model="activeCourse.title" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+          <input type="text" name="title" required x-model="activeCourse.title" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-primary/30">
         </div>
 
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">মূল্য (টাকা)</label>
-            <input type="number" step="10" name="price" x-model="activeCourse.price" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+            <input type="number" step="10" name="price" x-model="activeCourse.price" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-mono font-bold">
           </div>
           <div>
             <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">স্ট্যাটাস</label>
-            <select name="status" x-model="activeCourse.status" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+            <select name="status" x-model="activeCourse.status" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-semibold">
               <option value="PUBLISHED">Published (সক্রিয়)</option>
               <option value="DRAFT">Draft (খসড়া)</option>
             </select>
           </div>
         </div>
 
-        <div class="flex items-center gap-2">
-          <input type="checkbox" id="edit_course_is_free" name="is_free" x-model="activeCourse.is_free" class="rounded text-brand-primary">
-          <label for="edit_course_is_free" class="font-semibold text-slate-700 dark:text-slate-300">এটি সম্পূর্ণ ফ্রি কোর্স</label>
+        <div class="flex items-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
+          <input type="checkbox" id="edit_course_is_free" name="is_free" x-model="activeCourse.is_free" class="rounded text-brand-primary w-4 h-4">
+          <label for="edit_course_is_free" class="font-bold text-slate-700 dark:text-slate-300 cursor-pointer">এটি সম্পূর্ণ ফ্রি কোর্স (Free Enrollment)</label>
         </div>
 
         <div>
@@ -787,13 +1768,347 @@
           <input type="file" name="thumbnail" accept="image/*" class="w-full text-slate-500 text-xs">
         </div>
 
-        <div class="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
-          <button type="button" @click="editCourseModalOpen = false" class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 font-bold">বাতিল</button>
-          <button type="submit" class="px-5 py-2 rounded-xl bg-brand-primary text-white font-bold hover:opacity-90">আপডেট সংরক্ষণ করুন</button>
+        <div class="flex justify-end gap-2.5 pt-3 border-t border-slate-200 dark:border-slate-800">
+          <button type="button" @click="editCourseModalOpen = false" class="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">বাতিল</button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-brand-primary text-white font-bold hover:opacity-90 shadow-md shadow-brand-primary/20 transition-all">আপডেট সংরক্ষণ করুন</button>
         </div>
       </form>
     </div>
   </div>
 
+  <!-- MODAL 3: ADD FINANCIAL TRANSACTION -->
+  <div x-show="addTransactionModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div @click.away="addTransactionModalOpen = false" class="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-7 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto animate-fade-in-up">
+      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3.5">
+        <div class="flex items-center gap-2.5">
+          <span class="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-sm">💰</span>
+          <h3 class="text-base font-black text-slate-900 dark:text-white">নতুন আয় বা ব্যয় এন্ট্রি করুন</h3>
+        </div>
+        <button @click="addTransactionModalOpen = false" class="p-1 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800">✕</button>
+      </div>
+      <form method="POST" class="space-y-4 text-xs" x-data="{ txType: 'income' }">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_transaction">
+
+        <!-- Transaction Type Switcher -->
+        <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">লেনদেনের ধরন *</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center justify-center gap-2 p-3 rounded-2xl border cursor-pointer font-bold transition-all" :class="txType === 'income' ? 'bg-emerald-500/15 border-emerald-500 text-emerald-600 dark:text-emerald-400 ring-2 ring-emerald-500/20 shadow-sm' : 'border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800'">
+              <input type="radio" name="transaction_type" value="income" x-model="txType" class="hidden">
+              <span class="text-xs">🟢 আয় (Income / Credit)</span>
+            </label>
+            <label class="flex items-center justify-center gap-2 p-3 rounded-2xl border cursor-pointer font-bold transition-all" :class="txType === 'expense' ? 'bg-rose-500/15 border-rose-500 text-rose-600 dark:text-rose-400 ring-2 ring-rose-500/20 shadow-sm' : 'border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800'">
+              <input type="radio" name="transaction_type" value="expense" x-model="txType" class="hidden">
+              <span class="text-xs">🔴 ব্যয় (Expense / Debit)</span>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">বিবরণ / শিরোনাম *</label>
+          <input type="text" name="title" required placeholder="যেমন: HSC '26 ভর্তি ফি - মো: রাহিম অথবা ফেসবুক অ্যাডস ক্যাম্পেইন" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">ক্যাটাগরি</label>
+            <select name="category" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-semibold">
+              <template x-if="txType === 'income'">
+                <optgroup label="আয়ের খাতসমূহ">
+                  <option value="course_fee" selected>কোর্স ফি / ভর্তি</option>
+                  <option value="book_sale">বই বিক্রয়</option>
+                  <option value="offline_payment">অফলাইন ফি / ক্যাশ</option>
+                  <option value="other_income">অন্যান্য আয়</option>
+                </optgroup>
+              </template>
+              <template x-if="txType === 'expense'">
+                <optgroup label="ব্যয়ের খাতসমূহ">
+                  <option value="instructor_salary" selected>শিক্ষক / মেন্টর সম্মানী</option>
+                  <option value="marketing_ads">মার্কেটিং ও ফেসবুক অ্যাড</option>
+                  <option value="server_software">সার্ভার, ডোমেন ও সফটওয়্যার</option>
+                  <option value="office_utility">অফিস ভাড়া ও ইউটিলিটি</option>
+                  <option value="other_expense">অন্যান্য ব্যয়</option>
+                </optgroup>
+              </template>
+            </select>
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">পরিমাণ (টাকা) *</label>
+            <input type="number" step="0.01" name="amount" required placeholder="1500" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-mono font-bold">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">পেমেন্ট মেথড</label>
+            <select name="payment_method" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-semibold">
+              <option value="bKash" selected>bKash বিকাশ</option>
+              <option value="Nagad">Nagad নগদ</option>
+              <option value="Rocket">Rocket রকেট</option>
+              <option value="Bank Transfer">Bank Transfer ব্যাংক</option>
+              <option value="Cash">Cash নগদ ক্যাশ</option>
+              <option value="Other">অন্যান্য</option>
+            </select>
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">TrxID / ভাউচার নং</label>
+            <input type="text" name="reference_no" placeholder="TRX-839420" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-mono">
+          </div>
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">তারিখ</label>
+          <input type="date" name="transaction_date" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">নোট বা মন্তব্য (ঐচ্ছিক)</label>
+          <textarea name="notes" rows="2" placeholder="প্রয়োজনীয় যে কোনো অতিরিক্ত তথ্য..." class="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white"></textarea>
+        </div>
+
+        <div class="flex justify-end gap-2.5 pt-3 border-t border-slate-200 dark:border-slate-800">
+          <button type="button" @click="addTransactionModalOpen = false" class="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">বাতিল</button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-all shadow-md shadow-emerald-600/20">লেজারে সংরক্ষণ করুন →</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 4: SCHEDULE LIVE ONLINE CLASS -->
+  <div x-show="scheduleLiveModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div @click.away="scheduleLiveModalOpen = false" class="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-7 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto animate-fade-in-up">
+      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3.5">
+        <div class="flex items-center gap-2.5">
+          <span class="w-8 h-8 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold text-sm">🔴</span>
+          <h3 class="text-base font-black text-slate-900 dark:text-white">নতুন লাইভ ক্লাস শিডিউল করুন</h3>
+        </div>
+        <button @click="scheduleLiveModalOpen = false" class="p-1 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800">✕</button>
+      </div>
+      <form method="POST" class="space-y-4 text-xs">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="schedule_live_class">
+
+        <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">লাইভ ক্লাসের শিরোনাম / বিষয় *</label>
+          <input type="text" name="title" required placeholder="যেমন: উচ্চতর গণিত - ক্যালকুলাস মেগা লাইভ ক্লাস" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/30">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">কোর্স নির্বাচন (ঐচ্ছিক)</label>
+            <select name="course_id" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-semibold">
+              <option value="">-- কোনো নির্দিষ্ট কোর্স নয় --</option>
+              {% for c in courses %}
+                <option value="{{ c.id }}">{{ c.title }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">প্ল্যাটফর্ম *</label>
+            <select name="platform" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-semibold">
+              <option value="zoom" selected>Zoom Meeting</option>
+              <option value="meet">Google Meet</option>
+              <option value="youtube_live">YouTube Live</option>
+              <option value="facebook_live">Facebook Live</option>
+              <option value="custom">অন্যান্য লাইভ রুম</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">মিটিং / লাইভ স্ট্রিম URL লিংক *</label>
+          <input type="url" name="meeting_url" required placeholder="https://zoom.us/j/... বা https://meet.google.com/..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-mono text-xs focus:ring-2 focus:ring-rose-500/20">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">Meeting ID (ঐচ্ছিক)</label>
+            <input type="text" name="meeting_id" placeholder="839 2948 2948" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-mono">
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">Passcode (ঐচ্ছিক)</label>
+            <input type="text" name="passcode" placeholder="123456" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-mono">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">তারিখ ও সময় *</label>
+            <input type="datetime-local" name="scheduled_at" required class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-mono">
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">ডিউরেশন (মিনিট)</label>
+            <input type="number" name="duration_minutes" value="90" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-mono">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">শিক্ষক / মেন্টরের নাম</label>
+            <input type="text" name="instructor_name" value="{{ user.get_full_name|default:'কোর্স মেন্টর' }}" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">স্ট্যাটাস</label>
+            <select name="status" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-semibold">
+              <option value="upcoming" selected>Upcoming (আসন্ন)</option>
+              <option value="live_now">🔴 Live Now (এখনই লাইভ)</option>
+              <option value="completed">Completed (সম্পন্ন)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2.5 pt-3 border-t border-slate-200 dark:border-slate-800">
+          <button type="button" @click="scheduleLiveModalOpen = false" class="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">বাতিল</button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold transition-all shadow-md shadow-rose-600/20">শিডিউল সংরক্ষণ করুন →</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: STUDENT PROFILE & PASSWORD RESET   -->
+  <!-- ========================================== -->
+  <div 
+    x-show="studentModalOpen" 
+    x-cloak 
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in-up"
+  >
+    <div 
+      @click.away="studentModalOpen = false" 
+      class="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-6 max-h-[90vh] overflow-y-auto custom-scrollbar"
+    >
+      <!-- Header -->
+      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-brand-primary/10 flex items-center justify-center text-brand-primary text-xl font-bold">
+            👤
+          </div>
+          <div>
+            <h3 class="text-base font-extrabold text-slate-900 dark:text-white">শিক্ষার্থী প্রোফাইল ও অ্যাকাউন্ট</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">অ্যাকাউন্টের তথ্য দেখুন এবং পাসওয়ার্ড সরাসরি রিসেট করুন</p>
+          </div>
+        </div>
+        <button 
+          type="button" 
+          @click="studentModalOpen = false" 
+          class="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+        >
+          ✕
+        </button>
+      </div>
+
+      <!-- Student Details Card -->
+      <template x-if="selectedStudent">
+        <div class="space-y-4">
+          <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2.5">
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-500 font-medium">শিক্ষার্থীর নাম:</span>
+              <span class="font-extrabold text-slate-900 dark:text-white text-sm" x-text="selectedStudent.name"></span>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-500 font-medium">ইমেইল ঠিকানা:</span>
+              <span class="font-mono font-bold text-slate-800 dark:text-slate-200" x-text="selectedStudent.email"></span>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-500 font-medium">কোর্স:</span>
+              <span class="font-bold text-brand-primary" x-text="selectedStudent.course"></span>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-500 font-medium">ভর্তির সময়:</span>
+              <span class="font-mono text-slate-600 dark:text-slate-400" x-text="selectedStudent.enrolled_at"></span>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-500 font-medium">কোর্স স্ট্যাটাস:</span>
+              <span class="px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" x-text="selectedStudent.status"></span>
+            </div>
+          </div>
+
+          <!-- In-Dashboard Password Reset Form -->
+          <div class="p-4 rounded-2xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="text-base">🔑</span>
+              <h4 class="text-xs font-extrabold text-amber-700 dark:text-amber-400 uppercase tracking-wider">পাসওয়ার্ড পরিবর্তন / রিসেট</h4>
+            </div>
+            <p class="text-xs text-slate-600 dark:text-slate-400">
+              শিক্ষার্থী যদি পাসওয়ার্ড ভুলে যান বা পরিবর্তন করতে চান, এখানে নতুন পাসওয়ার্ড টাইপ করে সেভ করুন।
+            </p>
+            <form method="POST" class="space-y-3 pt-1">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="reset_student_password">
+              <input type="hidden" name="student_id" :value="selectedStudent.id">
+              
+              <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">নতুন পাসওয়ার্ড (কমপক্ষে ৬ অক্ষর) *</label>
+                <input 
+                  type="text" 
+                  name="new_password" 
+                  required 
+                  minlength="6"
+                  placeholder="যেমন: Student@2026" 
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-mono text-xs focus:ring-2 focus:ring-amber-500/30"
+                >
+              </div>
+
+              <div class="flex justify-end">
+                <button 
+                  type="submit" 
+                  class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-md shadow-amber-600/20 transition-all flex items-center gap-1.5"
+                >
+                  <span>💾 পাসওয়ার্ড আপডেট করুন</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Update Enrollment Status Form -->
+          <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="text-base">⚙️</span>
+              <h4 class="text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider">কোর্স এনরোলমেন্ট স্ট্যাটাস</h4>
+            </div>
+            <form method="POST" class="flex items-center gap-2">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="update_enrollment_status">
+              <input type="hidden" name="enrollment_id" :value="selectedStudent.enrollment_id">
+              
+              <select 
+                name="status" 
+                :value="selectedStudent.status"
+                class="flex-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-semibold text-xs"
+              >
+                <option value="ACTIVE">ACTIVE (সক্রিয়)</option>
+                <option value="COMPLETED">COMPLETED (সম্পন্ন)</option>
+                <option value="CANCELLED">CANCELLED (বাতিল)</option>
+              </select>
+
+              <button 
+                type="submit" 
+                class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white dark:bg-slate-700 dark:hover:bg-slate-600 font-bold text-xs transition-all"
+              >
+                স্ট্যাটাস সেভ
+              </button>
+            </form>
+          </div>
+
+        </div>
+      </template>
+
+      <div class="flex justify-end pt-3 border-t border-slate-200 dark:border-slate-800">
+        <button 
+          type="button" 
+          @click="studentModalOpen = false" 
+          class="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+        >
+          বন্ধ করুন
+        </button>
+      </div>
+    </div>
+  </div>
+
 </div>
+{% endblock content %}
+
+{% block footer %}
+  {% include "includes/dashboard_bottom_nav.html" %}
 {% endblock %}

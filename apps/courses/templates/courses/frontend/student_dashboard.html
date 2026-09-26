@@ -2,6 +2,10 @@
 
 {% block title %}স্টুডেন্ট ড্যাশবোর্ড — {{ tenant.name|default:"CourseFlow" }}{% endblock %}
 
+{% block header %}
+  {% include "includes/dashboard_header.html" %}
+{% endblock header %}
+
 {% block content %}
 <div 
   x-data="{ 
@@ -10,26 +14,11 @@
     selectedInvoice: null,
     orderModalBook: null
   }" 
-  class="min-h-[calc(100vh-4rem)] flex flex-col lg:flex-row bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans transition-colors"
+  @toggle-sidebar.window="sidebarOpen = !sidebarOpen"
+  @close-sidebar.window="sidebarOpen = false"
+  @switch-tab.window="activeTab = $event.detail; sidebarOpen = false; window.scrollTo({top: 0, behavior: 'smooth'});"
+  class="min-h-[calc(100vh-3.5rem)] flex flex-col lg:flex-row bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans transition-colors pb-20 lg:pb-0"
 >
-
-  <!-- Mobile Top Bar for Sidebar Toggle -->
-  <div class="lg:hidden flex items-center justify-between px-4 py-3 bg-white/95 dark:bg-slate-950/90 border-b border-slate-200 dark:border-slate-800 sticky top-16 z-30">
-    <div class="flex items-center gap-2">
-      <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-primary to-emerald-400 flex items-center justify-center font-bold text-white text-xs shadow-md">
-        {{ user.first_name|default:user.email|slice:":1"|upper }}
-      </div>
-      <span class="text-xs font-bold text-slate-900 dark:text-white truncate">শিক্ষার্থী পোর্টাল</span>
-    </div>
-    <button 
-      @click="sidebarOpen = !sidebarOpen"
-      class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 border border-slate-300 dark:border-slate-700"
-    >
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-      </svg>
-    </button>
-  </div>
 
   <!-- Mobile Off-Canvas Drawer Backdrop -->
   <div 
@@ -42,9 +31,9 @@
   <!-- LEFT SIDEBAR MENU (PERSISTENT & COMPLETE) -->
   <aside 
     :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
-    class="fixed lg:static inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between transition-transform duration-300 ease-in-out lg:min-h-[calc(100vh-4rem)] shadow-2xl lg:shadow-none shrink-0"
+    class="fixed lg:sticky lg:top-14 sm:lg:top-16 inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between transition-transform duration-300 ease-in-out h-screen lg:h-[calc(100vh-3.5rem)] sm:lg:h-[calc(100vh-4rem)] max-h-screen overflow-hidden shadow-2xl lg:shadow-none shrink-0"
   >
-    <div class="p-5 space-y-6 overflow-y-auto">
+    <div class="p-5 space-y-6 overflow-y-auto flex-1">
       
       <!-- Academy & Student Card -->
       <div class="pb-4 border-b border-slate-200 dark:border-slate-800">
@@ -208,8 +197,8 @@
 
     <!-- Bottom Actions -->
     <div class="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60">
-      <a href="{% url 'users:logout' %}" class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors w-full border border-rose-200 dark:border-rose-900/40">
-        <span>🚪 লগআউট</span>
+      <a href="{% url 'users:logout' %}" class="flex items-center justify-center px-4 py-2.5 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors w-full border border-rose-200 dark:border-rose-900/40">
+        লগআউট
       </a>
     </div>
   </aside>
@@ -1275,21 +1264,21 @@
         <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">সেরা গাইডবই ও প্রশ্নব্যাংক অর্ডার করুন।</p>
       </div>
 
-      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 sm:gap-4 lg:gap-5">
         {% for b in available_books %}
-          <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-4 shadow-sm flex flex-col justify-between space-y-3">
+          <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-3 sm:p-4 shadow-sm flex flex-col justify-between space-y-3 hover:border-emerald-500/50 hover:shadow-xl transition-all group">
             <div class="space-y-2">
-              <div class="h-44 rounded-2xl bg-gradient-to-tr from-slate-800 to-slate-900 flex items-center justify-center p-3 text-center text-white relative overflow-hidden">
+              <div class="w-full aspect-[3/4] rounded-2xl bg-gradient-to-b from-slate-100 to-slate-200/90 dark:from-slate-800 dark:to-slate-900 overflow-hidden flex items-center justify-center p-2 relative shadow-inner">
                 {% if b.get_cover_url %}
-                  <img src="{{ b.get_cover_url }}" alt="{{ b.title }}" class="w-full h-full object-cover rounded-xl">
+                  <img src="{{ b.get_cover_url }}" alt="{{ b.title }}" class="max-w-full max-h-full w-auto h-auto object-contain rounded-xl drop-shadow-md group-hover:scale-105 transition-transform duration-300">
                 {% else %}
-                  <span class="text-xs font-bold">{{ b.title }}</span>
+                  <span class="text-xs font-bold text-slate-700 dark:text-slate-300 text-center p-2">{{ b.title }}</span>
                 {% endif %}
-                <span class="absolute top-2 right-2 px-2 py-0.5 rounded bg-amber-500 text-slate-950 font-bold text-[9px]">{{ b.edition }}</span>
+                <span class="absolute top-2 right-2 px-2 py-0.5 rounded-lg bg-amber-500 text-slate-950 font-bold text-[9px] shadow-sm">{{ b.edition }}</span>
               </div>
-              <div class="text-[10px] text-slate-400">{{ b.author }}</div>
-              <h4 class="font-extrabold text-xs text-slate-900 dark:text-white line-clamp-2">{{ b.title }}</h4>
-              <div class="text-sm font-black text-slate-900 dark:text-white">৳{{ b.price }}</div>
+              <div class="text-[10px] text-slate-400 truncate">{{ b.author }}</div>
+              <h4 class="font-bold text-xs text-slate-900 dark:text-white line-clamp-2 leading-snug">{{ b.title }}</h4>
+              <div class="text-xs sm:text-sm font-black text-slate-900 dark:text-white">৳{{ b.price }}</div>
             </div>
 
             <button 
@@ -1348,4 +1337,6 @@
 
   </main>
 </div>
-{% endblock %}
+{% endblock content %}
+
+{% block footer %}{% endblock %}

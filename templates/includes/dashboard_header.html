@@ -1,0 +1,51 @@
+<!-- Unified Studio Top App Bar (Clean, Spacious, Professional Header) -->
+<header class="sticky top-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl border-b border-slate-200/90 dark:border-slate-800/90 px-4 sm:px-8 py-3 sm:py-3.5 flex items-center justify-between shadow-sm select-none transition-colors">
+  
+  <!-- Left: Brand Identity -->
+  <div class="flex items-center gap-3.5 min-w-0">
+    <!-- Studio / Academy Branding -->
+    <a href="{% if user.is_superuser and not current_tenant %}{% url 'tenants:platform_dashboard' %}{% else %}{% url 'dashboard' %}{% endif %}" class="flex items-center gap-3 min-w-0 group">
+      <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl {% if user.is_superuser and not current_tenant %}bg-gradient-to-tr from-amber-500 to-indigo-600{% else %}bg-brand-primary{% endif %} flex items-center justify-center font-black text-white text-sm sm:text-base shadow-md shadow-brand-primary/20 shrink-0 group-hover:scale-105 transition-transform">
+        {% if user.is_superuser and not current_tenant %}👑{% else %}{{ current_tenant.name|default:"⚡"|slice:":1"|upper }}{% endif %}
+      </div>
+      <div class="truncate min-w-0">
+        <span class="text-xs sm:text-sm font-black text-slate-900 dark:text-white truncate block max-w-[150px] sm:max-w-[300px] tracking-tight">
+          {% if user.is_superuser and not current_tenant %}SaaS Platform Control Plane{% else %}{{ current_tenant.name|default:"CourseFlow Studio" }}{% endif %}
+        </span>
+        <div class="flex items-center gap-1.5 mt-0.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 animate-pulse"></span>
+          <span class="text-[11px] font-mono font-bold text-emerald-600 dark:text-emerald-400 truncate">
+            {% if user.is_superuser and not current_tenant %}সুপার অ্যাডমিন ড্যাশবোর্ড{% elif current_tenant and current_tenant.owner == user %}এডমিন স্টুডিও কন্ট্রোল{% else %}স্টুডিও ড্যাশবোর্ড{% endif %}
+          </span>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Right: Compact Actions Collage [লাইভ স্টোরফ্রন্ট] & [🌙/☀️ Dark Mode] -->
+  <div class="flex items-center p-1 rounded-2xl bg-slate-100/90 dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 shadow-sm gap-1 backdrop-blur-md shrink-0">
+    <!-- 1. Live Storefront Link Button -->
+    <a 
+      href="/" 
+      target="_blank" 
+      class="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-extrabold text-xs shadow-sm transition-all cursor-pointer"
+      title="লাইভ ওয়েবসাইট দেখুন"
+    >
+      <span>🌐</span>
+      <span class="hidden sm:inline">লাইভ স্টোরফ্রন্ট</span>
+      <span class="text-emerald-500 font-bold text-[11px]">↗</span>
+    </a>
+
+    <!-- 2. Dark / Light Mode Switcher (Right Beside Live Storefront) -->
+    <button 
+      type="button" 
+      @click="isDark = !isDark; if(isDark){ document.documentElement.classList.add('dark'); localStorage.theme='dark'; } else { document.documentElement.classList.remove('dark'); localStorage.theme='light'; }"
+      class="p-1.5 sm:p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-amber-400 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors cursor-pointer flex items-center justify-center"
+      title="থিম পরিবর্তন করুন"
+    >
+      <span x-show="!isDark" class="text-sm leading-none">🌙</span>
+      <span x-show="isDark" x-cloak class="text-sm leading-none">☀️</span>
+    </button>
+  </div>
+
+</header>

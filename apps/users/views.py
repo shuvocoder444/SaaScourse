@@ -1,57 +1,137 @@
-from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login, logout, get_user_model
+import re
+
 from django.contrib import messages
+from django.contrib.auth import authenticate, get_user_model, login, logout
+from django.shortcuts import redirect, render
+
 from apps.tenants.models import Tenant
 from apps.users.models import TenantMembership
 
 User = get_user_model()
 
-
+ 
 def login_view(request):
     """
-    Authentication portal supporting standard credentials and 1-Click Quick Demo logins.
+    Modern Authentication & Student Registration Portal.
+    - Login: Validates email or mobile + password.
+    - Register: Creates user (STUDENT role), assigns tenant membership, logs in.
     """
     if request.user.is_authenticated:
         return redirect("dashboard")
 
     next_url = request.GET.get("next") or request.POST.get("next") or "/dashboard/"
+    current_tenant = getattr(request, "tenant", None)
+    initial_mode = request.GET.get("mode") or "login"
 
     if request.method == "POST":
         demo_role = request.POST.get("demo_role")
-
         if demo_role:
-            # 1-Click Quick Demo Login
-            email_map = {
+            demo_email_map = {
                 "superadmin": "admin@platform.com",
-                "instructor": "sarah@alpha.io",
+                "creator": "sarah@academy.com",
                 "student": "alex@student.com",
             }
-            target_email = email_map.get(demo_role)
-            if target_email:
-                user = User.objects.filter(email=target_email).first()
-                if user:
-                    login(request, user)
-                    messages.success(request, f"Logged in successfully as {user.get_full_name() or user.email} ({demo_role.title()})")
+            demo_email = demo_email_map.get(demo_role)
+            if demo_email:
+                demo_user = User.objects.filter(email=demo_email).first()
+                if demo_user:
+                    login(request, demo_user)
                     return redirect(next_url)
 
-        # Standard Email & Password
-        email = request.POST.get("email", "").strip().lower()
+        auth_mode = request.POST.get("auth_mode", "login")
+        identifier = request.POST.get("identifier", "").strip() or request.POST.get("email", "").strip()
         password = request.POST.get("password", "")
 
-        user = authenticate(request, email=email, password=password)
-        if user:
-            login(request, user)
-            messages.success(request, f"Welcome back, {user.get_full_name() or user.email}!")
-            return redirect(next_url)
+        if not identifier or not password:
+            messages.error(request, "অনুগ্রহ করে মোবাইল নম্বর/ইমেইল এবং পাসওয়ার্ড প্রদান করুন।")
+            return render(
+                request,
+                "users/login.html",
+                {
+                    "next": next_url,
+                    "current_tenant": current_tenant,
+                    "initial_mode": auth_mode,
+                    "identifier": identifier,
+                },
+            )
+
+        # Normalize email / phone
+        if "@" in identifier:
+            email = identifier.lower()
         else:
-            messages.error(request, "Invalid email address or password. Please try again.")
+            clean_phone = re.sub(r"[^0-9+]", "", identifier)
+            email = f"{clean_phone}@student.academy"
+
+        if auth_mode == "login":
+            user = authenticate(request, email=email, password=password)
+            if user:
+                login(request, user)
+                if current_tenant:
+                    TenantMembership.objects.get_or_create(
+                        tenant=current_tenant,
+                        user=user,
+                        defaults={"role": TenantMembership.Role.STUDENT, "is_active": True},
+                    )
+                messages.success(request, f"স্বাগতম, {user.get_full_name() or user.email}!")
+                return redirect(next_url)
+            else:
+                messages.error(request, "মোবাইল/ইমেইল অথবা পাসওয়ার্ড সঠিক নয়। অনুগ্রহ করে পুনরায় চেষ্টা করুন।")
+                return render(
+                    request,
+                    "users/login.html",
+                    {
+                        "next": next_url,
+                        "current_tenant": current_tenant,
+                        "initial_mode": "login",
+                        "identifier": identifier,
+                    },
+                )
+
+        elif auth_mode == "register":
+            full_name = request.POST.get("full_name", "").strip()
+            if User.objects.filter(email=email).exists():
+                messages.info(request, "এই মোবাইল/ইমেইলে ইতিমধ্যে অ্যাকাউন্ট রয়েছে। দয়া করে পাসওয়ার্ড দিয়ে লগইন করুন।")
+                return render(
+                    request,
+                    "users/login.html",
+                    {
+                        "next": next_url,
+                        "current_tenant": current_tenant,
+                        "initial_mode": "login",
+                        "identifier": identifier,
+                    },
+                )
+
+            name_parts = full_name.split(" ", 1)
+            first_name = name_parts[0] if name_parts else "Student"
+            last_name = name_parts[1] if len(name_parts) > 1 else ""
+
+            user = User.objects.create_user(
+                email=email,
+                password=password,
+                first_name=first_name,
+                last_name=last_name,
+            )
+
+            if current_tenant:
+                TenantMembership.objects.create(
+                    tenant=current_tenant,
+                    user=user,
+                    role=TenantMembership.Role.STUDENT,
+                    is_active=True,
+                )
+
+            login(request, user)
+            messages.success(request, f"🎉 অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে! স্বাগতম, {user.get_full_name()}।")
+            return redirect(next_url)
 
     return render(
         request,
         "users/login.html",
         {
             "next": next_url,
-            "current_tenant": getattr(request, "tenant", None),
+            "current_tenant": current_tenant,
+            "initial_mode": initial_mode,
         },
     )
 

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}অফলাইন মোড — {{ tenant.name|default:"একাডেমি" }}{% endblock %}
+
+{% block content %}
+<div class="min-h-[70vh] flex items-center justify-center px-4 py-16">
+  <div class="max-w-md w-full text-center space-y-6 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-8 shadow-2xl">
+    
+    <!-- Offline Icon Badge -->
+    <div class="w-20 h-20 mx-auto rounded-3xl bg-rose-500/10 text-rose-500 border border-rose-500/20 flex items-center justify-center text-4xl shadow-inner">
+      📡
+    </div>
+
+    <!-- Academy Name -->
+    <div class="space-y-1">
+      <span class="text-xs font-bold uppercase tracking-wider text-brand-primary">
+        {{ tenant.name|default:"অনলাইন লার্নিং একাডেমি" }}
+      </span>
+      <h1 class="text-2xl font-black text-slate-900 dark:text-white">
+        ইন্টারনেট সংযোগ পাওয়া যায়নি!
+      </h1>
+      <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-xs mx-auto">
+        দয়া করে আপনার ওয়াইফাই বা মোবাইল ডাটা কানেকশন পরীক্ষা করে আবার চেষ্টা করুন।
+      </p>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="space-y-3 pt-2">
+      <button 
+        onclick="window.location.reload()" 
+        class="w-full py-3.5 px-6 rounded-2xl bg-brand-primary hover:opacity-90 text-white font-extrabold text-xs shadow-lg shadow-brand-primary/25 transition-all flex items-center justify-center gap-2"
+      >
+        <span>🔄</span>
+        <span>পুনরায় চেষ্টা করুন (Reload)</span>
+      </button>
+
+      <a 
+        href="/" 
+        class="block w-full py-3 px-5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 font-bold text-xs transition-colors"
+      >
+        হোমপেজে ফিরে যান
+      </a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

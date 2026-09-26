@@ -18,11 +18,11 @@
             {% else %}
               ⚡
             {% endif %}
-          </div>
+          </div> 
         {% endif %}
         <div>
           <span class="font-extrabold text-base tracking-tight text-slate-900 dark:text-white block group-hover:text-indigo-500 transition-colors">
-            {{ current_tenant.name|default:"CourseFlow" }}
+            {% if current_tenant %}{{ current_tenant.name }}{% else %}CourseFlow{% endif %}
           </span>
           <span class="text-[9px] font-mono tracking-wider text-slate-500 dark:text-slate-400 -mt-1 block">
             {% if current_tenant %}PRO ACADEMY{% else %}LMS ENGINE{% endif %}
@@ -31,14 +31,14 @@
       </a>
     </div>
 
-    <!-- Center Navigation Links (Pill Style) -->
+    <!-- Center Navigation Links -->
     {% if current_tenant %}
-      <nav class="hidden md:flex items-center gap-1 bg-slate-100/60 dark:bg-slate-800/60 p-1 rounded-xl border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-md">
+      <nav class="hidden md:flex items-center gap-2">
         {% for item in tenant_menu_items %}
           <a 
             href="{{ item.url }}" 
             {% if item.open_in_new_tab %}target="_blank" rel="noopener noreferrer"{% endif %}
-            class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-800 transition-all"
+            class="px-3.5 py-2 rounded-xl text-sm sm:text-base font-bold text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
           >
             {{ item.title }}
           </a>
@@ -46,25 +46,39 @@
       </nav>
     {% endif %}
 
-    <!-- Right Action Controls -->
-    <div class="flex items-center gap-2 sm:gap-3">
+    <!-- Right Action Controls (Dashboard & Dark Mode Closely Spaced) -->
+    <div class="flex items-center gap-2 sm:gap-2.5 shrink-0">
       {% if user.is_authenticated %}
-        <a href="{% url 'dashboard' %}" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-500/25 transition-all">
-          ⚡ ড্যাশবোর্ড
-        </a>
-
-        {% if current_tenant and current_tenant.owner == user or user.is_superuser %}
-          <a href="{% url 'courses:manage_dashboard' %}" class="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-all">
-            🛠️ স্টুডিও
+        <!-- Compact Collage Group: [ড্যাশবোর্ড] & [🌙/☀️ Dark Mode] -->
+        <div class="flex items-center p-1 rounded-2xl bg-slate-100/90 dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 shadow-sm gap-1 backdrop-blur-md">
+          <!-- 1. ড্যাশবোর্ড বাটন -->
+          <a 
+            href="{% url 'dashboard' %}" 
+            class="inline-flex items-center justify-center px-3.5 py-1.5 rounded-xl text-xs font-black bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm shadow-indigo-500/25 transition-all"
+          >
+            ড্যাশবোর্ড
           </a>
-          <a href="/tenants/settings/?tab=header_footer" class="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 transition-all">
-            🎨 কাস্টমাইজ
-          </a>
-        {% endif %}
 
-        <a href="{% url 'users:logout' %}" class="text-xs text-slate-500 hover:text-rose-500 px-2 py-1 hidden sm:block">
-          লগআউট
-        </a>
+          <!-- 2. Dark Mode Toggle (Right Beside Dashboard) -->
+          <button 
+            type="button"
+            @click="
+              isDark = !isDark;
+              if (isDark) {
+                document.documentElement.classList.add('dark');
+                localStorage.theme = 'dark';
+              } else {
+                document.documentElement.classList.remove('dark');
+                localStorage.theme = 'light';
+              }
+            "
+            class="p-1.5 sm:p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-amber-400 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-all flex items-center justify-center cursor-pointer"
+            title="থিম পরিবর্তন করুন"
+          >
+            <span x-show="!isDark" class="text-sm leading-none">🌙</span>
+            <span x-show="isDark" x-cloak class="text-sm leading-none">☀️</span>
+          </button>
+        </div>
       {% else %}
         <a href="{% url 'users:login' %}" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
           লগইন
@@ -75,31 +89,27 @@
         >
           {{ current_tenant.branding.header_cta_text|default:"কোর্স এক্সপ্লোর" }} →
         </a>
-      {% endif %}
 
-      <!-- Dark / Light Mode Toggle Button -->
-      <button 
-        type="button"
-        @click="
-          isDark = !isDark;
-          if (isDark) {
-            document.documentElement.classList.add('dark');
-            localStorage.theme = 'dark';
-          } else {
-            document.documentElement.classList.remove('dark');
-            localStorage.theme = 'light';
-          }
-        "
-        class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-amber-400 hover:text-amber-500 transition-all"
-        title="Toggle Theme"
-      >
-        <svg x-show="isDark" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: none;">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
-        </svg>
-        <svg x-show="!isDark" class="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
-        </svg>
-      </button>
+        <!-- Dark / Light Mode Toggle for Guests -->
+        <button 
+          type="button"
+          @click="
+            isDark = !isDark;
+            if (isDark) {
+              document.documentElement.classList.add('dark');
+              localStorage.theme = 'dark';
+            } else {
+              document.documentElement.classList.remove('dark');
+              localStorage.theme = 'light';
+            }
+          "
+          class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-amber-400 hover:text-amber-500 transition-all cursor-pointer"
+          title="Toggle Theme"
+        >
+          <span x-show="!isDark" class="text-sm leading-none">🌙</span>
+          <span x-show="isDark" x-cloak class="text-sm leading-none">☀️</span>
+        </button>
+      {% endif %}
 
       <!-- Mobile Menu Hamburger Button -->
       <button 
@@ -108,7 +118,7 @@
         class="md:hidden p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>
         </svg>
       </button>
 
@@ -116,4 +126,3 @@
 
   </div>
 </header>
-

@@ -1,7 +1,7 @@
 cd /home/webkoders/course.webkoders.com && source venv/bin/activate
 python3 manage.py makemigrations
 python3 manage.py migrate
-
+python manage.py createsuperuser
 
 # Multi-Tenant Course/LMS SaaS Platform
 

@@ -2,32 +2,72 @@
 
 {% block title %}SuperAdmin Control Plane — SaaS Platform{% endblock %}
 
+{% block header %}
+  {% include "includes/dashboard_header.html" %}
+{% endblock header %}
+
 {% block content %}
 <div 
   x-data="{ 
     sidebarOpen: false, 
-    activeTab: new URLSearchParams(window.location.search).get('tab') || 'overview' 
+    activeTab: new URLSearchParams(window.location.search).get('tab') || 'overview',
+    planModalOpen: false,
+    planModalTitle: 'নতুন সাবস্ক্রিপশন প্ল্যান তৈরি করুন',
+    currentPlan: {
+      id: '',
+      name: '',
+      slug: '',
+      description: '',
+      price_monthly: '',
+      billing_period: 'প্রতি মাস',
+      badge_text: '',
+      cta_text: '১৪ দিনের ফ্রি ট্রায়াল শুরু করুন',
+      max_courses: 5,
+      max_students: 250,
+      custom_domain_allowed: false,
+      is_popular: false,
+      is_active: true,
+      order: 0,
+      features_text: ''
+    },
+    editPlan(data) {
+      this.currentPlan = Object.assign({}, data);
+      this.planModalTitle = 'সাবস্ক্রিপশন প্ল্যান পরিবর্তন: ' + data.name;
+      this.planModalOpen = true;
+    },
+    createPlan() {
+      this.currentPlan = {
+        id: '',
+        name: '',
+        slug: '',
+        description: '',
+        price_monthly: '',
+        billing_period: 'প্রতি মাস',
+        badge_text: '',
+        cta_text: '১৪ দিনের ফ্রি ট্রায়াল শুরু করুন',
+        max_courses: 5,
+        max_students: 250,
+        custom_domain_allowed: false,
+        is_popular: false,
+        is_active: true,
+        order: 0,
+        features_text: ''
+      };
+      this.planModalTitle = 'নতুন সাবস্ক্রিপশন প্ল্যান তৈরি করুন';
+      this.planModalOpen = true;
+    },
+    tenantSubModalOpen: false,
+    selectedTenantForSub: { id: '', name: '', plan_id: '', status: 'ACTIVE' },
+    openTenantSubModal(tId, tName, pId, status) {
+      this.selectedTenantForSub = { id: tId, name: tName, plan_id: pId, status: status || 'ACTIVE' };
+      this.tenantSubModalOpen = true;
+    }
   }" 
-  class="min-h-[calc(100vh-4rem)] flex flex-col lg:flex-row bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors"
+  @toggle-sidebar.window="sidebarOpen = !sidebarOpen"
+  @close-sidebar.window="sidebarOpen = false"
+  @switch-tab.window="activeTab = $event.detail; sidebarOpen = false; window.scrollTo({top: 0, behavior: 'smooth'});"
+  class="min-h-[calc(100vh-3.5rem)] flex flex-col lg:flex-row bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors"
 >
-
-  <!-- Mobile Top Bar for Sidebar Toggle -->
-  <div class="lg:hidden flex items-center justify-between px-4 py-3 bg-white/90 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800">
-    <div class="flex items-center gap-2">
-      <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-amber-500 to-indigo-600 flex items-center justify-center font-bold text-white text-xs">
-        👑
-      </div>
-      <span class="text-sm font-bold text-slate-900 dark:text-white">SaaS Platform Admin</span>
-    </div>
-    <button 
-      @click="sidebarOpen = !sidebarOpen"
-      class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-slate-700 focus:outline-none"
-    >
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-      </svg>
-    </button>
-  </div>
 
   <!-- Mobile Off-Canvas Drawer Backdrop -->
   <div 
@@ -40,19 +80,19 @@
   <!-- Left Sidebar (Slide Bar Menu - Always present) -->
   <aside 
     :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
-    class="fixed lg:static inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between transition-transform duration-300 ease-in-out lg:min-h-[calc(100vh-4rem)] shadow-2xl lg:shadow-none shrink-0"
+    class="fixed lg:sticky lg:top-14 sm:lg:top-16 inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between transition-transform duration-300 ease-in-out h-screen lg:h-[calc(100vh-3.5rem)] sm:lg:h-[calc(100vh-4rem)] max-h-screen overflow-hidden shadow-2xl lg:shadow-none shrink-0"
   >
-    <div class="p-6 space-y-6">
+    <div class="p-6 space-y-6 overflow-y-auto flex-1">
       
       <!-- Platform Header Card -->
       <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800/80">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-indigo-600 flex items-center justify-center font-extrabold text-white text-lg shadow-lg shadow-amber-500/20">
-            👑
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-indigo-600 flex items-center justify-center font-extrabold text-white text-base shadow-lg shadow-amber-500/20 shrink-0">
+            {{ user.first_name|default:user.email|slice:":1"|upper }}
           </div>
-          <div>
-            <span class="font-extrabold text-sm text-slate-900 dark:text-white block">SaaS Control Plane</span>
-            <span class="text-[10px] font-mono uppercase text-amber-600 dark:text-amber-400 font-bold tracking-wider">SuperAdmin View</span>
+          <div class="truncate max-w-[145px]">
+            <span class="font-extrabold text-sm text-slate-900 dark:text-white block truncate">{{ user.get_full_name|default:user.email }}</span>
+            <span class="text-[10px] font-mono uppercase text-amber-600 dark:text-amber-400 font-bold tracking-wider block truncate">👑 সুপার অ্যাডমিন</span>
           </div>
         </div>
         <button @click="sidebarOpen = false" class="lg:hidden text-slate-400 hover:text-slate-600 dark:hover:text-white">✕</button>
@@ -157,15 +197,15 @@
             <span class="text-[10px] font-mono text-emerald-600 dark:text-emerald-400">● SuperAdmin</span>
           </div>
         </div>
-        <a href="{% url 'users:logout' %}" class="text-xs font-mono text-slate-400 hover:text-rose-500" title="Sign Out">
-          🚪
+        <a href="{% url 'users:logout' %}" class="text-xs font-bold text-rose-500 hover:text-rose-600 px-2 py-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors" title="লগআউট">
+          লগআউট
         </a>
       </div>
     </div>
   </aside>
 
   <!-- Main Content Area with Persistent Sidebar -->
-  <main class="flex-1 p-6 sm:p-10 space-y-10 overflow-y-auto">
+  <main class="flex-1 p-6 sm:p-10 space-y-10 overflow-y-auto pb-24 lg:pb-10">
 
     <!-- Top Hero Header -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-8 border-b border-slate-200 dark:border-slate-800">
@@ -333,6 +373,19 @@
                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
                       {{ tenant.subscription.plan.name|default:"Free Trial" }}
                     </span>
+                    <div class="flex items-center gap-2">
+                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                        {{ tenant.subscription.plan.name|default:"Free Trial" }}
+                      </span>
+                      <button 
+                        type="button"
+                        @click="openTenantSubModal('{{ tenant.id }}', '{{ tenant.name|escapejs }}', '{{ tenant.subscription.plan.id|default:'' }}', '{{ tenant.subscription.status|default:'ACTIVE' }}')"
+                        class="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-brand-primary text-xs"
+                        title="সাবস্ক্রিপশন প্ল্যান পরিবর্তন করুন"
+                      >
+                        ⚙️
+                      </button>
+                    </div>
                   </td>
                   <td class="px-6 py-4">
                     {% if tenant.is_active %}
@@ -382,25 +435,172 @@
     <!-- TAB 3: SUBSCRIPTION PLANS (MRR)            -->
     <!-- ========================================== -->
     <div x-show="activeTab === 'plans'" x-cloak class="space-y-6">
-      <div class="border-b border-slate-200 dark:border-slate-800 pb-6">
-        <h2 class="text-2xl font-extrabold text-slate-900 dark:text-white">Subscription Tier Management (টাকা / BDT)</h2>
-        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Platform plan configurations, prices in Bangladeshi Taka, and subscriber statistics.</p>
+      
+      <!-- Top Header & Create Button -->
+      <div class="border-b border-slate-200 dark:border-slate-800 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-xl">💳</span>
+            <h2 class="text-2xl font-extrabold text-slate-900 dark:text-white">Subscription Tier Management (সাবস্ক্রিপশন প্ল্যান ও মূল্য নির্ধারণ)</h2>
+          </div>
+          <p class="text-xs text-slate-500 dark:text-slate-400">কোচিং একাডেমির সাবস্ক্রিপশন প্যাকেজের মূল্য (টাকা / BDT), বিবরণ, ফিচার এবং লিমিটেশন নির্ধারণ ও পরিচালনা করুন।</p>
+        </div>
+        <button 
+          type="button"
+          @click="createPlan()"
+          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl font-extrabold text-xs text-slate-950 bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-300 hover:to-teal-300 shadow-lg shadow-emerald-500/20 transition-all shrink-0 cursor-pointer"
+        >
+          <span>➕ নতুন সাবস্ক্রিপশন প্ল্যান যোগ করুন</span>
+        </button>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Plan Cards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
         {% for item in plan_stats %}
-          <div class="p-6 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-sm space-y-4">
-            <div class="flex items-center justify-between">
-              <h3 class="text-xl font-bold text-slate-900 dark:text-white">{{ item.plan.name }}</h3>
-              <span class="text-2xl font-black text-slate-900 dark:text-white">৳{{ item.plan.price_monthly|floatformat:0 }}</span>
+          <div class="rounded-3xl border {% if item.plan.is_popular %}border-emerald-500/80 bg-white dark:bg-slate-900 shadow-xl shadow-emerald-500/10 relative ring-2 ring-emerald-500/20{% else %}border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-sm hover:shadow-md{% endif %} p-6 flex flex-col justify-between transition-all">
+            
+            <div class="space-y-4">
+              <!-- Badge & Status Row -->
+              <div class="flex items-center justify-between gap-2">
+                {% if item.plan.is_popular or item.plan.badge_text %}
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-extrabold bg-gradient-to-r from-emerald-500/15 to-cyan-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                    {{ item.plan.badge_text|default:"⭐ সর্বাধিক জনপ্রিয় (Recommended)" }}
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                    ক্রমানুসার: #{{ item.plan.order }}
+                  </span>
+                {% endif %}
+
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold {% if item.plan.is_active %}bg-emerald-500/10 text-emerald-600 dark:text-emerald-400{% else %}bg-rose-500/10 text-rose-500{% endif %}">
+                  <span class="w-1.5 h-1.5 rounded-full {% if item.plan.is_active %}bg-emerald-500{% else %}bg-rose-500{% endif %}"></span>
+                  {% if item.plan.is_active %}সক্রিয় (Active){% else %}নিষ্ক্রিয়{% endif %}
+                </span>
+              </div>
+
+              <!-- Plan Name & Pricing -->
+              <div>
+                <div class="flex items-start justify-between gap-2">
+                  <div>
+                    <h3 class="text-xl font-black text-slate-900 dark:text-white tracking-tight">{{ item.plan.name }}</h3>
+                    <span class="text-[11px] font-mono text-slate-400 dark:text-slate-500 block mt-0.5">slug: {{ item.plan.slug }}</span>
+                  </div>
+                  <div class="text-right">
+                    <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">৳{{ item.plan.price_monthly|floatformat:0 }}</div>
+                    <span class="text-[10px] font-mono text-slate-400 dark:text-slate-500 uppercase">/ {{ item.plan.billing_period|default:"মাস" }}</span>
+                  </div>
+                </div>
+
+                {% if item.plan.description %}
+                  <p class="text-xs text-slate-600 dark:text-slate-400 mt-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800/80 leading-relaxed">
+                    {{ item.plan.description }}
+                  </p>
+                {% endif %}
+              </div>
+
+              <!-- Quotas / Limits Grid -->
+              <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-100 dark:border-slate-800/80 space-y-2 text-xs font-mono">
+                <div class="flex items-center justify-between text-slate-600 dark:text-slate-300">
+                  <span class="flex items-center gap-1.5">📚 সর্বোচ্চ কোর্স:</span>
+                  <strong class="text-slate-900 dark:text-white font-bold">{{ item.plan.max_courses }}টি</strong>
+                </div>
+                <div class="flex items-center justify-between text-slate-600 dark:text-slate-300">
+                  <span class="flex items-center gap-1.5">👥 সর্বোচ্চ শিক্ষার্থী:</span>
+                  <strong class="text-slate-900 dark:text-white font-bold">{{ item.plan.max_students }} জন</strong>
+                </div>
+                <div class="flex items-center justify-between text-slate-600 dark:text-slate-300">
+                  <span class="flex items-center gap-1.5">🌐 কাস্টম ডোমেইন:</span>
+                  <strong>
+                    {% if item.plan.custom_domain_allowed %}
+                      <span class="text-emerald-600 dark:text-emerald-400 font-bold">সমর্থিত (CNAME)</span>
+                    {% else %}
+                      <span class="text-slate-400">সাবডোমেইন শুধুমাত্র</span>
+                    {% endif %}
+                  </strong>
+                </div>
+              </div>
+
+              <!-- Features List -->
+              <div class="pt-2">
+                <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-bold block mb-2">অন্তর্ভুক্ত সুবিধাসমূহ:</span>
+                <ul class="space-y-2 text-xs text-slate-600 dark:text-slate-300">
+                  {% for feature in item.plan.features %}
+                    <li class="flex items-center gap-2">
+                      <span class="w-4 h-4 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-[10px] shrink-0">✓</span>
+                      <span class="truncate">{{ feature }}</span>
+                    </li>
+                  {% empty %}
+                    <li class="text-slate-400 italic text-[11px]">কোনো অতিরিক্ত ফিচার যুক্ত নেই</li>
+                  {% endfor %}
+                </ul>
+              </div>
+
+              <!-- Subscriber Statistics -->
+              <div class="p-3 rounded-2xl bg-emerald-500/5 border border-emerald-500/15 flex items-center justify-between text-xs">
+                <div>
+                  <span class="text-slate-500 dark:text-slate-400 block text-[11px]">এনরোল্ড একাডেমি:</span>
+                  <strong class="text-slate-900 dark:text-white font-extrabold text-sm">{{ item.subscribers_count }}টি</strong>
+                </div>
+                <div class="text-right">
+                  <span class="text-slate-500 dark:text-slate-400 block text-[11px]">মাসিক আয় (MRR):</span>
+                  <strong class="text-emerald-600 dark:text-emerald-400 font-black text-sm">৳{{ item.revenue|floatformat:0 }}</strong>
+                </div>
+              </div>
             </div>
-            <div class="space-y-2 text-xs font-mono text-slate-600 dark:text-slate-400 pt-3 border-t border-slate-200 dark:border-slate-800">
-              <div>Max Courses: <strong>{{ item.plan.max_courses }}</strong></div>
-              <div>Max Students: <strong>{{ item.plan.max_students }}</strong></div>
-              <div>Custom Domain: <strong>{% if item.plan.custom_domain_allowed %}Yes (CNAME){% else %}No{% endif %}</strong></div>
-              <div>Subscribers: <strong>{{ item.subscribers_count }}</strong></div>
-              <div>Monthly Revenue: <strong class="text-emerald-600 dark:text-emerald-400">৳{{ item.revenue|floatformat:0 }}</strong></div>
+
+            <!-- Action Buttons Footer -->
+            <div class="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
+              <button 
+                type="button"
+                @click="editPlan({
+                  id: '{{ item.plan.id }}',
+                  name: '{{ item.plan.name|escapejs }}',
+                  slug: '{{ item.plan.slug|escapejs }}',
+                  description: '{{ item.plan.description|escapejs }}',
+                  price_monthly: '{{ item.plan.price_monthly|stringformat:'.2f' }}',
+                  billing_period: '{{ item.plan.billing_period|escapejs }}',
+                  badge_text: '{{ item.plan.badge_text|escapejs }}',
+                  cta_text: '{{ item.plan.cta_text|escapejs }}',
+                  max_courses: {{ item.plan.max_courses }},
+                  max_students: {{ item.plan.max_students }},
+                  custom_domain_allowed: {% if item.plan.custom_domain_allowed %}true{% else %}false{% endif %},
+                  is_popular: {% if item.plan.is_popular %}true{% else %}false{% endif %},
+                  is_active: {% if item.plan.is_active %}true{% else %}false{% endif %},
+                  order: {{ item.plan.order }},
+                  features_text: `{{ item.plan.features_text|escapejs }}`
+                })"
+                class="flex-1 py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+              >
+                <span>✏️ প্ল্যান এডিট করুন</span>
+              </button>
+
+              <form method="POST" action="{% url 'tenants:platform_dashboard' %}" onsubmit="return confirm('আপনি কি নিশ্চিতভাবে এই সাবস্ক্রিপশন প্ল্যানটি ডিলিট করতে চান?');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete_subscription_plan">
+                <input type="hidden" name="plan_id" value="{{ item.plan.id }}">
+                <button 
+                  type="submit"
+                  class="p-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 text-xs font-bold transition-all cursor-pointer"
+                  title="প্ল্যান ডিলিট করুন"
+                >
+                  🗑️
+                </button>
+              </form>
             </div>
+
+          </div>
+        {% empty %}
+          <div class="col-span-full p-12 text-center rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 space-y-3 bg-white/50 dark:bg-slate-900/50">
+            <span class="text-4xl">💳</span>
+            <h4 class="text-lg font-bold text-slate-900 dark:text-white">কোনো সাবস্ক্রিপশন প্ল্যান তৈরি করা হয়নি</h4>
+            <p class="text-xs text-slate-500">আপনার প্ল্যাটফর্মের জন্য প্রথম সাবস্ক্রিপশন প্যাকেজ যুক্ত করতে উপরের বাটনে ক্লিক করুন।</p>
+            <button 
+              type="button"
+              @click="createPlan()"
+              class="px-5 py-2.5 rounded-2xl font-bold text-xs text-slate-950 bg-emerald-400 hover:bg-emerald-300 transition-all inline-block mt-2 cursor-pointer"
+            >
+              ➕ নতুন প্ল্যান তৈরি করুন
+            </button>
           </div>
         {% endfor %}
       </div>
@@ -792,5 +992,365 @@
 
   </main>
 
+  <!-- ============================================================== -->
+  <!-- MODAL 1: SUBSCRIPTION PLAN EDITOR (CREATE / EDIT)             -->
+  <!-- ============================================================== -->
+  <div 
+    x-show="planModalOpen" 
+    x-cloak 
+    class="fixed inset-0 z-50 overflow-y-auto"
+    aria-labelledby="modal-title" 
+    role="dialog" 
+    aria-modal="true"
+  >
+    <!-- Backdrop -->
+    <div 
+      x-show="planModalOpen"
+      x-transition:enter="ease-out duration-300"
+      x-transition:enter-start="opacity-0"
+      x-transition:enter-end="opacity-100"
+      x-transition:leave="ease-in duration-200"
+      x-transition:leave-start="opacity-100"
+      x-transition:leave-end="opacity-0"
+      @click="planModalOpen = false"
+      class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity"
+    ></div>
+
+    <div class="flex min-h-screen items-center justify-center p-4 text-center sm:p-0">
+      <div 
+        x-show="planModalOpen"
+        x-transition:enter="ease-out duration-300"
+        x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+        x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+        x-transition:leave="ease-in duration-200"
+        x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+        x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+        class="relative transform overflow-hidden rounded-3xl bg-white dark:bg-slate-900 text-left shadow-2xl transition-all sm:my-8 w-full max-w-2xl border border-slate-200 dark:border-slate-800"
+      >
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl font-bold">
+              💳
+            </div>
+            <div>
+              <h3 class="text-base font-extrabold text-slate-900 dark:text-white" x-text="planModalTitle"></h3>
+              <p class="text-xs text-slate-500">মূল্য, বিবরণ ও ফিচার কাস্টমাইজ করুন</p>
+            </div>
+          </div>
+          <button 
+            type="button" 
+            @click="planModalOpen = false"
+            class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          >
+            ✕
+          </button>
+        </div>
+
+        <!-- Modal Form Body -->
+        <form method="POST" action="{% url 'tenants:platform_dashboard' %}" class="p-6 space-y-5">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="save_subscription_plan">
+          <input type="hidden" name="plan_id" :value="currentPlan.id">
+
+          <!-- Row 1: Plan Name & Slug -->
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                প্ল্যানের নাম (Plan Name) <span class="text-rose-500">*</span>
+              </label>
+              <input 
+                type="text" 
+                name="name" 
+                x-model="currentPlan.name" 
+                required 
+                placeholder="যেমন: Starter / Pro / Enterprise"
+                class="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-semibold focus:outline-none focus:border-emerald-500 dark:text-white"
+              >
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                স্লাগ (Slug)
+              </label>
+              <input 
+                type="text" 
+                name="slug" 
+                x-model="currentPlan.slug" 
+                placeholder="যেমন: starter (ফাঁকা রাখলে স্বয়ংক্রিয় তৈরি হবে)"
+                class="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono focus:outline-none focus:border-emerald-500 dark:text-white"
+              >
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+              সংক্ষিপ্ত বিবরণ (Description / Tagline)
+            </label>
+            <input 
+              type="text" 
+              name="description" 
+              x-model="currentPlan.description" 
+              placeholder="যেমন: ছোট একাডেমি ও ইন্ডিভিজুয়াল শিক্ষকদের জন্য উপযুক্ত"
+              class="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs focus:outline-none focus:border-emerald-500 dark:text-white"
+            >
+          </div>
+
+          <!-- Row 2: Price & Billing Period -->
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                মূল্য (টাকা / BDT) <span class="text-rose-500">*</span>
+              </label>
+              <div class="relative">
+                <span class="absolute left-3.5 top-2.5 text-xs font-bold text-slate-400">৳</span>
+                <input 
+                  type="number" 
+                  step="0.01" 
+                  name="price_monthly" 
+                  x-model="currentPlan.price_monthly" 
+                  required 
+                  placeholder="500.00"
+                  class="w-full pl-8 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-bold focus:outline-none focus:border-emerald-500 dark:text-white"
+                >
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                বিলিং সময়কাল (Billing Period)
+              </label>
+              <input 
+                type="text" 
+                name="billing_period" 
+                x-model="currentPlan.billing_period" 
+                placeholder="প্রতি মাস / /month"
+                class="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs focus:outline-none focus:border-emerald-500 dark:text-white"
+              >
+            </div>
+          </div>
+
+          <!-- Row 3: Badges & Buttons -->
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                কাস্টম ব্যাজ লেখা (Badge Text)
+              </label>
+              <input 
+                type="text" 
+                name="badge_text" 
+                x-model="currentPlan.badge_text" 
+                placeholder="যেমন: ⭐ সর্বাধিক জনপ্রিয় / 🔥 সেরা অফার"
+                class="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs focus:outline-none focus:border-emerald-500 dark:text-white"
+              >
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                বাটন টেক্সট (CTA Button)
+              </label>
+              <input 
+                type="text" 
+                name="cta_text" 
+                x-model="currentPlan.cta_text" 
+                placeholder="১৪ দিনের ফ্রি ট্রায়াল শুরু করুন"
+                class="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs focus:outline-none focus:border-emerald-500 dark:text-white"
+              >
+            </div>
+          </div>
+
+          <!-- Row 4: Quotas (Max Courses, Max Students, Order) -->
+          <div class="grid grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                সর্বোচ্চ কোর্স
+              </label>
+              <input 
+                type="number" 
+                name="max_courses" 
+                x-model="currentPlan.max_courses" 
+                required 
+                class="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono focus:outline-none focus:border-emerald-500 dark:text-white text-center font-bold"
+              >
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                সর্বোচ্চ শিক্ষার্থী
+              </label>
+              <input 
+                type="number" 
+                name="max_students" 
+                x-model="currentPlan.max_students" 
+                required 
+                class="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono focus:outline-none focus:border-emerald-500 dark:text-white text-center font-bold"
+              >
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                ক্রম (Order)
+              </label>
+              <input 
+                type="number" 
+                name="order" 
+                x-model="currentPlan.order" 
+                class="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-mono focus:outline-none focus:border-emerald-500 dark:text-white text-center font-bold"
+              >
+            </div>
+          </div>
+
+          <!-- Features (1 per line) -->
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                প্ল্যানের সুবিধাসমূহ (Features - প্রতি লাইনে ১টি)
+              </label>
+              <span class="text-[10px] text-slate-400">প্রতি লাইনে ১টি বুলেট পয়েন্ট লিখুন</span>
+            </div>
+            <textarea 
+              name="features_text" 
+              x-model="currentPlan.features_text" 
+              rows="4" 
+              placeholder="সম্পূর্ণ LMS ও কোর্স বিল্ডার&#10;সুরক্ষিত ভিডিও ক্লাস ও অ্যান্টি-পাইরেসি&#10;মডেল টেস্ট ও নেগেটিভ মার্কিং&#10;লাইভ সাপোর্ট"
+              class="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs leading-relaxed focus:outline-none focus:border-emerald-500 dark:text-white"
+            ></textarea>
+          </div>
+
+          <!-- Checkboxes: Custom Domain, Popular, Active -->
+          <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-3">
+            <label class="flex items-center gap-3 cursor-pointer text-xs font-semibold text-slate-800 dark:text-slate-200">
+              <input type="checkbox" name="custom_domain_allowed" x-model="currentPlan.custom_domain_allowed" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500">
+              <span>🌐 কাস্টম CNAME ডোমেইন ব্যবহারের অনুমতি দিন</span>
+            </label>
+
+            <label class="flex items-center gap-3 cursor-pointer text-xs font-semibold text-slate-800 dark:text-slate-200">
+              <input type="checkbox" name="is_popular" x-model="currentPlan.is_popular" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500">
+              <span>⭐ সর্বাধিক জনপ্রিয় (Recommended) প্ল্যান হিসেবে চিহ্নিত করুন</span>
+            </label>
+
+            <label class="flex items-center gap-3 cursor-pointer text-xs font-semibold text-slate-800 dark:text-slate-200">
+              <input type="checkbox" name="is_active" x-model="currentPlan.is_active" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500">
+              <span>✅ প্ল্যানটি সক্রিয় (Active) ও পাবলিকলি দৃশ্যমান রাখুন</span>
+            </label>
+          </div>
+
+          <!-- Footer Action Buttons -->
+          <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-200 dark:border-slate-800">
+            <button 
+              type="button" 
+              @click="planModalOpen = false"
+              class="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              বাতিল
+            </button>
+            <button 
+              type="submit" 
+              class="px-6 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-lg shadow-emerald-500/25 transition-all"
+            >
+              💾 সংরক্ষণ করুন (Save Plan)
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ============================================================== -->
+  <!-- MODAL 2: TENANT SUBSCRIPTION CHANGER MODAL                    -->
+  <!-- ============================================================== -->
+  <div 
+    x-show="tenantSubModalOpen" 
+    x-cloak 
+    class="fixed inset-0 z-50 overflow-y-auto"
+    role="dialog" 
+    aria-modal="true"
+  >
+    <!-- Backdrop -->
+    <div 
+      x-show="tenantSubModalOpen"
+      @click="tenantSubModalOpen = false"
+      class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity"
+    ></div>
+
+    <div class="flex min-h-screen items-center justify-center p-4 text-center sm:p-0">
+      <div 
+        x-show="tenantSubModalOpen"
+        class="relative transform overflow-hidden rounded-3xl bg-white dark:bg-slate-900 text-left shadow-2xl transition-all sm:my-8 w-full max-w-md border border-slate-200 dark:border-slate-800"
+      >
+        <div class="p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">🏫</span>
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 dark:text-white" x-text="selectedTenantForSub.name"></h3>
+              <p class="text-xs text-slate-500">সাবস্ক্রিপশন প্ল্যান ও অ্যাকাউন্টের স্ট্যাটাস পরিবর্তন</p>
+            </div>
+          </div>
+          <button @click="tenantSubModalOpen = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-white">✕</button>
+        </div>
+
+        <form method="POST" action="{% url 'tenants:platform_dashboard' %}" class="p-6 space-y-4">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="update_tenant_subscription">
+          <input type="hidden" name="tenant_id" :value="selectedTenantForSub.id">
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+              সাবস্ক্রিপশন প্ল্যান নির্বাচন করুন
+            </label>
+            <select 
+              name="plan_id" 
+              x-model="selectedTenantForSub.plan_id" 
+              required
+              class="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-semibold focus:outline-none focus:border-brand-primary dark:text-white"
+            >
+              {% for p in plans %}
+                <option value="{{ p.id }}">{{ p.name }} (৳{{ p.price_monthly|floatformat:0 }}/{{ p.billing_period|default:'মাস' }})</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+              সাবস্ক্রিপশন স্ট্যাটাস
+            </label>
+            <select 
+              name="status" 
+              x-model="selectedTenantForSub.status" 
+              class="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs font-semibold focus:outline-none focus:border-brand-primary dark:text-white"
+            >
+              <option value="ACTIVE">Active (সক্রিয় ও লাইভ)</option>
+              <option value="TRIALING">14-Day Free Trial (ফ্রি ট্রায়াল)</option>
+              <option value="PAST_DUE">Past Due (বকেয়া)</option>
+              <option value="CANCELED">Canceled (বাতিল)</option>
+            </select>
+          </div>
+
+          <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-200 dark:border-slate-800">
+            <button 
+              type="button" 
+              @click="tenantSubModalOpen = false" 
+              class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400"
+            >
+              বাতিল
+            </button>
+            <button 
+              type="submit" 
+              class="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-brand-primary hover:opacity-90 shadow-md transition-all"
+            >
+              আপডেট করুন
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
 </div>
+{% endblock content %}
+
+{% block footer %}
+  {% include "includes/dashboard_bottom_nav.html" %}
 {% endblock %}

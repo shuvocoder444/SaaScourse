@@ -15,15 +15,15 @@
               {% if current_tenant %}{{ current_tenant.name|slice:":1"|upper }}{% else %}🏛️{% endif %}
             </div>
           {% endif %}
-          <span class="text-xl font-black text-white">{{ current_tenant.name|default:"একাডেমি কোচিং" }}</span>
+          <span class="text-xl font-black text-white">{% if current_tenant %}{{ current_tenant.name }}{% else %}একাডেমি কোচিং{% endif %}</span>
         </div>
         
         <p class="text-xs text-slate-400 leading-relaxed">
-          {{ current_tenant.branding.footer_about|default:"আমাদের লক্ষ্য প্রতিটি শিক্ষার্থীর স্বপ্ন পূরণ ও মেধা বিকাশে সার্বক্ষণিক সহায়তা ও নির্ভুল শিক্ষাদান প্রদান করা।" }}
+          {% if current_tenant %}{{ current_tenant.branding.footer_about|default:"আমাদের লক্ষ্য প্রতিটি শিক্ষার্থীর স্বপ্ন পূরণ ও মেধা বিকাশে সার্বক্ষণিক সহায়তা ও নির্ভুল শিক্ষাদান প্রদান করা।" }}{% else %}আমাদের লক্ষ্য প্রতিটি শিক্ষার্থীর স্বপ্ন পূরণ ও মেধা বিকাশে সার্বক্ষণিক সহায়তা ও নির্ভুল শিক্ষাদান প্রদান করা।{% endif %}
         </p>
 
         <!-- Address -->
-        {% if current_tenant.branding.contact_address %}
+        {% if current_tenant and current_tenant.branding.contact_address %}
           <div class="p-3 rounded-xl bg-slate-800/80 border border-slate-700/80 text-xs space-y-1">
             <div class="font-bold text-amber-400">📍 প্রধান ক্যাম্পাস ও অফিস:</div>
             <div class="text-slate-300">{{ current_tenant.branding.contact_address }}</div>
@@ -51,7 +51,7 @@
           ভর্তি তথ্য ও হেল্পলাইন
         </h4>
         <div class="space-y-3">
-          {% if current_tenant.branding.contact_phone %}
+          {% if current_tenant and current_tenant.branding.contact_phone %}
             <div class="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-center sm:text-left">
               <div class="text-[11px] text-amber-300 font-bold uppercase">সরাসরি কথা বলুন:</div>
               <a href="tel:{{ current_tenant.branding.contact_phone }}" class="text-lg font-black text-amber-400 font-mono block mt-0.5 hover:underline">
@@ -62,19 +62,19 @@
           {% endif %}
 
           <div class="flex items-center gap-3 pt-1">
-            {% if current_tenant.branding.facebook_url %}
+            {% if current_tenant and current_tenant.branding.facebook_url %}
               <a href="{{ current_tenant.branding.facebook_url }}" target="_blank" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700">
                 Facebook
               </a>
             {% endif %}
-            {% if current_tenant.branding.youtube_url %}
+            {% if current_tenant and current_tenant.branding.youtube_url %}
               <a href="{{ current_tenant.branding.youtube_url }}" target="_blank" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700">
                 YouTube
               </a>
             {% endif %}
-            {% if current_tenant.branding.whatsapp_number %}
-              <a href="https://wa.me/{{ current_tenant.branding.whatsapp_number }}" target="_blank" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white shadow-sm">
-                WhatsApp
+            {% if current_tenant and current_tenant.branding.whatsapp_number %}
+              <a href="{{ current_tenant.whatsapp_url }}" target="_blank" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white shadow-sm flex items-center gap-1.5 transition-colors">
+                <span>💬</span> WhatsApp
               </a>
             {% endif %}
           </div>
@@ -86,8 +86,8 @@
     <!-- 2. Bottom Copyright -->
     <div class="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
       <div>
-        {{ current_tenant.branding.footer_copyright|default:"© 2026 সর্বস্বত্ব সংরক্ষিত।" }} 
-        <span class="text-white font-bold">{{ current_tenant.name }}</span>
+        {% if current_tenant %}{{ current_tenant.branding.footer_copyright|default:"© 2026 সর্বস্বত্ব সংরক্ষিত।" }}{% else %}© 2026 সর্বস্বত্ব সংরক্ষিত।{% endif %} 
+        <span class="text-white font-bold">{% if current_tenant %}{{ current_tenant.name }}{% endif %}</span>
       </div>
       <div class="flex items-center gap-4 text-[11px] font-mono">
         <span>সরকারি অনুমোদিত শিক্ষা প্রতিষ্ঠান</span>

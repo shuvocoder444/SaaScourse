@@ -7,8 +7,8 @@ from django.utils import timezone
 
 def default_branding():
     return {
-        "primary_color": "#16a34a",    # Green-600 (Fresh EdTech default)
-        "accent_color": "#f59e0b",     # Amber-500
+        "primary_color": "#16a34a",  # Green-600 (Fresh EdTech default)
+        "accent_color": "#f59e0b",  # Amber-500
         "logo_url": "",
         "banner_url": "",
         "favicon_url": "",
@@ -27,8 +27,8 @@ def default_branding():
         "app_promo_subtitle": "লাইভ ক্লাস, মডেল টেস্ট, লেকচার শিট ও পরীক্ষার ফলাফল সব পাবেন এক অ্যাপে।",
         "app_rating": "4.8★ (৫,০০০+ রিভিউ)",
         "app_downloads": "৫০,০০০+ শিক্ষার্থী",
-        "play_store_url": "https://play.google.com",
-        "app_store_url": "https://apple.com/app-store/",
+        "play_store_url": "",
+        "app_store_url": "",
         "contact_phone": "+880 1800-123456",
         "contact_email": "support@academy.edu.bd",
         "contact_address": "ফার্মগেট / নীলক্ষেত, ঢাকা, বাংলাদেশ",
@@ -36,6 +36,12 @@ def default_branding():
         "youtube_url": "https://youtube.com",
         "telegram_url": "https://t.me",
         "whatsapp_number": "+8801800123456",
+        "whatsapp_default_msg": "আসসালামু আলাইকুম, আমি আপনাদের একাডেমি সম্পর্কে বিস্তারিত জানতে চাই।",
+        "enable_whatsapp_widget": True,
+        "meta_title": "",
+        "meta_description": "",
+        "meta_keywords": "",
+        "android_apk_url": "",
         "trade_license": "TRAD/DSCC/029148/2024",
         "govt_reg_no": "Govt Reg: ED-9482-BD",
         "header_cta_text": "ভর্তি আবেদন",
@@ -54,23 +60,73 @@ class SubscriptionPlan(models.Model):
     """
     SaaS subscription tiers sold by the platform admin.
     e.g. Starter ($29/mo), Professional ($79/mo), Enterprise ($199/mo).
+    e.g. Starter (৳500/mo), Professional (৳1500/mo), Enterprise (৳3500/mo).
     """
 
     name = models.CharField(max_length=100)
     slug = models.SlugField(max_length=50, unique=True)
+    description = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Short description or target audience (e.g. ছোট একাডেমি ও শিক্ষকদের জন্য)",
+    )
     price_monthly = models.DecimalField(max_digits=8, decimal_places=2)
-    max_courses = models.PositiveIntegerField(default=5, help_text="Maximum published courses permitted.")
-    max_students = models.PositiveIntegerField(default=250, help_text="Maximum enrolled students permitted.")
-    custom_domain_allowed = models.BooleanField(default=False, help_text="Allows white-label custom CNAME domain.")
-    features = models.JSONField(default=list, blank=True, help_text="List of feature bullet points for pricing cards.")
-    is_popular = models.BooleanField(default=False, help_text="Highlight as Recommended/Most Popular tier.")
+    billing_period = models.CharField(
+        max_length=30,
+        default="প্রতি মাস",
+        help_text="Billing cycle label, e.g. 'প্রতি মাস' or '/month'",
+    )
+    badge_text = models.CharField(
+        max_length=50,
+        blank=True,
+        default="",
+        help_text="Custom badge label e.g. ⭐ সর্বাধিক জনপ্রিয় or 🔥 সেরা অফার",
+    )
+    cta_text = models.CharField(
+        max_length=50,
+        default="১৪ দিনের ফ্রি ট্রায়াল শুরু করুন",
+        help_text="Call to action button text",
+    )
+    max_courses = models.PositiveIntegerField(
+        default=5, help_text="Maximum published courses permitted."
+    )
+    max_students = models.PositiveIntegerField(
+        default=250, help_text="Maximum enrolled students permitted."
+    )
+    custom_domain_allowed = models.BooleanField(
+        default=False, help_text="Allows white-label custom CNAME domain."
+    )
+    features = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of feature bullet points for pricing cards.",
+    )
+    is_popular = models.BooleanField(
+        default=False, help_text="Highlight as Recommended/Most Popular tier."
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Controls if this plan is visible in public pricing and registration.",
+    )
+    order = models.PositiveIntegerField(
+        default=0, help_text="Display order in pricing tables."
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["price_monthly"]
+        ordering = ["order", "price_monthly"]
 
     def __str__(self):
         return f"{self.name} (৳{self.price_monthly}/mo)"
+        return f"{self.name} (৳{self.price_monthly}/{self.billing_period})"
+
+    @property
+    def features_text(self):
+        if isinstance(self.features, list):
+            return "\n".join(str(f) for f in self.features)
+        return ""
 
 
 class Tenant(models.Model):
@@ -93,7 +149,9 @@ class Tenant(models.Model):
         FOOTER_2 = "footer_2", "মডার্ন মাল্টি-কলাম ও নিউজলেটার ফুটার (স্টাইল ২)"
         FOOTER_3 = "footer_3", "ক্লাসিক ক্যাম্পাস ব্রাঞ্চ ও হেল্পলাইন ফুটার (স্টাইল ৩)"
 
-    name = models.CharField(max_length=150, help_text="Public brand name of the academy.")
+    name = models.CharField(
+        max_length=150, help_text="Public brand name of the academy."
+    )
     slug = models.SlugField(
         max_length=63,
         unique=True,
@@ -169,6 +227,12 @@ class Tenant(models.Model):
         null=True,
         blank=True,
         help_text="Browser favicon icon (32x32 or 64x64 .png / .ico).",
+    )
+    android_apk = models.FileField(
+        upload_to="tenants/apks/",
+        null=True,
+        blank=True,
+        help_text="Android App APK package uploaded for direct download by academy students.",
     )
     branding = models.JSONField(
         default=default_branding,
@@ -247,6 +311,7 @@ class Tenant(models.Model):
         """Generates or returns existing verification token for DNS challenge."""
         if not self.custom_domain_token:
             import secrets
+
             self.custom_domain_token = f"saascourse-verify-{secrets.token_hex(16)}"
             self.save(update_fields=["custom_domain_token"])
         return self.custom_domain_token
@@ -283,6 +348,14 @@ class Tenant(models.Model):
             return False
         return sub.is_valid
 
+    @property
+    def is_subscription_expired(self) -> bool:
+        """Returns True if the academy subscription or trial has expired."""
+        sub = getattr(self, "subscription", None)
+        if not sub:
+            return True
+        return sub.is_expired
+
     def get_subdomain_host(self, request=None) -> str:
         """Returns full subdomain host, e.g. slug.course.webkoders.com or slug.localhost:8001"""
         if request:
@@ -290,7 +363,11 @@ class Tenant(models.Model):
             if "localhost" in host or "127.0.0.1" in host:
                 port_part = f":{host.split(':')[1]}" if ":" in host else ""
                 return f"{self.slug}.localhost{port_part}"
-        main_domain = getattr(settings, "PLATFORM_MAIN_DOMAIN", "course.webkoders.com").strip().lower()
+        main_domain = (
+            getattr(settings, "PLATFORM_MAIN_DOMAIN", "course.webkoders.com")
+            .strip()
+            .lower()
+        )
         return f"{self.slug}.{main_domain}"
 
     @property
@@ -309,7 +386,11 @@ class Tenant(models.Model):
 
     def get_storefront_url(self, request=None) -> str:
         scheme = "https"
-        if request and not request.is_secure() and ("localhost" in request.get_host() or "127.0.0.1" in request.get_host()):
+        if (
+            request
+            and not request.is_secure()
+            and ("localhost" in request.get_host() or "127.0.0.1" in request.get_host())
+        ):
             scheme = "http"
         return f"{scheme}://{self.get_primary_domain(request)}/"
 
@@ -319,14 +400,84 @@ class Tenant(models.Model):
 
     def get_dashboard_url(self, request=None) -> str:
         scheme = "https"
-        if request and not request.is_secure() and ("localhost" in request.get_host() or "127.0.0.1" in request.get_host()):
+        if (
+            request
+            and not request.is_secure()
+            and ("localhost" in request.get_host() or "127.0.0.1" in request.get_host())
+        ):
             scheme = "http"
-        return f"{scheme}://{self.get_primary_domain(request)}/courses/manage/dashboard/"
+        return (
+            f"{scheme}://{self.get_primary_domain(request)}/courses/manage/dashboard/"
+        )
 
     @property
     def dashboard_url(self) -> str:
         return self.get_dashboard_url()
 
+    @property
+    def get_apk_url(self) -> str:
+        """Returns dedicated app download route or direct uploaded APK URL."""
+        if self.android_apk and self.android_apk.name:
+            return "/tenants/download-app/?download=1"
+        branding = self.branding or {}
+        if branding.get("android_apk_url"):
+            return branding.get("android_apk_url")
+        return "/tenants/download-app/"
+
+    @property
+    def whatsapp_number_clean(self) -> str:
+        """Returns normalized numeric WhatsApp digits e.g. 8801800123456"""
+        branding = self.branding or {}
+        num = str(branding.get("whatsapp_number") or "").strip()
+        # Remove non-digit characters except leading plus if any
+        digits = "".join(c for c in num if c.isdigit())
+        if digits.startswith("0") and len(digits) == 11:
+            digits = "88" + digits
+        return digits
+
+    def get_whatsapp_url(self, custom_msg: str = "") -> str:
+        """Generates direct wa.me link with encoded Bangla message."""
+        import urllib.parse
+
+        digits = self.whatsapp_number_clean
+        if not digits:
+            return "https://wa.me/"
+        branding = self.branding or {}
+        msg = (
+            custom_msg
+            or branding.get("whatsapp_default_msg")
+            or f"আসসালামু আলাইকুম, আমি {self.name} একাডেমি সম্পর্কে জানতে আগ্রহী।"
+        )
+        encoded_msg = urllib.parse.quote(msg)
+        return f"https://wa.me/{digits}?text={encoded_msg}"
+
+    @property
+    def whatsapp_url(self) -> str:
+        return self.get_whatsapp_url()
+
+    @property
+    def meta_title(self) -> str:
+        branding = self.branding or {}
+        return (
+            branding.get("meta_title")
+            or f"{self.name} - সেরা অনলাইন লার্নিং ও একাডেমি প্ল্যাটফর্ম"
+        )
+
+    @property
+    def meta_description(self) -> str:
+        branding = self.branding or {}
+        return (
+            branding.get("meta_description")
+            or branding.get("hero_subheadline")
+            or branding.get("tagline")
+            or f"{self.name} - লাইভ ক্লাস, মডেল টেস্ট, প্র্যাকটিস এক্সাম ও লেকচার শিট নিয়ে ঘরে বসেই নিন সেরা প্রস্তুতি।"
+        )
+
+    @property
+    def meta_keywords(self) -> str:
+        branding = self.branding or {}
+        default_kw = f"{self.name}, অনলাইন কোর্স, এডটেক একাডেমি, ভর্তি প্রস্তুতি, মডেল টেস্ট, লাইভ ক্লাস, এইচএসসি, বিসিএস, saas edtech"
+        return branding.get("meta_keywords") or default_kw
 
 
 class TenantMenuItem(models.Model):
@@ -341,14 +492,22 @@ class TenantMenuItem(models.Model):
         on_delete=models.CASCADE,
         related_name="menu_items",
     )
-    title = models.CharField(max_length=100, help_text="Label displayed in navigation (e.g., 'কোর্সসমূহ')")
+    title = models.CharField(
+        max_length=100, help_text="Label displayed in navigation (e.g., 'কোর্সসমূহ')"
+    )
     url = models.CharField(
         max_length=255,
         help_text="Path or external URL (e.g., '/courses/', '/books/', 'https://youtube.com')",
     )
-    order = models.PositiveIntegerField(default=0, help_text="Display order in the navigation bar")
-    is_active = models.BooleanField(default=True, help_text="Visible in the public storefront header")
-    open_in_new_tab = models.BooleanField(default=False, help_text="Open link in a new browser tab")
+    order = models.PositiveIntegerField(
+        default=0, help_text="Display order in the navigation bar"
+    )
+    is_active = models.BooleanField(
+        default=True, help_text="Visible in the public storefront header"
+    )
+    open_in_new_tab = models.BooleanField(
+        default=False, help_text="Open link in a new browser tab"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -430,6 +589,7 @@ class TenantSMSSetting(models.Model):
         """
         import logging
         import re
+
         logger = logging.getLogger(__name__)
 
         cleaned_number = re.sub(r"[^\d+]", "", str(recipient).strip())
@@ -437,7 +597,10 @@ class TenantSMSSetting(models.Model):
             return {"success": False, "error": "Invalid recipient phone number."}
 
         if not self.is_enabled:
-            return {"success": False, "error": "SMS sending is currently disabled for this academy."}
+            return {
+                "success": False,
+                "error": "SMS sending is currently disabled for this academy.",
+            }
 
         # If live credentials are provided, attempt real dispatch
         if self.api_key and self.provider != self.Provider.GENERIC:
@@ -456,28 +619,43 @@ class TenantSMSSetting(models.Model):
                     if self.sender_id:
                         params["senderid"] = self.sender_id
                     url = f"{endpoint}?{urllib.parse.urlencode(params)}"
-                    req = urllib.request.Request(url, headers={"User-Agent": "CourseFlow-SaaS/1.0"})
-                    with urllib.request.urlopen(req, timeout=10) as resp:
-                        res_body = resp.read().decode("utf-8")
-                        return {"success": True, "response": res_body, "provider": self.provider}
-
-                elif self.provider == self.Provider.SSL_WIRELESS:
-                    endpoint = "https://smsplus.sslwireless.com/api/v3/send-sms"
-                    payload = json.dumps({
-                        "api_token": self.api_key,
-                        "sid": self.sender_id,
-                        "msisdn": cleaned_number,
-                        "sms": message,
-                        "csms_id": f"CF{timezone.now().strftime('%Y%m%d%H%M%S')}",
-                    }).encode("utf-8")
                     req = urllib.request.Request(
-                        endpoint,
-                        data=payload,
-                        headers={"Content-Type": "application/json", "Accept": "application/json"},
+                        url, headers={"User-Agent": "CourseFlow-SaaS/1.0"}
                     )
                     with urllib.request.urlopen(req, timeout=10) as resp:
                         res_body = resp.read().decode("utf-8")
-                        return {"success": True, "response": res_body, "provider": self.provider}
+                        return {
+                            "success": True,
+                            "response": res_body,
+                            "provider": self.provider,
+                        }
+
+                elif self.provider == self.Provider.SSL_WIRELESS:
+                    endpoint = "https://smsplus.sslwireless.com/api/v3/send-sms"
+                    payload = json.dumps(
+                        {
+                            "api_token": self.api_key,
+                            "sid": self.sender_id,
+                            "msisdn": cleaned_number,
+                            "sms": message,
+                            "csms_id": f"CF{timezone.now().strftime('%Y%m%d%H%M%S')}",
+                        }
+                    ).encode("utf-8")
+                    req = urllib.request.Request(
+                        endpoint,
+                        data=payload,
+                        headers={
+                            "Content-Type": "application/json",
+                            "Accept": "application/json",
+                        },
+                    )
+                    with urllib.request.urlopen(req, timeout=10) as resp:
+                        res_body = resp.read().decode("utf-8")
+                        return {
+                            "success": True,
+                            "response": res_body,
+                            "provider": self.provider,
+                        }
 
                 elif self.provider == self.Provider.MIM_SMS:
                     endpoint = "https://api.mimsms.com/api/SmsSending/Send"
@@ -489,16 +667,26 @@ class TenantSMSSetting(models.Model):
                         "MobileNumbers": cleaned_number,
                     }
                     url = f"{endpoint}?{urllib.parse.urlencode(params)}"
-                    req = urllib.request.Request(url, headers={"User-Agent": "CourseFlow-SaaS/1.0"})
+                    req = urllib.request.Request(
+                        url, headers={"User-Agent": "CourseFlow-SaaS/1.0"}
+                    )
                     with urllib.request.urlopen(req, timeout=10) as resp:
                         res_body = resp.read().decode("utf-8")
-                        return {"success": True, "response": res_body, "provider": self.provider}
+                        return {
+                            "success": True,
+                            "response": res_body,
+                            "provider": self.provider,
+                        }
 
             except Exception as e:
-                logger.warning(f"Live SMS dispatch error: {e}. Falling back to simulation.")
+                logger.warning(
+                    f"Live SMS dispatch error: {e}. Falling back to simulation."
+                )
 
         # Dev / Simulation mode
-        logger.info(f"[SMS SIMULATION] To: {cleaned_number} | From: {self.sender_id or self.tenant.name} | Text: {message}")
+        logger.info(
+            f"[SMS SIMULATION] To: {cleaned_number} | From: {self.sender_id or self.tenant.name} | Text: {message}"
+        )
         return {
             "success": True,
             "simulated": True,
@@ -548,9 +736,29 @@ class TenantSubscription(models.Model):
     def is_valid(self) -> bool:
         """Determines if the subscription grants live access."""
         if self.status == self.Status.ACTIVE:
+            if self.current_period_end and self.current_period_end < timezone.now():
+                return False
             return True
         if self.status == self.Status.TRIALING:
             if self.trial_ends_at and self.trial_ends_at < timezone.now():
                 return False
             return True
         return False
+
+    @property
+    def is_expired(self) -> bool:
+        """Returns True if the trial or active subscription period has elapsed."""
+        return not self.is_valid
+
+    @property
+    def days_remaining(self) -> int:
+        """Returns positive days left before expiration."""
+        target_date = (
+            self.current_period_end
+            if self.status == self.Status.ACTIVE
+            else self.trial_ends_at
+        )
+        if not target_date:
+            return 0
+        delta = target_date - timezone.now()
+        return max(0, delta.days)

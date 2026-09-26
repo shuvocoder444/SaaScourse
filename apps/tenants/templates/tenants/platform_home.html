@@ -1,62 +1,101 @@
 {% extends "base.html" %}
 
-{% block title %}CourseFlow - The Complete Multi-Tenant LMS SaaS Platform{% endblock %}
+{% block title %}CourseFlow SaaS — বাংলাদেশের শীর্ষস্থানীয় মাল্টি-টেন্যান্ট একাডেমি ও LMS প্ল্যাটফর্ম{% endblock %}
+
+{% block meta_description %}কোর্সফ্লো SaaS দিয়ে যেকোনো শিক্ষক, কোচিং বা প্রতিষ্ঠান মাত্র ২ মিনিটে নিজস্ব ব্র্যান্ডেড একাডেমি ওয়েবসাইট, লাইভ ক্লাস ও অনলাইন এক্সাম প্ল্যাটফর্ম চালু করতে পারেন।{% endblock %}
 
 {% block content %}
-<div class="relative overflow-hidden">
+<div class="relative overflow-hidden font-sans bg-slate-950 text-slate-100">
   
-  <!-- Hero Section -->
-  <section class="relative pt-20 pb-24 lg:pt-32 lg:pb-36">
-    <div class="absolute -top-48 left-1/2 -translate-x-1/2 w-[900px] h-[550px] bg-gradient-to-tr from-indigo-600/20 via-cyan-500/15 to-purple-600/15 blur-3xl opacity-70 pointer-events-none"></div>
+  <!-- Background Glow & Grid -->
+  <div class="absolute inset-0 bg-[linear-gradient(to_right,#1e293b15_1px,transparent_1px),linear-gradient(to_bottom,#1e293b15_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none"></div>
 
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+  <!-- Hero Section -->
+  <section class="relative pt-24 pb-28 lg:pt-36 lg:pb-40">
+    <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-gradient-to-tr from-emerald-500/20 via-cyan-500/20 to-indigo-600/20 blur-[130px] rounded-full opacity-70 pointer-events-none"></div>
+
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10 space-y-8">
       
-      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 mb-8 shadow-sm">
-        <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-        Everything You Need to Sell Courses Under Your Own Brand
+      <div class="inline-flex items-center gap-2.5 px-4 py-2 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 shadow-lg shadow-emerald-500/10 backdrop-blur-md">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>বাংলাদেশের সেরা এডটেক ও কোচিং প্ল্যাটফর্ম ইঞ্জিন</span>
       </div>
 
-      <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-slate-900 dark:text-white max-w-4xl mx-auto leading-tight">
-        Launch Your Branded <br class="hidden sm:inline">
-        <span class="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 via-cyan-500 to-indigo-500 dark:from-indigo-400 dark:via-cyan-300 dark:to-indigo-200">
-          Course Academy & LMS
+      <h1 class="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white max-w-5xl mx-auto leading-[1.15]">
+        আপনার নিজস্ব ব্র্যান্ডে তৈরি করুন <br class="hidden sm:inline">
+        <span class="bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400">
+          প্রফেশনাল অনলাইন একাডেমি ও LMS
         </span>
-        in Minutes.
       </h1>
 
-      <p class="mt-6 text-lg sm:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
-        Stop giving away 30% commissions. Get a private academy with your own subdomain, custom domain, video streaming, and student analytics with zero coding.
+      <p class="text-base sm:text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed font-normal">
+        কোনো কোডিং ছাড়াই মাত্র ২ মিনিটে চালু করুন নিজস্ব সাবডোমেইন, সুরক্ষিত ভিডিও ক্লাস, অটোমেটেড মডেল টেস্ট, পিডিএফ শিট এবং বিকাশ/নগদ পেমেন্ট গেটওয়ে।
       </p>
 
       <!-- Primary CTA Buttons -->
-      <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
         <a 
           href="{% url 'signup' %}?plan=pro"
-          class="w-full sm:w-auto px-8 py-4 rounded-2xl text-base font-bold bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white shadow-xl shadow-indigo-500/25 transition-all transform hover:-translate-y-0.5"
+          class="w-full sm:w-auto px-8 py-4 rounded-2xl text-sm sm:text-base font-extrabold bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 shadow-xl shadow-emerald-500/25 transition-all transform hover:-translate-y-0.5"
         >
-          🚀 Start 14-Day Free Trial
+          🚀 ১৪ দিনের ফ্রি ট্রায়াল শুরু করুন
         </a>
         <a 
           href="#pricing"
-          class="w-full sm:w-auto px-8 py-4 rounded-2xl text-base font-semibold bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 shadow-sm transition-all"
+          class="w-full sm:w-auto px-8 py-4 rounded-2xl text-sm sm:text-base font-bold bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700 shadow-md transition-all"
         >
-          View Subscription Plans ↓
+          সাবস্ক্রিপশন প্যাকেজ দেখুন ↓
         </a>
       </div>
 
       <!-- Trust Badges -->
-      <div class="mt-12 flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-xs font-mono text-slate-500 dark:text-slate-400">
+      <div class="pt-6 flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-xs font-mono text-slate-400">
         <div class="flex items-center gap-2">
-          <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          No Credit Card Required
+          <span class="text-emerald-400">✓</span> কোনো ক্রেডিট কার্ড প্রয়োজন নেই
         </div>
         <div class="flex items-center gap-2">
-          <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          Instant Subdomain Setup
+          <span class="text-emerald-400">✓</span> ইনস্ট্যান্ট সাবডোমেইন সক্রিয়
         </div>
         <div class="flex items-center gap-2">
-          <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          0% Platform Transaction Fees
+          <span class="text-emerald-400">✓</span> ১০০% ডেডিকেটেড সাপোর্ট
+        </div>
+      </div>
+
+      <!-- Live Dashboard Graphic Preview -->
+      <div class="pt-10 max-w-5xl mx-auto">
+        <div class="rounded-3xl border border-slate-800 bg-slate-900/90 p-3 sm:p-4 shadow-2xl shadow-emerald-500/5 backdrop-blur-xl">
+          <div class="rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden">
+            <!-- Mock browser bar -->
+            <div class="px-4 py-3 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-rose-500/80"></span>
+                <span class="w-3 h-3 rounded-full bg-amber-500/80"></span>
+                <span class="w-3 h-3 rounded-full bg-emerald-500/80"></span>
+              </div>
+              <div class="px-6 py-1 rounded-full bg-slate-950 border border-slate-800 text-[11px] font-mono text-slate-400">
+                https://youracademy.course.webkoders.com/courses/manage/dashboard/
+              </div>
+              <div class="w-12"></div>
+            </div>
+            <!-- Mock Studio Content -->
+            <div class="p-6 sm:p-8 grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+              <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2">
+                <span class="text-2xl">🎓</span>
+                <div class="text-xs text-slate-400 font-mono">মোট শিক্ষার্থী</div>
+                <div class="text-2xl font-black text-white">১,৪৫০+ জন</div>
+              </div>
+              <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2">
+                <span class="text-2xl">📺</span>
+                <div class="text-xs text-slate-400 font-mono">সুরক্ষিত ভিডিও ক্লাস</div>
+                <div class="text-2xl font-black text-emerald-400">১০০% ব্র্যান্ড-ফ্রি</div>
+              </div>
+              <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2">
+                <span class="text-2xl">📝</span>
+                <div class="text-xs text-slate-400 font-mono">ডেইলি মডেল টেস্ট</div>
+                <div class="text-2xl font-black text-cyan-400">অটো নেগেটিভ মার্কিং</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -64,77 +103,125 @@
   </section>
 
   <!-- Platform Features Grid -->
-  <section class="py-20 border-t border-slate-200 dark:border-slate-800/80 bg-slate-100/60 dark:bg-slate-950/40 transition-colors">
+  <section id="features" class="py-24 border-t border-slate-800 bg-slate-900/40">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center max-w-3xl mx-auto mb-16">
-        <h2 class="text-xs font-mono uppercase tracking-widest text-indigo-600 dark:text-cyan-400 mb-3">Enterprise-Grade Infrastructure</h2>
-        <h3 class="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">Built specifically for creators and online academies</h3>
+      <div class="text-center max-w-3xl mx-auto mb-16 space-y-3">
+        <span class="text-xs font-mono uppercase tracking-widest text-emerald-400 font-bold">শক্তিশালী প্ল্যাটফর্ম ফিচারসমূহ</span>
+        <h3 class="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">এডটেক একাডেমি পরিচালনার সবকিছু এক জায়গায়</h3>
       </div>
 
       <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-        <div class="p-8 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 shadow-sm hover:border-slate-300 dark:hover:border-slate-700 transition-all">
-          <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-2xl mb-6">🌐</div>
-          <h4 class="text-xl font-bold text-slate-900 dark:text-white mb-2">Custom Subdomain & CNAME</h4>
-          <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Launch at <code class="text-indigo-600 dark:text-indigo-300 font-mono">yourbrand.saascourse.com</code> or link your own custom domain like <code class="text-cyan-600 dark:text-cyan-300 font-mono">learn.yourcompany.com</code>.</p>
+        
+        <div class="p-8 rounded-3xl border border-slate-800 bg-slate-900/80 hover:border-emerald-500/40 transition-all space-y-4">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-2xl">🌐</div>
+          <h4 class="text-xl font-bold text-white">কাস্টম সাবডোমেইন ও ডোমেইন</h4>
+          <p class="text-xs sm:text-sm text-slate-400 leading-relaxed">
+            আপনার পছন্দের নামে চালু করুন সাবডোমেইন অথবা যুক্ত করুন আপনার নিজস্ব কাস্টম CNAME ডোমেইন ফ্রি SSL সার্টিফিকেটসহ।
+          </p>
         </div>
 
-        <div class="p-8 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 shadow-sm hover:border-slate-300 dark:hover:border-slate-700 transition-all">
-          <div class="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center text-2xl mb-6">🎨</div>
-          <h4 class="text-xl font-bold text-slate-900 dark:text-white mb-2">100% White-Label Branding</h4>
-          <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Customize your primary and accent colors, logo, typography, hero copy, and storefront layout in real time.</p>
+        <div class="p-8 rounded-3xl border border-slate-800 bg-slate-900/80 hover:border-emerald-500/40 transition-all space-y-4">
+          <div class="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-2xl">🛡️</div>
+          <h4 class="text-xl font-bold text-white">ইউটিউব ব্র্যান্ডিং-মুক্ত সুরক্ষিত প্লেয়ার</h4>
+          <p class="text-xs sm:text-sm text-slate-400 leading-relaxed">
+            ভিডিও লিকেজ বন্ধে শিল্ড মাস্ক ও কাস্টম ফুলস্ক্রিন কনটেইনার। ভিডিওতে থাকবে শিক্ষার্থীর নাম ও ইমেইলযুক্ত লাইভ ওয়াটারমার্ক।
+          </p>
         </div>
 
-        <div class="p-8 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 shadow-sm hover:border-slate-300 dark:hover:border-slate-700 transition-all">
-          <div class="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center text-2xl mb-6">⚡</div>
-          <h4 class="text-xl font-bold text-slate-900 dark:text-white mb-2">HTMX Interactive Lessons</h4>
-          <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Blazing fast video and reading lesson player with instant progress checks without clunky Single-Page-App load times.</p>
+        <div class="p-8 rounded-3xl border border-slate-800 bg-slate-900/80 hover:border-emerald-500/40 transition-all space-y-4">
+          <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-2xl">📝</div>
+          <h4 class="text-xl font-bold text-white">এডভান্সড এক্সাম ও মডেল টেস্ট</h4>
+          <p class="text-xs sm:text-sm text-slate-400 leading-relaxed">
+            টাইমার, নেগেটিভ মার্কিং, অটো র‍্যাঙ্কিং, লিডারবোর্ড এবং সরাসরি প্রশ্ন পেপার প্রিন্ট করার প্রফেশনাল সুবিধা।
+          </p>
         </div>
+
+        <div class="p-8 rounded-3xl border border-slate-800 bg-slate-900/80 hover:border-emerald-500/40 transition-all space-y-4">
+          <div class="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-2xl">🎨</div>
+          <h4 class="text-xl font-bold text-white">৩টি ভিন্ন ল্যান্ডিং ও হেডার ডিজাইন</h4>
+          <p class="text-xs sm:text-sm text-slate-400 leading-relaxed">
+            এডমিশন এডটেক, মডার্ন টেক ও ক্লাসিক কোচিং—যেকোনো মুহূর্তে এক ক্লিকে বদলান আপনার ওয়েবসাইটের লুক ও কালার স্কিম।
+          </p>
+        </div>
+
+        <div class="p-8 rounded-3xl border border-slate-800 bg-slate-900/80 hover:border-emerald-500/40 transition-all space-y-4">
+          <div class="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-400 flex items-center justify-center text-2xl">📲</div>
+          <h4 class="text-xl font-bold text-white">অ্যান্ড্রয়েড অ্যাপ (.APK) ইন্টিগ্রেশন</h4>
+          <p class="text-xs sm:text-sm text-slate-400 leading-relaxed">
+            একাডেমির নিজস্ব মোবাইল অ্যাপ আপলোড করুন। শিক্ষার্থীরা ওয়েবসাইট থেকেই এক ক্লিকে সরাসরি APK ফাইল ডাউনলোড করতে পারবে।
+          </p>
+        </div>
+
+        <div class="p-8 rounded-3xl border border-slate-800 bg-slate-900/80 hover:border-emerald-500/40 transition-all space-y-4">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-2xl">💬</div>
+          <h4 class="text-xl font-bold text-white">হোয়াটসঅ্যাপ লাইভ সাপোর্ট উইজেট</h4>
+          <p class="text-xs sm:text-sm text-slate-400 leading-relaxed">
+            প্রতিটি একাডেমির জন্য ডেডিকেটেড হোয়াটসঅ্যাপ কানেকশন এবং ভাসমান সাপোর্ট উইজেট যাতে শিক্ষার্থীরা সরাসরি যোগাযোগ করতে পারে।
+          </p>
+        </div>
+
       </div>
     </div>
   </section>
 
   <!-- Pricing Subscription Section -->
-  <section id="pricing" class="py-24 border-t border-slate-200 dark:border-slate-800">
+  <section id="pricing" class="py-24 border-t border-slate-800">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center max-w-3xl mx-auto mb-16">
-        <h2 class="text-xs font-mono uppercase tracking-widest text-indigo-600 dark:text-indigo-400 mb-3">Subscription Plans</h2>
-        <h3 class="text-3xl sm:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight">Simple, Transparent Pricing</h3>
-        <p class="mt-4 text-base text-slate-600 dark:text-slate-400">All plans include a 14-day free trial. Upgrade or cancel anytime.</p>
+      <div class="text-center max-w-3xl mx-auto mb-16 space-y-3">
+        <span class="text-xs font-mono uppercase tracking-widest text-emerald-400 font-bold">স্বচ্ছ ও সাশ্রয়ী প্যাকেজ</span>
+        <h3 class="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">আপনার একাডেমির জন্য সেরা প্ল্যান বেছে নিন</h3>
+        <p class="text-slate-400 text-sm">প্রতিটি প্ল্যানে রয়েছে ১৪ দিনের ফ্রি ট্রায়াল সুবিধা। যেকোনো সময় আপগ্রেড করতে পারবেন।</p>
       </div>
 
       <div class="grid md:grid-cols-3 gap-8 items-stretch">
         {% for plan in plans %}
-          <div class="rounded-3xl border {% if plan.is_popular %}border-cyan-500 bg-white dark:bg-slate-900/90 shadow-2xl shadow-cyan-500/10 relative scale-105 z-10{% else %}border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-md{% endif %} p-8 flex flex-col justify-between transition-all">
+          <div class="rounded-3xl border {% if plan.is_popular %}border-emerald-500 bg-slate-900 shadow-2xl shadow-emerald-500/10 relative scale-105 z-10{% else %}border-slate-800 bg-slate-900/60 shadow-md{% endif %} p-8 flex flex-col justify-between transition-all">
             
-            {% if plan.is_popular %}
-              <div class="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-extrabold bg-gradient-to-r from-indigo-500 to-cyan-400 text-white uppercase tracking-wider shadow-md">
-                Most Popular
+            {% if plan.is_popular or plan.badge_text %}
+              <div class="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[11px] font-extrabold bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 uppercase tracking-wider shadow-md whitespace-nowrap">
+                {{ plan.badge_text|default:"⭐ সর্বাধিক জনপ্রিয় (Recommended)" }}
               </div>
             {% endif %}
 
             <div>
-              <div class="flex items-center justify-between mb-4">
-                <h4 class="text-xl font-bold text-slate-900 dark:text-white">{{ plan.name }}</h4>
+              <div class="mb-3">
+                <h4 class="text-xl font-black text-white">{{ plan.name }}</h4>
+                {% if plan.description %}
+                  <p class="text-xs text-slate-400 mt-1 leading-relaxed">{{ plan.description }}</p>
+                {% endif %}
               </div>
               
-              <div class="flex items-baseline gap-1 mb-6">
-                <span class="text-4xl sm:text-5xl font-extrabold text-slate-900 dark:text-white">৳{{ plan.price_monthly|floatformat:0 }}</span>
-                <span class="text-slate-500 dark:text-slate-400 text-sm font-medium">/ month</span>
+              <div class="flex items-baseline gap-1.5 mb-6">
+                <span class="text-4xl sm:text-5xl font-black text-white">৳{{ plan.price_monthly|floatformat:0 }}</span>
+                <span class="text-slate-400 text-xs font-mono">/ {{ plan.billing_period|default:"প্রতি মাস" }}</span>
               </div>
 
               <!-- Limits Overview -->
-              <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 mb-6 text-xs text-slate-700 dark:text-slate-300 font-mono space-y-1">
-                <div>📚 Up to <strong>{{ plan.max_courses }} Courses</strong></div>
-                <div>👥 Up to <strong>{{ plan.max_students }} Enrolled Students</strong></div>
-                <div>🌐 Custom Domain: <strong>{% if plan.custom_domain_allowed %}Included (CNAME){% else %}Subdomain Only{% endif %}</strong></div>
+              <div class="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 mb-6 text-xs text-slate-300 font-mono space-y-1.5">
+                <div>📚 সর্বোচ্চ কোর্স: <strong class="text-white">{{ plan.max_courses }}টি</strong></div>
+                <div>👥 সর্বোচ্চ শিক্ষার্থী: <strong class="text-white">{{ plan.max_students }} জন</strong></div>
+                <div>🌐 কাস্টম ডোমেইন: <strong class="{% if plan.custom_domain_allowed %}text-emerald-400{% else %}text-slate-500{% endif %}">{% if plan.custom_domain_allowed %}সমর্থিত (CNAME){% else %}সাবডোমেইন শুধুমাত্র{% endif %}</strong></div>
               </div>
 
               <!-- Feature Bullets -->
-              <ul class="space-y-3 text-sm text-slate-600 dark:text-slate-300 mb-8">
+              <ul class="space-y-3 text-xs sm:text-sm text-slate-300 mb-8">
                 {% for feature in plan.features %}
                   <li class="flex items-center gap-2.5">
-                    <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span class="text-emerald-400 font-bold">✓</span>
                     <span>{{ feature }}</span>
+                  </li>
+                {% empty %}
+                  <li class="flex items-center gap-2.5">
+                    <span class="text-emerald-400 font-bold">✓</span>
+                    <span>সম্পূর্ণ LMS ও কোর্স বিল্ডার</span>
+                  </li>
+                  <li class="flex items-center gap-2.5">
+                    <span class="text-emerald-400 font-bold">✓</span>
+                    <span>সুরক্ষিত ভিডিও ও অ্যান্টি-পাইরেসি</span>
+                  </li>
+                  <li class="flex items-center gap-2.5">
+                    <span class="text-emerald-400 font-bold">✓</span>
+                    <span>মডেল টেস্ট ও রেজাল্ট সিস্টেম</span>
                   </li>
                 {% endfor %}
               </ul>
@@ -143,50 +230,88 @@
             <div>
               <a 
                 href="{% url 'signup' %}?plan={{ plan.slug }}"
-                class="w-full block py-3.5 px-6 rounded-xl text-center text-sm font-bold transition-all {% if plan.is_popular %}bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white shadow-lg shadow-cyan-500/20{% else %}bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white border border-slate-300 dark:border-slate-700{% endif %}"
+                class="w-full block py-3.5 px-6 rounded-2xl text-center text-xs sm:text-sm font-extrabold transition-all {% if plan.is_popular %}bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 shadow-lg shadow-emerald-500/25{% else %}bg-slate-800 hover:bg-slate-700 text-white border border-slate-700{% endif %}"
               >
-                Start 14-Day Free Trial
+                {{ plan.cta_text|default:"১৪ দিনের ফ্রি ট্রায়াল শুরু করুন →" }}
               </a>
             </div>
 
+          </div>
+        {% empty %}
+          <!-- Default Fallback Tiers if DB is empty -->
+          <div class="rounded-3xl border border-slate-800 bg-slate-900/60 p-8 flex flex-col justify-between">
+            <h4 class="text-xl font-bold text-white">Starter</h4>
+            <div class="text-4xl font-extrabold text-white my-4">৳৫০০ <span class="text-xs text-slate-400 font-normal">/মাস</span></div>
+            <a href="{% url 'signup' %}?plan=starter" class="py-3 rounded-xl bg-slate-800 text-white text-center font-bold text-xs">শুরু করুন</a>
+          </div>
+          <div class="rounded-3xl border border-emerald-500 bg-slate-900 p-8 flex flex-col justify-between relative scale-105">
+            <h4 class="text-xl font-bold text-white">Professional</h4>
+            <div class="text-4xl font-extrabold text-white my-4">৳১,০০০ <span class="text-xs text-slate-400 font-normal">/মাস</span></div>
+            <a href="{% url 'signup' %}?plan=pro" class="py-3 rounded-xl bg-emerald-500 text-slate-950 text-center font-bold text-xs">শুরু করুন</a>
+          </div>
+          <div class="rounded-3xl border border-slate-800 bg-slate-900/60 p-8 flex flex-col justify-between">
+            <h4 class="text-xl font-bold text-white">Enterprise</h4>
+            <div class="text-4xl font-extrabold text-white my-4">৳১,৫০০ <span class="text-xs text-slate-400 font-normal">/মাস</span></div>
+            <a href="{% url 'signup' %}?plan=enterprise" class="py-3 rounded-xl bg-slate-800 text-white text-center font-bold text-xs">শুরু করুন</a>
           </div>
         {% endfor %}
       </div>
     </div>
   </section>
 
-  <!-- Live Academies Sandbox Showcase -->
-  <section class="py-20 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-950/60 transition-colors">
+  <!-- Live Customer Showcase -->
+  {% if showcase_tenants %}
+  <section class="py-20 border-t border-slate-800 bg-slate-950">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-10">
         <div>
-          <h2 class="text-xs font-mono uppercase tracking-widest text-indigo-600 dark:text-cyan-400 mb-2">Live Customer Showcase</h2>
-          <h3 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">Active Academies Powered by Our Platform</h3>
+          <span class="text-xs font-mono uppercase tracking-widest text-emerald-400 font-bold mb-1 block">সফল একাডেমি কাস্টমারস</span>
+          <h3 class="text-2xl sm:text-3xl font-extrabold text-white">আমাদের প্ল্যাটফর্মে পরিচালিত একাডেমি এবং কোচিং</h3>
         </div>
-        <span class="text-xs text-slate-500 dark:text-slate-400 font-mono mt-2 sm:mt-0">Tested live on Port 8001</span>
       </div>
 
       <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {% for tenant in showcase_tenants %}
-          <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm p-6 flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-700 transition-all">
+          <div class="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 flex flex-col justify-between hover:border-emerald-500/40 transition-all">
             <div>
               <div class="flex items-center gap-3 mb-4">
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white shadow" style="background-color: {{ tenant.branding.primary_color|default:'#4f46e5' }}">
+                <div class="w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-white shadow-md" style="background-color: {{ tenant.branding.primary_color|default:'#16a34a' }}">
                   {{ tenant.name|slice:":1"|upper }}
                 </div>
                 <div>
-                  <h4 class="font-bold text-slate-900 dark:text-white text-base">{{ tenant.name }}</h4>
-                  <span class="text-xs font-mono text-slate-500 dark:text-slate-400 block">{{ tenant.subdomain_host }}</span>
+                  <h4 class="font-extrabold text-white text-sm sm:text-base">{{ tenant.name }}</h4>
+                  <span class="text-xs font-mono text-slate-400 block">{{ tenant.subdomain_host }}</span>
                 </div>
               </div>
-              <p class="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 mb-4">{{ tenant.branding.tagline|default:"Explore industry-focused courses." }}</p>
+              <p class="text-xs text-slate-400 line-clamp-2 mb-4">{{ tenant.branding.tagline|default:"অভিজ্ঞ শিক্ষক ও প্র্যাকটিস ব্যাচে সেরা প্রস্তুতি।" }}</p>
             </div>
-            <div class="pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
-              <span class="text-[11px] font-mono text-slate-500">Plan: {{ tenant.subscription.plan.name|default:"Pro" }}</span>
-              <a href="{{ tenant.storefront_url }}" target="_blank" class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-cyan-600 dark:hover:text-cyan-300">Visit Storefront →</a>
+            <div class="pt-4 border-t border-slate-800 flex items-center justify-between">
+              <span class="text-[11px] font-mono text-emerald-400 font-bold">✓ লাইভ একাডেমি</span>
+              <a href="{{ tenant.storefront_url }}" target="_blank" class="text-xs font-bold text-cyan-400 hover:underline">স্টোরফ্রন্ট ভিজিট করুন →</a>
             </div>
           </div>
         {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Bottom Final CTA Banner -->
+  <section class="py-20 border-t border-slate-800">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="rounded-3xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 p-8 sm:p-12 text-center text-slate-950 space-y-6 shadow-2xl">
+        <h3 class="text-2xl sm:text-4xl font-black text-white">আজই শুরু করুন আপনার অনলাইন একাডেমি যাত্রা</h3>
+        <p class="text-sm sm:text-base text-emerald-100 max-w-xl mx-auto">
+          কোর্স বিক্রয়, লাইভ ক্লাস, মডেল টেস্ট ও স্টুডেন্ট ম্যানেজমেন্টের পূর্ণাঙ্গ ক্ষমতা এখন আপনার হাতে।
+        </p>
+        <div>
+          <a 
+            href="{% url 'signup' %}?plan=pro" 
+            class="inline-block px-8 py-4 rounded-2xl bg-white text-slate-950 hover:bg-slate-100 font-black text-sm shadow-xl transition-all transform hover:scale-105"
+          >
+            🚀 বিনামূল্যে ১৪ দিনের ট্রায়াল শুরু করুন
+          </a>
+        </div>
       </div>
     </div>
   </section>

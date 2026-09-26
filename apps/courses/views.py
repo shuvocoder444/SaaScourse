@@ -1,5 +1,6 @@
 import re
 import uuid
+from datetime import timedelta
 
 from django.contrib import messages
 from django.contrib.auth import authenticate, get_user_model, login
@@ -35,9 +36,11 @@ from apps.courses.models import (
     FeedComment,
     FeedLike,
     FeedPost,
+    FinancialLedger,
     FreeResource,
     Lesson,
     LessonProgress,
+    LiveClassSession,
     Module,
     StudentClub,
     StudentInvoice,
@@ -45,6 +48,7 @@ from apps.courses.models import (
     SupportChatMessage,
     SupportThread,
 )
+from apps.tenants.models import SubscriptionPlan, TenantSubscription
 from apps.users.models import TenantMembership
 
 
@@ -54,7 +58,9 @@ def course_list(request):
     Query is automatically scoped by TenantManager!
     """
     tenant = getattr(request, "tenant", None)
-    courses = Course.objects.filter(status=Course.Status.PUBLISHED).select_related("instructor")
+    courses = Course.objects.filter(status=Course.Status.PUBLISHED).select_related(
+        "instructor"
+    )
     enrolled_course_ids = set()
     if request.user.is_authenticated and tenant:
         enrolled_course_ids = set(
@@ -77,18 +83,95 @@ def course_list(request):
 def course_detail(request, slug):
     """Frontend detailed curriculum syllabus for a course."""
     course = get_object_or_404(
-        Course.objects.prefetch_related("modules__lessons").select_related("instructor"),
+        Course.objects.prefetch_related("modules__lessons").select_related(
+            "instructor", "tenant"
+        ),
         slug=slug,
     )
+    tenant = getattr(request, "tenant", None) or course.tenant
     progress_data = course.get_user_progress(request.user)
-    first_lesson = Lesson.objects.filter(module__course=course).order_by("module__order", "order").first()
-    
+    first_lesson = (
+        Lesson.objects.filter(module__course=course)
+        .order_by("module__order", "order")
+        .first()
+    )
+
     is_enrolled = False
+    is_admin_or_instructor = False
     if request.user.is_authenticated:
-        tenant = getattr(request, "tenant", None) or course.tenant
-        is_enrolled = Enrollment.objects.filter(
-            tenant=tenant, user=request.user, course=course, status=Enrollment.Status.ACTIVE
-        ).exists()
+        if (
+            request.user.is_superuser
+            or (tenant and tenant.owner == request.user)
+            or course.instructor == request.user
+        ):
+            is_enrolled = True
+            is_admin_or_instructor = True
+        else:
+            is_enrolled = Enrollment.objects.filter(
+                tenant=tenant,
+                user=request.user,
+                course=course,
+                status=Enrollment.Status.ACTIVE,
+            ).exists()
+
+    # Handle 1-Click Free Enrollment directly from single course page
+    if request.method == "POST" and request.POST.get("action") == "free_enroll":
+        if not request.user.is_authenticated:
+            messages.info(
+                request,
+                "ফ্রি কোর্সে এনরোল করার জন্য অনুগ্রহ করে প্রথমে লগইন করুন বা অ্যাকাউন্ট খুলুন।",
+            )
+            return redirect(f"/login/?next={request.path}")
+
+        if course.is_free:
+            TenantMembership.objects.get_or_create(
+                tenant=tenant,
+                user=request.user,
+                defaults={"role": TenantMembership.Role.STUDENT, "is_active": True},
+            )
+            enrollment, _ = Enrollment.objects.get_or_create(
+                tenant=tenant,
+                user=request.user,
+                course=course,
+                defaults={"status": Enrollment.Status.ACTIVE},
+            )
+            if enrollment.status != Enrollment.Status.ACTIVE:
+                enrollment.status = Enrollment.Status.ACTIVE
+                enrollment.save()
+
+            # Record zero-amount invoice
+            invoice_no = f"INV-{uuid.uuid4().hex[:8].upper()}"
+            StudentInvoice.objects.get_or_create(
+                tenant=tenant,
+                student=request.user,
+                item_title=f"Free Course: {course.title}",
+                defaults={
+                    "invoice_no": invoice_no,
+                    "amount": 0,
+                    "payment_method": "Free Enrollment",
+                    "transaction_id": f"FREE-{uuid.uuid4().hex[:6].upper()}",
+                    "status": "PAID",
+                },
+            )
+            messages.success(
+                request,
+                f"🎉 অভিনন্দন! '{course.title}' কোর্সে আপনার ফ্রি এনরোলমেন্ট সফল হয়েছে। সব ক্লাস আনলক করা হয়েছে!",
+            )
+            if first_lesson:
+                return redirect(
+                    "courses:player",
+                    course_slug=course.slug,
+                    lesson_slug=first_lesson.slug,
+                )
+            return redirect("courses:detail", slug=course.slug)
+
+    total_lessons_count = sum(m.lessons.count() for m in course.modules.all())
+    total_duration_minutes = sum(
+        sum(l.duration_minutes for l in m.lessons.all()) for m in course.modules.all()
+    )
+    total_duration_hours = (
+        round(total_duration_minutes / 60, 1) if total_duration_minutes > 0 else 0
+    )
 
     return render(
         request,
@@ -98,6 +181,10 @@ def course_detail(request, slug):
             "progress_data": progress_data,
             "first_lesson": first_lesson,
             "is_enrolled": is_enrolled,
+            "is_admin_or_instructor": is_admin_or_instructor,
+            "total_lessons_count": total_lessons_count,
+            "total_duration_minutes": total_duration_minutes,
+            "total_duration_hours": total_duration_hours,
         },
     )
 
@@ -119,12 +206,23 @@ def course_checkout_view(request, slug):
     # If already logged in and enrolled, jump straight to player
     if request.user.is_authenticated:
         is_enrolled = Enrollment.objects.filter(
-            tenant=tenant, user=request.user, course=course, status=Enrollment.Status.ACTIVE
+            tenant=tenant,
+            user=request.user,
+            course=course,
+            status=Enrollment.Status.ACTIVE,
         ).exists()
         if is_enrolled:
-            first_lesson = Lesson.objects.filter(module__course=course).order_by("module__order", "order").first()
+            first_lesson = (
+                Lesson.objects.filter(module__course=course)
+                .order_by("module__order", "order")
+                .first()
+            )
             if first_lesson:
-                return redirect("courses:player", course_slug=course.slug, lesson_slug=first_lesson.slug)
+                return redirect(
+                    "courses:player",
+                    course_slug=course.slug,
+                    lesson_slug=first_lesson.slug,
+                )
             return redirect("courses:detail", slug=course.slug)
 
     if request.method == "POST":
@@ -137,8 +235,14 @@ def course_checkout_view(request, slug):
             full_name = request.POST.get("full_name", "").strip()
 
             if not identifier or not password:
-                messages.error(request, "অনুগ্রহ করে মোবাইল নম্বর/ইমেইল এবং পাসওয়ার্ড প্রদান করুন।")
-                return render(request, "courses/frontend/checkout.html", {"course": course, "identifier": identifier})
+                messages.error(
+                    request, "অনুগ্রহ করে মোবাইল নম্বর/ইমেইল এবং পাসওয়ার্ড প্রদান করুন।"
+                )
+                return render(
+                    request,
+                    "courses/frontend/checkout.html",
+                    {"course": course, "identifier": identifier},
+                )
 
             # Format email identifier
             if "@" in identifier:
@@ -152,22 +256,36 @@ def course_checkout_view(request, slug):
             if checkout_mode == "login":
                 user = authenticate(request, email=email, password=password)
                 if not user:
-                    messages.error(request, "মোবাইল/ইমেইল অথবা পাসওয়ার্ড সঠিক নয়। অনুগ্রহ করে পুনরায় চেষ্টা করুন।")
-                    return render(request, "courses/frontend/checkout.html", {
-                        "course": course,
-                        "identifier": identifier,
-                        "prompt_login": True,
-                    })
+                    messages.error(
+                        request,
+                        "মোবাইল/ইমেইল অথবা পাসওয়ার্ড সঠিক নয়। অনুগ্রহ করে পুনরায় চেষ্টা করুন।",
+                    )
+                    return render(
+                        request,
+                        "courses/frontend/checkout.html",
+                        {
+                            "course": course,
+                            "identifier": identifier,
+                            "prompt_login": True,
+                        },
+                    )
                 login(request, user)
             else:
                 # Signup Mode
                 if User.objects.filter(email=email).exists():
-                    messages.info(request, "এই মোবাইল/ইমেইলে ইতিমধ্যে একটি অ্যাকাউন্ট রয়েছে। অনুগ্রহ করে পাসওয়ার্ড দিয়ে লগইন করুন।")
-                    return render(request, "courses/frontend/checkout.html", {
-                        "course": course,
-                        "identifier": identifier,
-                        "prompt_login": True,
-                    })
+                    messages.info(
+                        request,
+                        "এই মোবাইল/ইমেইলে ইতিমধ্যে একটি অ্যাকাউন্ট রয়েছে। অনুগ্রহ করে পাসওয়ার্ড দিয়ে লগইন করুন।",
+                    )
+                    return render(
+                        request,
+                        "courses/frontend/checkout.html",
+                        {
+                            "course": course,
+                            "identifier": identifier,
+                            "prompt_login": True,
+                        },
+                    )
 
                 name_parts = full_name.split(" ", 1)
                 first_name = name_parts[0] if name_parts else "Student"
@@ -201,7 +319,10 @@ def course_checkout_view(request, slug):
 
         # 3. Create StudentInvoice
         payment_method = request.POST.get("payment_method", "bKash Online")
-        trx_id = request.POST.get("trx_id", "").strip() or f"TRX{timezone.now().strftime('%Y%m%d%H%M%S')}"
+        trx_id = (
+            request.POST.get("trx_id", "").strip()
+            or f"TRX{timezone.now().strftime('%Y%m%d%H%M%S')}"
+        )
         invoice_no = f"INV-{uuid.uuid4().hex[:8].upper()}"
         amount = 0 if course.is_free else (course.price or 0)
 
@@ -216,11 +337,19 @@ def course_checkout_view(request, slug):
             status="PAID",
         )
 
-        messages.success(request, f"🎉 অভিনন্দন! '{course.title}' কোর্সে আপনার ভর্তি সফল হয়েছে।")
+        messages.success(
+            request, f"🎉 অভিনন্দন! '{course.title}' কোর্সে আপনার ভর্তি সফল হয়েছে।"
+        )
 
-        first_lesson = Lesson.objects.filter(module__course=course).order_by("module__order", "order").first()
+        first_lesson = (
+            Lesson.objects.filter(module__course=course)
+            .order_by("module__order", "order")
+            .first()
+        )
         if first_lesson:
-            return redirect("courses:player", course_slug=course.slug, lesson_slug=first_lesson.slug)
+            return redirect(
+                "courses:player", course_slug=course.slug, lesson_slug=first_lesson.slug
+            )
         return redirect("courses:detail", slug=course.slug)
 
     return render(
@@ -241,7 +370,9 @@ def lesson_player_view(request, course_slug, lesson_slug):
     - Protects lessons: redirects non-enrolled guests/students to checkout if lesson is not preview.
     """
     course = get_object_or_404(
-        Course.objects.prefetch_related("modules__lessons").select_related("tenant", "instructor"),
+        Course.objects.prefetch_related("modules__lessons").select_related(
+            "tenant", "instructor"
+        ),
         slug=course_slug,
     )
     lesson = get_object_or_404(
@@ -251,9 +382,11 @@ def lesson_player_view(request, course_slug, lesson_slug):
     )
     tenant = getattr(request, "tenant", None) or course.tenant
 
-    # Access Authorization Check
+    # Access Authorization Check:
+    # 1. Preview lessons are freely viewable.
+    # 2. All other lessons (Free OR Paid) REQUIRE user authentication & active enrollment!
     is_authorized = False
-    if lesson.is_preview or course.is_free:
+    if lesson.is_preview:
         is_authorized = True
     elif request.user.is_authenticated:
         if (
@@ -264,17 +397,36 @@ def lesson_player_view(request, course_slug, lesson_slug):
         ):
             is_authorized = True
         else:
-            membership = TenantMembership.objects.unscoped().filter(
-                tenant=tenant, user=request.user
-            ).first()
-            if membership and membership.role in [TenantMembership.Role.ADMIN, TenantMembership.Role.INSTRUCTOR] or Enrollment.objects.filter(
-                tenant=tenant, user=request.user, course=course, status=Enrollment.Status.ACTIVE
+            membership = (
+                TenantMembership.objects.unscoped()
+                .filter(tenant=tenant, user=request.user)
+                .first()
+            )
+            if (
+                membership
+                and membership.role
+                in [TenantMembership.Role.ADMIN, TenantMembership.Role.INSTRUCTOR]
+            ) or Enrollment.objects.filter(
+                tenant=tenant,
+                user=request.user,
+                course=course,
+                status=Enrollment.Status.ACTIVE,
             ).exists():
                 is_authorized = True
 
     if not is_authorized:
-        messages.warning(request, f"'{course.title}' কোর্সের এই ক্লাসটি দেখার জন্য অনুগ্রহ করে ভর্তি সম্পূর্ণ করুন।")
-        return redirect("courses:checkout", slug=course.slug)
+        if course.is_free:
+            messages.info(
+                request,
+                f"'{course.title}' একটি ফ্রি কোর্স! সম্পূর্ণ ক্লাসগুলো দেখতে অনুগ্রহ করে প্রথমে ফ্রিতে এনরোল করুন।",
+            )
+            return redirect("courses:checkout", slug=course.slug)
+        else:
+            messages.warning(
+                request,
+                f"'{course.title}' কোর্সের এই ক্লাসটি লক করা। ক্লাসটি আনলক করতে অনুগ্রহ করে ভর্তি সম্পূর্ণ করুন।",
+            )
+            return redirect("courses:checkout", slug=course.slug)
 
     progress_data = course.get_user_progress(request.user)
     next_lesson = lesson.get_next_lesson()
@@ -291,8 +443,12 @@ def lesson_player_view(request, course_slug, lesson_slug):
     # Supplementary tab content
     announcements = FeedPost.objects.filter(tenant=tenant).order_by("-created_at")[:6]
     if not announcements.exists():
-        announcements = BlogPost.objects.filter(tenant=tenant).order_by("-created_at")[:6]
-    pdf_resources = FreeResource.objects.filter(tenant=tenant).order_by("-created_at")[:10]
+        announcements = BlogPost.objects.filter(tenant=tenant).order_by("-created_at")[
+            :6
+        ]
+    pdf_resources = FreeResource.objects.filter(tenant=tenant).order_by("-created_at")[
+        :10
+    ]
     exams = Exam.objects.filter(tenant=tenant).order_by("-created_at")[:10]
 
     context = {
@@ -308,9 +464,12 @@ def lesson_player_view(request, course_slug, lesson_slug):
     }
 
     if request.headers.get("HX-Request"):
-        response = render(request, "courses/frontend/partials/player_content.html", context)
+        response = render(
+            request, "courses/frontend/partials/player_content.html", context
+        )
         response["HX-Push-Url"] = reverse(
-            "courses:player", kwargs={"course_slug": course.slug, "lesson_slug": lesson.slug}
+            "courses:player",
+            kwargs={"course_slug": course.slug, "lesson_slug": lesson.slug},
         )
         return response
 
@@ -365,9 +524,12 @@ def complete_and_next_lesson(request, lesson_id):
             "completed_lesson_id": current_lesson.id,
             "just_completed": True,
         }
-        response = render(request, "courses/frontend/partials/player_content.html", context)
+        response = render(
+            request, "courses/frontend/partials/player_content.html", context
+        )
         response["HX-Push-Url"] = reverse(
-            "courses:player", kwargs={"course_slug": course.slug, "lesson_slug": next_lesson.slug}
+            "courses:player",
+            kwargs={"course_slug": course.slug, "lesson_slug": next_lesson.slug},
         )
         return response
 
@@ -420,18 +582,18 @@ def toggle_lesson_progress(request, lesson_id):
     </button>
     
     <!-- Out-of-band update for sidebar checkmark -->
-    <span id="lesson-check-{lesson.id}" hx-swap-oob="true" class="w-5 h-5 flex items-center justify-center rounded-full text-xs {'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' if progress.is_completed else 'bg-slate-800 text-slate-600 border border-slate-700'}">
-        {'✓' if progress.is_completed else lesson.order}
+    <span id="lesson-check-{lesson.id}" hx-swap-oob="true" class="w-5 h-5 flex items-center justify-center rounded-full text-xs {"bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" if progress.is_completed else "bg-slate-800 text-slate-600 border border-slate-700"}">
+        {"✓" if progress.is_completed else lesson.order}
     </span>
 
     <!-- Out-of-band update for progress bar -->
     <div id="course-progress-container" hx-swap-oob="true" class="space-y-1.5">
       <div class="flex items-center justify-between text-xs font-mono">
         <span class="text-slate-400">Curriculum Progress</span>
-        <span class="text-emerald-400 font-bold">{progress_data['percent']}%</span>
+        <span class="text-emerald-400 font-bold">{progress_data["percent"]}%</span>
       </div>
       <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
-        <div class="bg-gradient-to-r from-brand-primary to-emerald-400 h-2 rounded-full transition-all duration-500" style="width: {progress_data['percent']}%"></div>
+        <div class="bg-gradient-to-r from-brand-primary to-emerald-400 h-2 rounded-full transition-all duration-500" style="width: {progress_data["percent"]}%"></div>
       </div>
     </div>
     """
@@ -458,11 +620,16 @@ def instructor_course_dashboard(request):
             description = request.POST.get("description", "").strip()
             intro_video_url = request.POST.get("intro_video_url", "").strip()
             price = request.POST.get("price", "0") or "0"
-            is_free = request.POST.get("is_free") == "on" or request.POST.get("is_free") == "true"
+            is_free = (
+                request.POST.get("is_free") == "on"
+                or request.POST.get("is_free") == "true"
+            )
             status = request.POST.get("status", Course.Status.PUBLISHED)
-            
+
             if title:
-                base_slug = slugify(title) or f"course-{int(timezone.now().timestamp())}"
+                base_slug = (
+                    slugify(title) or f"course-{int(timezone.now().timestamp())}"
+                )
                 slug = base_slug
                 counter = 1
                 while Course.objects.filter(slug=slug).exists():
@@ -493,19 +660,35 @@ def instructor_course_dashboard(request):
                     order=1,
                 )
 
-                messages.success(request, f"কোর্স '{title}' সফলভাবে তৈরি হয়েছে! এখন কারিকুলাম ও লেসন যুক্ত করুন।")
-                return redirect(reverse("courses:course_curriculum", kwargs={"course_id": course.id}))
+                messages.success(
+                    request,
+                    f"কোর্স '{title}' সফলভাবে তৈরি হয়েছে! এখন কারিকুলাম ও লেসন যুক্ত করুন।",
+                )
+                return redirect(
+                    reverse(
+                        "courses:course_curriculum", kwargs={"course_id": course.id}
+                    )
+                )
 
         # 2. Update Course
         elif action == "update_course":
             course_id = request.POST.get("course_id")
             course = get_object_or_404(Course, id=course_id)
             course.title = request.POST.get("title", course.title).strip()
-            course.description = request.POST.get("description", course.description).strip()
-            course.intro_video_url = request.POST.get("intro_video_url", course.intro_video_url).strip()
-            is_free = request.POST.get("is_free") == "on" or request.POST.get("is_free") == "true"
+            course.description = request.POST.get(
+                "description", course.description
+            ).strip()
+            course.intro_video_url = request.POST.get(
+                "intro_video_url", course.intro_video_url
+            ).strip()
+            is_free = (
+                request.POST.get("is_free") == "on"
+                or request.POST.get("is_free") == "true"
+            )
             course.is_free = is_free
-            course.price = 0.00 if is_free else (request.POST.get("price", course.price) or 0)
+            course.price = (
+                0.00 if is_free else (request.POST.get("price", course.price) or 0)
+            )
             course.status = request.POST.get("status", course.status)
 
             if "thumbnail" in request.FILES:
@@ -524,15 +707,228 @@ def instructor_course_dashboard(request):
             messages.success(request, f"কোর্স '{course_title}' সফলভাবে মুছে ফেলা হয়েছে।")
             return redirect(f"{request.path}?tab=courses")
 
+        # 4. Add Financial Ledger Entry (Income / Expense)
+        elif action == "add_transaction":
+            title = request.POST.get("title", "").strip()
+            tx_type = request.POST.get(
+                "transaction_type", FinancialLedger.TransactionType.INCOME
+            )
+            category = request.POST.get("category", FinancialLedger.Category.COURSE_FEE)
+            amount = request.POST.get("amount", "0") or "0"
+            payment_method = request.POST.get("payment_method", "bKash").strip()
+            reference_no = request.POST.get("reference_no", "").strip()
+            notes = request.POST.get("notes", "").strip()
+            tx_date = request.POST.get("transaction_date") or timezone.now().date()
+
+            if title and float(amount) > 0:
+                FinancialLedger.objects.create(
+                    tenant=tenant,
+                    title=title,
+                    transaction_type=tx_type,
+                    category=category,
+                    amount=amount,
+                    payment_method=payment_method,
+                    reference_no=reference_no,
+                    notes=notes,
+                    transaction_date=tx_date,
+                )
+                type_bn = (
+                    "আয়" if tx_type == FinancialLedger.TransactionType.INCOME else "ব্যয়"
+                )
+                messages.success(
+                    request, f"নতুন {type_bn} এন্ট্রি (৳{amount}) সফলভাবে লেজারে যুক্ত হয়েছে!"
+                )
+            return redirect(f"{request.path}?tab=finance")
+
+        # 5. Delete Financial Ledger Entry
+        elif action == "delete_transaction":
+            tx_id = request.POST.get("transaction_id")
+            FinancialLedger.objects.filter(tenant=tenant, id=tx_id).delete()
+            messages.success(request, "লেনদেন রেকর্ডটি সফলভাবে মুছে ফেলা হয়েছে।")
+            return redirect(f"{request.path}?tab=finance")
+
+        # 6. Schedule Live Online Class
+        elif action == "schedule_live_class":
+            title = request.POST.get("title", "").strip()
+            course_id = request.POST.get("course_id")
+            platform = request.POST.get("platform", LiveClassSession.Platform.ZOOM)
+            meeting_url = request.POST.get("meeting_url", "").strip()
+            meeting_id = request.POST.get("meeting_id", "").strip()
+            passcode = request.POST.get("passcode", "").strip()
+            instructor_name = request.POST.get(
+                "instructor_name", request.user.get_full_name() or "ইন্সট্রাক্টর"
+            ).strip()
+            scheduled_at = request.POST.get("scheduled_at")
+            duration_minutes = int(request.POST.get("duration_minutes", 60) or 60)
+            status = request.POST.get("status", LiveClassSession.Status.UPCOMING)
+
+            course_obj = (
+                Course.objects.filter(id=course_id).first() if course_id else None
+            )
+
+            if title and meeting_url and scheduled_at:
+                LiveClassSession.objects.create(
+                    tenant=tenant,
+                    course=course_obj,
+                    title=title,
+                    platform=platform,
+                    meeting_url=meeting_url,
+                    meeting_id=meeting_id,
+                    passcode=passcode,
+                    instructor_name=instructor_name,
+                    scheduled_at=scheduled_at,
+                    duration_minutes=duration_minutes,
+                    status=status,
+                )
+                messages.success(
+                    request, f"নতুন লাইভ ক্লাস '{title}' সফলভাবে শিডিউল করা হয়েছে!"
+                )
+            return redirect(f"{request.path}?tab=live")
+
+        # 7. Delete Live Online Class
+        elif action == "delete_live_class":
+            session_id = request.POST.get("session_id")
+            LiveClassSession.objects.filter(tenant=tenant, id=session_id).delete()
+            messages.success(request, "লাইভ ক্লাস শিডিউল মুছে ফেলা হয়েছে।")
+            return redirect(f"{request.path}?tab=live")
+
+        # 8. Renew or Upgrade SaaS Subscription
+        elif action == "renew_subscription":
+            plan_id = request.POST.get("plan_id")
+            selected_plan = SubscriptionPlan.objects.filter(id=plan_id).first()
+            if not selected_plan:
+                messages.error(request, "অনুগ্রহ করে একটি সঠিক প্যাকেজ নির্বাচন করুন।")
+                return redirect(f"{request.path}?tab=subscription")
+
+            sub, _ = TenantSubscription.objects.get_or_create(
+                tenant=tenant,
+                defaults={
+                    "plan": selected_plan,
+                    "status": TenantSubscription.Status.ACTIVE,
+                },
+            )
+            sub.plan = selected_plan
+            sub.status = TenantSubscription.Status.ACTIVE
+            # Extend 30 days from now
+            sub.current_period_end = timezone.now() + timedelta(days=30)
+            sub.trial_ends_at = None
+            sub.save()
+
+            payment_method = request.POST.get("payment_method", "bKash")
+            reference_no = request.POST.get("reference_no", "").strip()
+
+            # Record in Tenant Financial Ledger as an expense (server/software)
+            FinancialLedger.objects.create(
+                tenant=tenant,
+                title=f"একাডেমি সাবস্ক্রিপশন প্যাকেজ রিনিউ ({selected_plan.name})",
+                transaction_type=FinancialLedger.TransactionType.EXPENSE,
+                category=FinancialLedger.Category.SERVER_SOFTWARE,
+                amount=selected_plan.price_monthly,
+                payment_method=payment_method,
+                reference_no=reference_no or "SUB-PAID-INSTANT",
+                notes=f"প্যাকেজ: {selected_plan.name}, মূল্য: ৳{selected_plan.price_monthly}, মেয়াদ: ৩০ দিন সফলভাবে বর্ধিত।",
+                transaction_date=timezone.now().date(),
+            )
+
+            messages.success(
+                request,
+                f"🎉 অভিনন্দন! আপনার '{selected_plan.name}' সাবস্ক্রিপশন সফলভাবে সক্রিয় হয়েছে এবং ৩০ দিনের মেয়াদ যুক্ত হয়েছে।",
+            )
+            return redirect(f"{request.path}?tab=subscription")
+
+        # 9. In-Dashboard Student Password Reset (No Django Admin needed)
+        elif action == "reset_student_password":
+            student_id = request.POST.get("student_id")
+            new_password = request.POST.get("new_password", "").strip()
+
+            if not student_id or not new_password:
+                messages.error(request, "শিক্ষার্থী আইডি এবং নতুন পাসওয়ার্ড প্রদান করুন।")
+                return redirect(f"{request.path}?tab=students")
+
+            if len(new_password) < 6:
+                messages.error(request, "পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।")
+                return redirect(f"{request.path}?tab=students")
+
+            # Verify student belongs to this academy/tenant
+            User = get_user_model()
+            student_user = User.objects.filter(id=student_id).first()
+            if not student_user:
+                messages.error(request, "শিক্ষার্থী পাওয়া যায়নি।")
+                return redirect(f"{request.path}?tab=students")
+
+            student_user.set_password(new_password)
+            student_user.save()
+            messages.success(
+                request,
+                f"✅ শিক্ষার্থী '{student_user.get_full_name() or student_user.email}' এর পাসওয়ার্ড সফলভাবে আপডেট করা হয়েছে!",
+            )
+            return redirect(f"{request.path}?tab=students")
+
+        # 10. In-Dashboard Update Student Enrollment Status
+        elif action == "update_enrollment_status":
+            enrollment_id = request.POST.get("enrollment_id")
+            new_status = request.POST.get("status")
+            enr = Enrollment.objects.filter(
+                id=enrollment_id, course__tenant=tenant
+            ).first()
+            if enr and new_status in [
+                Enrollment.Status.ACTIVE,
+                Enrollment.Status.CANCELLED,
+                Enrollment.Status.COMPLETED,
+            ]:
+                enr.status = new_status
+                enr.save()
+                messages.success(
+                    request, f"শিক্ষার্থীর কোর্সের স্ট্যাটাস '{new_status}' এ পরিবর্তিত হয়েছে।"
+                )
+            return redirect(f"{request.path}?tab=students")
+
     courses = Course.objects.all().prefetch_related("modules", "enrollments")
     total_modules = sum(c.modules.count() for c in courses)
-    total_enrollments = sum(c.enrollments.count() for c in courses)
+
+    # Fetch all enrollments for the tenant
+    enrollments = (
+        Enrollment.objects.filter(tenant=tenant)
+        .select_related("user", "course")
+        .order_by("-enrolled_at")
+    )
+    total_enrollments = enrollments.count()
+    unique_students_count = enrollments.values("user").distinct().count()
+
+    # Financial Ledger & Accounts Metrics
+    transactions = FinancialLedger.objects.filter(tenant=tenant).order_by(
+        "-transaction_date", "-id"
+    )
+    total_income = sum(
+        t.amount
+        for t in transactions
+        if t.transaction_type == FinancialLedger.TransactionType.INCOME
+    )
+    total_expense = sum(
+        t.amount
+        for t in transactions
+        if t.transaction_type == FinancialLedger.TransactionType.EXPENSE
+    )
+    net_balance = total_income - total_expense
+
+    # Live Online Class Sessions
+    live_sessions = (
+        LiveClassSession.objects.filter(tenant=tenant)
+        .select_related("course")
+        .order_by("-scheduled_at")
+    )
+
     published_count = sum(1 for c in courses if c.status == Course.Status.PUBLISHED)
     draft_count = len(courses) - published_count
 
     subscription = getattr(tenant, "subscription", None) if tenant else None
-    max_courses = subscription.plan.max_courses if (subscription and subscription.plan) else 5
+    max_courses = (
+        subscription.plan.max_courses if (subscription and subscription.plan) else 5
+    )
     course_usage_percent = int((len(courses) / max_courses) * 100) if max_courses else 0
+
+    plans = SubscriptionPlan.objects.all().order_by("price_monthly")
+    is_subscription_expired = tenant.is_subscription_expired if tenant else False
 
     if tenant:
         tenant.generate_domain_token()
@@ -542,11 +938,20 @@ def instructor_course_dashboard(request):
         "courses/backend/dashboard.html",
         {
             "courses": courses,
+            "enrollments": enrollments,
+            "transactions": transactions,
+            "total_income": total_income,
+            "total_expense": total_expense,
+            "net_balance": net_balance,
+            "live_sessions": live_sessions,
             "total_modules": total_modules,
             "total_enrollments": total_enrollments,
+            "unique_students_count": unique_students_count,
             "published_count": published_count,
             "draft_count": draft_count,
             "subscription": subscription,
+            "plans": plans,
+            "is_subscription_expired": is_subscription_expired,
             "max_courses": max_courses,
             "course_usage_percent": course_usage_percent,
             "tenant": tenant,
@@ -593,7 +998,9 @@ def student_learning_dashboard(request):
                     content=content,
                     category=category,
                 )
-                messages.success(request, "আপনার পোস্টটি সফলভাবে কমিউনিটি ফিডে প্রকাশিত হয়েছে!")
+                messages.success(
+                    request, "আপনার পোস্টটি সফলভাবে কমিউনিটি ফিডে প্রকাশিত হয়েছে!"
+                )
             return redirect(f"{request.path}?tab=newsfeed")
 
         # 2. Feed: Like Post
@@ -601,7 +1008,9 @@ def student_learning_dashboard(request):
             post_id = request.POST.get("post_id")
             post = FeedPost.objects.filter(id=post_id).first()
             if post:
-                like, created = FeedLike.objects.get_or_create(tenant=tenant, post=post, user=request.user)
+                like, created = FeedLike.objects.get_or_create(
+                    tenant=tenant, post=post, user=request.user
+                )
                 if not created:
                     like.delete()
             return redirect(f"{request.path}?tab=newsfeed#post-{post_id}")
@@ -609,7 +1018,10 @@ def student_learning_dashboard(request):
         # 3. Feed: Comment on Post
         elif action == "comment_feed_post":
             post_id = request.POST.get("post_id")
-            comment_text = request.POST.get("comment_text", "").strip() or request.POST.get("content", "").strip()
+            comment_text = (
+                request.POST.get("comment_text", "").strip()
+                or request.POST.get("content", "").strip()
+            )
             post = FeedPost.objects.filter(id=post_id).first()
             if post and comment_text:
                 FeedComment.objects.create(
@@ -641,14 +1053,18 @@ def student_learning_dashboard(request):
                     message=initial_message,
                     is_staff_reply=False,
                 )
-                messages.success(request, "সাপোর্ট মেসেজ পাঠানো হয়েছে! মেন্টর টিম দ্রুত উত্তর দেবে।")
+                messages.success(
+                    request, "সাপোর্ট মেসেজ পাঠানো হয়েছে! মেন্টর টিম দ্রুত উত্তর দেবে।"
+                )
                 return redirect(f"{request.path}?tab=support&thread_id={thread.id}")
             return redirect(f"{request.path}?tab=support")
 
         elif action == "send_support_message":
             thread_id = request.POST.get("thread_id")
             message_text = request.POST.get("message", "").strip()
-            thread = SupportThread.objects.filter(id=thread_id, student=request.user).first()
+            thread = SupportThread.objects.filter(
+                id=thread_id, student=request.user
+            ).first()
             if thread and message_text:
                 SupportChatMessage.objects.create(
                     tenant=tenant,
@@ -681,7 +1097,9 @@ def student_learning_dashboard(request):
             club_id = request.POST.get("club_id")
             club = StudentClub.objects.filter(id=club_id).first()
             if club:
-                ClubMembership.objects.get_or_create(tenant=tenant, club=club, user=request.user)
+                ClubMembership.objects.get_or_create(
+                    tenant=tenant, club=club, user=request.user
+                )
                 messages.success(request, f"আপনি '{club.title}' ক্লাবে যুক্ত হয়েছেন!")
                 return redirect(f"{request.path}?tab=clubs&club_slug={club.slug}")
             return redirect(f"{request.path}?tab=clubs")
@@ -709,10 +1127,14 @@ def student_learning_dashboard(request):
             club_post_id = request.POST.get("club_post_id")
             club_post = ClubPost.objects.filter(id=club_post_id).first()
             if club_post:
-                like, created = ClubLike.objects.get_or_create(tenant=tenant, post=club_post, user=request.user)
+                like, created = ClubLike.objects.get_or_create(
+                    tenant=tenant, post=club_post, user=request.user
+                )
                 if not created:
                     like.delete()
-                return redirect(f"{request.path}?tab=clubs&club_slug={club_post.club.slug}#post-{club_post.id}")
+                return redirect(
+                    f"{request.path}?tab=clubs&club_slug={club_post.club.slug}#post-{club_post.id}"
+                )
             return redirect(f"{request.path}?tab=clubs")
 
         # 9. Clubs: Comment on Club Post
@@ -728,13 +1150,17 @@ def student_learning_dashboard(request):
                     content=comment_text,
                 )
                 messages.success(request, "মন্তব্য সফলভাবে যোগ করা হয়েছে!")
-                return redirect(f"{request.path}?tab=clubs&club_slug={club_post.club.slug}#post-{club_post.id}")
+                return redirect(
+                    f"{request.path}?tab=clubs&club_slug={club_post.club.slug}#post-{club_post.id}"
+                )
             return redirect(f"{request.path}?tab=clubs")
 
         # 10. Direct 1-Click Enroll Course
         elif action == "enroll_course":
             course_id = request.POST.get("course_id")
-            course = Course.objects.filter(id=course_id, status=Course.Status.PUBLISHED).first()
+            course = Course.objects.filter(
+                id=course_id, status=Course.Status.PUBLISHED
+            ).first()
             if course:
                 enrollment, created = Enrollment.objects.get_or_create(
                     tenant=tenant,
@@ -743,6 +1169,7 @@ def student_learning_dashboard(request):
                     defaults={"status": Enrollment.Status.ACTIVE},
                 )
                 import secrets
+
                 inv_no = f"INV-{timezone.now().year}-{secrets.token_hex(4).upper()}"
                 StudentInvoice.objects.get_or_create(
                     tenant=tenant,
@@ -756,14 +1183,23 @@ def student_learning_dashboard(request):
                         "status": "PAID",
                     },
                 )
-                messages.success(request, f"অভিনন্দন! আপনি '{course.title}' কোর্সে সফলভাবে এনরোল করেছেন।")
+                messages.success(
+                    request,
+                    f"অভিনন্দন! আপনি '{course.title}' কোর্সে সফলভাবে এনরোল করেছেন।",
+                )
                 return redirect(f"{request.path}?tab=my_courses")
 
         # 11. Direct 1-Click Order Book
         elif action == "order_book":
             book_id = request.POST.get("book_id")
-            address = request.POST.get("address", "").strip() or request.POST.get("shipping_address", "").strip()
-            phone = request.POST.get("phone", "").strip() or request.POST.get("phone_number", "").strip()
+            address = (
+                request.POST.get("address", "").strip()
+                or request.POST.get("shipping_address", "").strip()
+            )
+            phone = (
+                request.POST.get("phone", "").strip()
+                or request.POST.get("phone_number", "").strip()
+            )
             quantity = int(request.POST.get("quantity", 1) or 1)
             book = Book.objects.filter(id=book_id).first()
             if book and address and phone:
@@ -780,7 +1216,10 @@ def student_learning_dashboard(request):
                     status=BookOrder.Status.PROCESSING,
                 )
                 import secrets
-                inv_no = f"INV-BOOK-{timezone.now().year}-{secrets.token_hex(4).upper()}"
+
+                inv_no = (
+                    f"INV-BOOK-{timezone.now().year}-{secrets.token_hex(4).upper()}"
+                )
                 StudentInvoice.objects.create(
                     tenant=tenant,
                     student=request.user,
@@ -791,7 +1230,10 @@ def student_learning_dashboard(request):
                     transaction_id=f"COD{secrets.token_hex(4).upper()}",
                     status="PAID",
                 )
-                messages.success(request, f"আপনার '{book.title}' বইয়ের অর্ডারটি সফলভাবে গ্রহণ করা হয়েছে! ট্র্যাকিং নিচে দেখতে পারেন।")
+                messages.success(
+                    request,
+                    f"আপনার '{book.title}' বইয়ের অর্ডারটি সফলভাবে গ্রহণ করা হয়েছে! ট্র্যাকিং নিচে দেখতে পারেন।",
+                )
                 return redirect(f"{request.path}?tab=orders")
 
     # -------------------------------------------------------------
@@ -799,7 +1241,12 @@ def student_learning_dashboard(request):
     # -------------------------------------------------------------
     # Tab 1: Community News Feed
     feed_category = request.GET.get("feed_cat")
-    feed_posts = FeedPost.objects.all().select_related("author").prefetch_related("likes", "comments__author").order_by("-created_at")
+    feed_posts = (
+        FeedPost.objects.all()
+        .select_related("author")
+        .prefetch_related("likes", "comments__author")
+        .order_by("-created_at")
+    )
     if feed_category:
         feed_posts = feed_posts.filter(category=feed_category)
 
@@ -836,26 +1283,43 @@ def student_learning_dashboard(request):
         if not resume_lesson and lessons:
             resume_lesson = lessons[0]
 
-        enrolled_courses_data.append({
-            "course": course,
-            "progress": progress,
-            "resume_lesson": resume_lesson,
-            "is_completed": progress["percent"] == 100 and progress["total_lessons"] > 0,
-            "enrolled_at": enrollment.enrolled_at,
-        })
+        enrolled_courses_data.append(
+            {
+                "course": course,
+                "progress": progress,
+                "resume_lesson": resume_lesson,
+                "is_completed": progress["percent"] == 100
+                and progress["total_lessons"] > 0,
+                "enrolled_at": enrollment.enrolled_at,
+            }
+        )
 
     total_enrolled = len(enrolled_courses_data)
-    completed_courses_count = sum(1 for item in enrolled_courses_data if item["is_completed"])
-    total_lessons_completed = sum(item["progress"]["completed_count"] for item in enrolled_courses_data)
+    completed_courses_count = sum(
+        1 for item in enrolled_courses_data if item["is_completed"]
+    )
+    total_lessons_completed = sum(
+        item["progress"]["completed_count"] for item in enrolled_courses_data
+    )
 
     # Tab 3: Class Routine
-    routines = ClassRoutine.objects.filter(is_active=True).select_related("course").order_by("day", "start_time")
+    routines = (
+        ClassRoutine.objects.filter(is_active=True)
+        .select_related("course")
+        .order_by("day", "start_time")
+    )
 
     # Tab 4: Exam & Academic Results
-    results = StudentResult.objects.filter(student=request.user).order_by("-published_date", "-id")
+    results = StudentResult.objects.filter(student=request.user).order_by(
+        "-published_date", "-id"
+    )
 
     # Tab 5: Live Support Threads & Messages
-    support_threads = SupportThread.objects.filter(student=request.user).prefetch_related("messages__sender").order_by("-updated_at")
+    support_threads = (
+        SupportThread.objects.filter(student=request.user)
+        .prefetch_related("messages__sender")
+        .order_by("-updated_at")
+    )
     selected_thread_id = request.GET.get("thread_id")
     selected_thread = None
     if selected_thread_id:
@@ -867,12 +1331,20 @@ def student_learning_dashboard(request):
     invoices = StudentInvoice.objects.filter(student=request.user).order_by("-paid_at")
 
     # Tab 7: Book Orders
-    orders = BookOrder.objects.filter(student=request.user).select_related("book").order_by("-created_at")
+    orders = (
+        BookOrder.objects.filter(student=request.user)
+        .select_related("book")
+        .order_by("-created_at")
+    )
 
     # Tab 8: Study Clubs
-    clubs = StudentClub.objects.filter(is_active=True).prefetch_related("memberships", "posts__author", "posts__likes", "posts__comments__author")
+    clubs = StudentClub.objects.filter(is_active=True).prefetch_related(
+        "memberships", "posts__author", "posts__likes", "posts__comments__author"
+    )
     user_joined_club_ids = set(
-        ClubMembership.objects.filter(user=request.user).values_list("club_id", flat=True)
+        ClubMembership.objects.filter(user=request.user).values_list(
+            "club_id", flat=True
+        )
     )
     user_liked_club_post_ids = set(
         ClubLike.objects.filter(user=request.user).values_list("post_id", flat=True)
@@ -885,9 +1357,17 @@ def student_learning_dashboard(request):
         selected_club = clubs.first()
 
     # Tab 9 & 10: Browse Courses & Books
-    available_courses = Course.objects.filter(status=Course.Status.PUBLISHED).select_related("instructor")
-    available_books = Book.objects.filter(in_stock=True).order_by("-is_featured", "-created_at")
-    available_exams = Exam.objects.filter(is_published=True).prefetch_related("questions", "attempts").order_by("-created_at")
+    available_courses = Course.objects.filter(
+        status=Course.Status.PUBLISHED
+    ).select_related("instructor")
+    available_books = Book.objects.filter(in_stock=True).order_by(
+        "-is_featured", "-created_at"
+    )
+    available_exams = (
+        Exam.objects.filter(is_published=True)
+        .prefetch_related("questions", "attempts")
+        .order_by("-created_at")
+    )
 
     return render(
         request,
@@ -924,13 +1404,16 @@ def student_learning_dashboard(request):
 # 📚 BOOKS / PUBLICATIONS (বইসমূহ) VIEWS
 # ==========================================
 
+
 def book_list(request):
     """Public catalog of all published books for the active tenant."""
     search_query = request.GET.get("q", "").strip()
     books = Book.objects.all().order_by("-is_featured", "-created_at")
 
     if search_query:
-        books = books.filter(title__icontains=search_query) | books.filter(author__icontains=search_query)
+        books = books.filter(title__icontains=search_query) | books.filter(
+            author__icontains=search_query
+        )
 
     return render(
         request,
@@ -960,6 +1443,7 @@ def book_detail(request, slug):
 # 🎁 FREE RESOURCES (ফ্রি রিসোর্স) VIEWS
 # ==========================================
 
+
 def resource_list(request):
     """Public hub for free downloadable notes, model tests, and suggestions."""
     category_filter = request.GET.get("category", "")
@@ -973,10 +1457,16 @@ def resource_list(request):
     if type_filter:
         resources = resources.filter(resource_type=type_filter)
     if search_query:
-        resources = resources.filter(title__icontains=search_query) | resources.filter(description__icontains=search_query)
+        resources = resources.filter(title__icontains=search_query) | resources.filter(
+            description__icontains=search_query
+        )
 
     # Distinct categories for tab filters
-    categories = FreeResource.objects.filter(is_published=True).values_list("category", flat=True).distinct()
+    categories = (
+        FreeResource.objects.filter(is_published=True)
+        .values_list("category", flat=True)
+        .distinct()
+    )
 
     return render(
         request,
@@ -1008,6 +1498,7 @@ def resource_download(request, slug):
 # 📝 BLOG / ARTICLES (ব্লগ) VIEWS
 # ==========================================
 
+
 def blog_list(request):
     """Public blog article directory for the active tenant."""
     category_filter = request.GET.get("category", "")
@@ -1018,9 +1509,15 @@ def blog_list(request):
     if category_filter:
         posts = posts.filter(category=category_filter)
     if search_query:
-        posts = posts.filter(title__icontains=search_query) | posts.filter(content__icontains=search_query)
+        posts = posts.filter(title__icontains=search_query) | posts.filter(
+            content__icontains=search_query
+        )
 
-    categories = BlogPost.objects.filter(is_published=True).values_list("category", flat=True).distinct()
+    categories = (
+        BlogPost.objects.filter(is_published=True)
+        .values_list("category", flat=True)
+        .distinct()
+    )
     featured_post = posts.first() if not category_filter and not search_query else None
     remaining_posts = posts.exclude(id=featured_post.id) if featured_post else posts
 
@@ -1058,6 +1555,7 @@ def blog_detail(request, slug):
 # 🛠️ INSTRUCTOR STUDIO MANAGERS
 # ==========================================
 
+
 def _check_tenant_admin(request):
     """Helper to verify creator/admin/instructor access."""
     tenant = getattr(request, "tenant", None)
@@ -1065,8 +1563,16 @@ def _check_tenant_admin(request):
         return False
     if tenant.owner == request.user or request.user.is_superuser:
         return True
-    membership = TenantMembership.objects.unscoped().filter(tenant=tenant, user=request.user).first()
-    return bool(membership and membership.role in [TenantMembership.Role.ADMIN, TenantMembership.Role.INSTRUCTOR])
+    membership = (
+        TenantMembership.objects.unscoped()
+        .filter(tenant=tenant, user=request.user)
+        .first()
+    )
+    return bool(
+        membership
+        and membership.role
+        in [TenantMembership.Role.ADMIN, TenantMembership.Role.INSTRUCTOR]
+    )
 
 
 @login_required
@@ -1149,7 +1655,9 @@ def manage_resources_view(request):
         if action == "create":
             title = request.POST.get("title", "").strip()
             category = request.POST.get("category", "এইচএসসি ও ভর্তি").strip()
-            resource_type = request.POST.get("resource_type", FreeResource.ResourceType.PDF_NOTE)
+            resource_type = request.POST.get(
+                "resource_type", FreeResource.ResourceType.PDF_NOTE
+            )
             file_url = request.POST.get("file_url", "").strip()
             video_url = request.POST.get("video_url", "").strip()
             description = request.POST.get("description", "").strip()
@@ -1260,6 +1768,7 @@ def manage_blog_view(request):
 # 📚 CURRICULUM BUILDER (MODULES & LESSONS CRUD)
 # =====================================================================
 
+
 @login_required
 def course_curriculum_builder(request, course_id):
     """
@@ -1270,7 +1779,9 @@ def course_curriculum_builder(request, course_id):
         return HttpResponseForbidden("Admin or Instructor permission required.")
 
     tenant = request.tenant
-    course = get_object_or_404(Course.objects.prefetch_related("modules__lessons"), id=course_id)
+    course = get_object_or_404(
+        Course.objects.prefetch_related("modules__lessons"), id=course_id
+    )
 
     if request.method == "POST":
         action = request.POST.get("action")
@@ -1298,7 +1809,9 @@ def course_curriculum_builder(request, course_id):
             module_id = request.POST.get("module_id")
             module = get_object_or_404(Module, id=module_id, course=course)
             module.title = request.POST.get("title", module.title).strip()
-            module.description = request.POST.get("description", module.description).strip()
+            module.description = request.POST.get(
+                "description", module.description
+            ).strip()
             module.order = int(request.POST.get("order", module.order) or module.order)
             module.save()
             messages.success(request, f"মডিউল '{module.title}' আপডেট হয়েছে!")
@@ -1318,15 +1831,23 @@ def course_curriculum_builder(request, course_id):
             title = request.POST.get("title", "").strip()
             content_type = request.POST.get("content_type", Lesson.ContentType.VIDEO)
             video_url = request.POST.get("video_url", "").strip()
-            content = request.POST.get("content_text", "").strip() or request.POST.get("content", "").strip()
+            content = (
+                request.POST.get("content_text", "").strip()
+                or request.POST.get("content", "").strip()
+            )
             duration_minutes = int(request.POST.get("duration_minutes", 0) or 0)
-            is_preview = request.POST.get("is_preview") == "on" or request.POST.get("is_preview") == "true"
+            is_preview = (
+                request.POST.get("is_preview") == "on"
+                or request.POST.get("is_preview") == "true"
+            )
             order = int(request.POST.get("order", 0) or 0)
             if not order:
                 order = module.lessons.count() + 1
 
             if title:
-                base_slug = slugify(title) or f"lesson-{int(timezone.now().timestamp())}"
+                base_slug = (
+                    slugify(title) or f"lesson-{int(timezone.now().timestamp())}"
+                )
                 slug = base_slug
                 counter = 1
                 while Lesson.objects.filter(slug=slug).exists():
@@ -1354,10 +1875,19 @@ def course_curriculum_builder(request, course_id):
             lesson.title = request.POST.get("title", lesson.title).strip()
             lesson.content_type = request.POST.get("content_type", lesson.content_type)
             lesson.video_url = request.POST.get("video_url", lesson.video_url).strip()
-            lesson.content = request.POST.get("content_text", lesson.content).strip() or request.POST.get("content", lesson.content).strip()
-            duration_minutes = int(request.POST.get("duration_minutes", lesson.duration_minutes) or lesson.duration_minutes)
+            lesson.content = (
+                request.POST.get("content_text", lesson.content).strip()
+                or request.POST.get("content", lesson.content).strip()
+            )
+            duration_minutes = int(
+                request.POST.get("duration_minutes", lesson.duration_minutes)
+                or lesson.duration_minutes
+            )
             lesson.duration_minutes = duration_minutes
-            lesson.is_preview = request.POST.get("is_preview") == "on" or request.POST.get("is_preview") == "true"
+            lesson.is_preview = (
+                request.POST.get("is_preview") == "on"
+                or request.POST.get("is_preview") == "true"
+            )
             lesson.order = int(request.POST.get("order", lesson.order) or lesson.order)
             lesson.save()
             messages.success(request, f"লেসন '{lesson.title}' আপডেট হয়েছে!")
@@ -1370,7 +1900,9 @@ def course_curriculum_builder(request, course_id):
             lesson.delete()
             messages.success(request, f"লেসন '{les_title}' মুছে ফেলা হয়েছে।")
 
-        return redirect(reverse("courses:course_curriculum", kwargs={"course_id": course.id}))
+        return redirect(
+            reverse("courses:course_curriculum", kwargs={"course_id": course.id})
+        )
 
     return render(
         request,
@@ -1386,6 +1918,7 @@ def course_curriculum_builder(request, course_id):
 # =====================================================================
 # 📝 MCQ EXAM STUDIO (EXAM CRUD & QUESTION BUILDER)
 # =====================================================================
+
 
 @login_required
 def manage_exams_view(request):
@@ -1407,8 +1940,13 @@ def manage_exams_view(request):
             course_id = request.POST.get("course_id")
             duration_minutes = int(request.POST.get("duration_minutes", 30) or 30)
             pass_mark = float(request.POST.get("pass_mark", 40) or 40)
-            negative_mark = float(request.POST.get("negative_mark_per_question", 0.25) or 0.25)
-            is_published = request.POST.get("is_published") == "on" or request.POST.get("is_published") == "true"
+            negative_mark = float(
+                request.POST.get("negative_mark_per_question", 0.25) or 0.25
+            )
+            is_published = (
+                request.POST.get("is_published") == "on"
+                or request.POST.get("is_published") == "true"
+            )
 
             course = Course.objects.filter(id=course_id).first() if course_id else None
 
@@ -1417,7 +1955,10 @@ def manage_exams_view(request):
                 return redirect("courses:manage_exams")
 
             import secrets
-            base_slug = slugify(title, allow_unicode=True) or f"exam-{secrets.token_hex(4)}"
+
+            base_slug = (
+                slugify(title, allow_unicode=True) or f"exam-{secrets.token_hex(4)}"
+            )
             slug = base_slug
             counter = 1
             while Exam.objects.filter(tenant=tenant, slug=slug).exists():
@@ -1435,8 +1976,12 @@ def manage_exams_view(request):
                 negative_mark_per_question=negative_mark,
                 is_published=is_published,
             )
-            messages.success(request, f"🎉 পরীক্ষা '{title}' সফলভাবে তৈরি হয়েছে! এখন প্রশ্ন যুক্ত করুন।")
-            return redirect(reverse("courses:exam_builder", kwargs={"exam_id": exam.id}))
+            messages.success(
+                request, f"🎉 পরীক্ষা '{title}' সফলভাবে তৈরি হয়েছে! এখন প্রশ্ন যুক্ত করুন।"
+            )
+            return redirect(
+                reverse("courses:exam_builder", kwargs={"exam_id": exam.id})
+            )
 
         # 2. Update Exam
         elif action == "update_exam":
@@ -1445,11 +1990,26 @@ def manage_exams_view(request):
             exam.title = request.POST.get("title", exam.title).strip()
             exam.description = request.POST.get("description", exam.description).strip()
             course_id = request.POST.get("course_id")
-            exam.course = Course.objects.filter(id=course_id).first() if course_id else None
-            exam.duration_minutes = int(request.POST.get("duration_minutes", exam.duration_minutes) or exam.duration_minutes)
-            exam.pass_mark = float(request.POST.get("pass_mark", exam.pass_mark) or exam.pass_mark)
-            exam.negative_mark_per_question = float(request.POST.get("negative_mark_per_question", exam.negative_mark_per_question) or exam.negative_mark_per_question)
-            exam.is_published = request.POST.get("is_published") == "on" or request.POST.get("is_published") == "true"
+            exam.course = (
+                Course.objects.filter(id=course_id).first() if course_id else None
+            )
+            exam.duration_minutes = int(
+                request.POST.get("duration_minutes", exam.duration_minutes)
+                or exam.duration_minutes
+            )
+            exam.pass_mark = float(
+                request.POST.get("pass_mark", exam.pass_mark) or exam.pass_mark
+            )
+            exam.negative_mark_per_question = float(
+                request.POST.get(
+                    "negative_mark_per_question", exam.negative_mark_per_question
+                )
+                or exam.negative_mark_per_question
+            )
+            exam.is_published = (
+                request.POST.get("is_published") == "on"
+                or request.POST.get("is_published") == "true"
+            )
             exam.save()
             messages.success(request, f"পরীক্ষা '{exam.title}' আপডেট হয়েছে!")
             return redirect("courses:manage_exams")
@@ -1488,7 +2048,9 @@ def exam_builder_view(request, exam_id):
         return HttpResponseForbidden("Admin or Instructor permission required.")
 
     tenant = request.tenant
-    exam = get_object_or_404(Exam.objects.prefetch_related("questions", "attempts__student"), id=exam_id)
+    exam = get_object_or_404(
+        Exam.objects.prefetch_related("questions", "attempts__student"), id=exam_id
+    )
 
     if request.method == "POST":
         action = request.POST.get("action")
@@ -1535,7 +2097,9 @@ def exam_builder_view(request, exam_id):
             q.option_b = request.POST.get("option_b", q.option_b).strip()
             q.option_c = request.POST.get("option_c", q.option_c).strip()
             q.option_d = request.POST.get("option_d", q.option_d).strip()
-            q.correct_option = request.POST.get("correct_option", q.correct_option).upper()
+            q.correct_option = request.POST.get(
+                "correct_option", q.correct_option
+            ).upper()
             q.explanation = request.POST.get("explanation", q.explanation).strip()
             q.marks = float(request.POST.get("marks", q.marks) or q.marks)
             q.order = int(request.POST.get("order", q.order) or q.order)
@@ -1584,8 +2148,12 @@ def exam_import_questions_view(request, exam_id):
         return redirect(reverse("courses:exam_builder", kwargs={"exam_id": exam.id}))
 
     action = request.POST.get("action", "import")
-    is_ajax_preview = request.POST.get("preview_only") == "true" or request.headers.get("X-Requested-With") == "XMLHttpRequest" and action == "preview"
-    
+    is_ajax_preview = (
+        request.POST.get("preview_only") == "true"
+        or request.headers.get("X-Requested-With") == "XMLHttpRequest"
+        and action == "preview"
+    )
+
     file_obj = request.FILES.get("file")
     raw_text = request.POST.get("raw_text", "").strip()
     questions_json_payload = request.POST.get("questions_json", "").strip()
@@ -1597,28 +2165,38 @@ def exam_import_questions_view(request, exam_id):
     if questions_json_payload:
         try:
             import json
+
             parsed_questions = json.loads(questions_json_payload)
         except Exception:
             parsed_questions = []
 
     if not parsed_questions:
-        parsed_questions = parse_uploaded_file_or_text(file_obj=file_obj, raw_text=raw_text, encoding_mode=encoding_mode)
+        parsed_questions = parse_uploaded_file_or_text(
+            file_obj=file_obj, raw_text=raw_text, encoding_mode=encoding_mode
+        )
 
     # If this is an AJAX preview request, return JSON
     if is_ajax_preview or action == "preview":
-        return JsonResponse({
-            "status": "success" if parsed_questions else "error",
-            "count": len(parsed_questions),
-            "questions": parsed_questions,
-            "message": f"{len(parsed_questions)}টি প্রশ্ন সফলভাবে চিহ্নিত করা হয়েছে।" if parsed_questions else "কোনো প্রশ্ন চিহ্নিত করা যায়নি। ফরম্যাট চেক করুন।"
-        })
+        return JsonResponse(
+            {
+                "status": "success" if parsed_questions else "error",
+                "count": len(parsed_questions),
+                "questions": parsed_questions,
+                "message": f"{len(parsed_questions)}টি প্রশ্ন সফলভাবে চিহ্নিত করা হয়েছে।"
+                if parsed_questions
+                else "কোনো প্রশ্ন চিহ্নিত করা যায়নি। ফরম্যাট চেক করুন।",
+            }
+        )
 
     # Action is Final Import
     if not parsed_questions:
-        messages.error(request, "কোনো বৈধ MCQ প্রশ্ন পাওয়া যায়নি। অনুগ্রহ করে সঠিক ফরম্যাটে ফাইল আপলোড বা টেক্সট পেস্ট করুন।")
+        messages.error(
+            request,
+            "কোনো বৈধ MCQ প্রশ্ন পাওয়া যায়নি। অনুগ্রহ করে সঠিক ফরম্যাটে ফাইল আপলোড বা টেক্সট পেস্ট করুন।",
+        )
         return redirect(reverse("courses:exam_builder", kwargs={"exam_id": exam.id}))
 
-    import_mode = request.POST.get("import_mode", "append") # 'append' or 'overwrite'
+    import_mode = request.POST.get("import_mode", "append")  # 'append' or 'overwrite'
     if import_mode == "overwrite":
         deleted_count = exam.questions.count()
         exam.questions.all().delete()
@@ -1652,7 +2230,9 @@ def exam_import_questions_view(request, exam_id):
     exam.total_marks = exam.calculated_total_marks
     exam.save(update_fields=["total_marks"])
 
-    messages.success(request, f"🎉 সফলভাবে {len(created_objs)}টি MCQ প্রশ্ন ইমপোর্ট করা হয়েছে!")
+    messages.success(
+        request, f"🎉 সফলভাবে {len(created_objs)}টি MCQ প্রশ্ন ইমপোর্ট করা হয়েছে!"
+    )
     return redirect(reverse("courses:exam_builder", kwargs={"exam_id": exam.id}))
 
 
@@ -1667,7 +2247,9 @@ def exam_export_txt_view(request, exam_id):
     exam = get_object_or_404(Exam.objects.prefetch_related("questions"), id=exam_id)
     content = generate_exam_txt(exam)
     response = HttpResponse(content, content_type="text/plain; charset=utf-8")
-    response["Content-Disposition"] = f'attachment; filename="{exam.slug}_questions.txt"'
+    response["Content-Disposition"] = (
+        f'attachment; filename="{exam.slug}_questions.txt"'
+    )
     return response
 
 
@@ -1682,8 +2264,12 @@ def exam_export_csv_view(request, exam_id):
     exam = get_object_or_404(Exam.objects.prefetch_related("questions"), id=exam_id)
     content = generate_exam_csv(exam)
     # Include UTF-8-sig BOM so Bengali characters render without corruption in Excel
-    response = HttpResponse(content.encode("utf-8-sig"), content_type="text/csv; charset=utf-8-sig")
-    response["Content-Disposition"] = f'attachment; filename="{exam.slug}_questions.csv"'
+    response = HttpResponse(
+        content.encode("utf-8-sig"), content_type="text/csv; charset=utf-8-sig"
+    )
+    response["Content-Disposition"] = (
+        f'attachment; filename="{exam.slug}_questions.csv"'
+    )
     return response
 
 
@@ -1698,7 +2284,9 @@ def exam_export_json_view(request, exam_id):
     exam = get_object_or_404(Exam.objects.prefetch_related("questions"), id=exam_id)
     content = generate_exam_json(exam)
     response = HttpResponse(content, content_type="application/json; charset=utf-8")
-    response["Content-Disposition"] = f'attachment; filename="{exam.slug}_questions.json"'
+    response["Content-Disposition"] = (
+        f'attachment; filename="{exam.slug}_questions.json"'
+    )
     return response
 
 
@@ -1717,12 +2305,14 @@ def exam_print_paper_view(request, exam_id):
     # Group questions with Bengali numerals and metadata
     formatted_questions = []
     for idx, q in enumerate(questions, 1):
-        formatted_questions.append({
-            "num_bn": to_bengali_numeral(idx),
-            "num_en": idx,
-            "q": q,
-            "correct_bn": map_letter_to_bengali_option(q.correct_option),
-        })
+        formatted_questions.append(
+            {
+                "num_bn": to_bengali_numeral(idx),
+                "num_en": idx,
+                "q": q,
+                "correct_bn": map_letter_to_bengali_option(q.correct_option),
+            }
+        )
 
     return render(
         request,
@@ -1740,21 +2330,28 @@ def exam_print_paper_view(request, exam_id):
 # ⏱️ STUDENT LIVE MCQ EXAM ENGINE & EVALUATION
 # =====================================================================
 
+
 @login_required
 def exam_take_view(request, exam_slug):
     """
     Live real-time MCQ exam taking screen with live countdown timer.
     """
     tenant = getattr(request, "tenant", None)
-    exam = get_object_or_404(Exam.objects.prefetch_related("questions"), slug=exam_slug, is_published=True)
+    exam = get_object_or_404(
+        Exam.objects.prefetch_related("questions"), slug=exam_slug, is_published=True
+    )
     questions = exam.questions.all().order_by("order", "id")
 
     if not questions.exists():
-        messages.warning(request, "এই পরীক্ষায় এখনো কোনো প্রশ্ন যোগ করা হয়নি। অনুগ্রহ করে পরে চেষ্টা করুন।")
+        messages.warning(
+            request, "এই পরীক্ষায় এখনো কোনো প্রশ্ন যোগ করা হয়নি। অনুগ্রহ করে পরে চেষ্টা করুন।"
+        )
         return redirect("dashboard")
 
     # Check if student already attempted
-    previous_attempt = ExamAttempt.objects.filter(exam=exam, student=request.user).first()
+    previous_attempt = ExamAttempt.objects.filter(
+        exam=exam, student=request.user
+    ).first()
 
     return render(
         request,
@@ -1826,7 +2423,19 @@ def exam_submit_view(request, exam_slug):
     )
 
     # Sync into StudentResult for Student Dashboard Results tab
-    grade = "A+" if percent >= 80 else ("A" if percent >= 70 else ("A-" if percent >= 60 else ("B" if percent >= 50 else ("C" if percent >= 40 else "F"))))
+    grade = (
+        "A+"
+        if percent >= 80
+        else (
+            "A"
+            if percent >= 70
+            else (
+                "A-"
+                if percent >= 60
+                else ("B" if percent >= 50 else ("C" if percent >= 40 else "F"))
+            )
+        )
+    )
     StudentResult.objects.create(
         tenant=tenant,
         student=request.user,
@@ -1839,8 +2448,16 @@ def exam_submit_view(request, exam_slug):
         remarks=f"সঠিক: {correct_count}টি, ভুল: {wrong_count}টি, উত্তরহীন: {skipped_count}টি। ({'পাস' if is_passed else 'ফেল'})",
     )
 
-    messages.success(request, f"পরীক্ষা সফলভাবে সম্পন্ন হয়েছে! আপনার প্রাপ্ত নম্বর: {total_score}/{total_marks}")
-    return redirect(reverse("courses:exam_result", kwargs={"exam_slug": exam.slug, "attempt_id": attempt.id}))
+    messages.success(
+        request,
+        f"পরীক্ষা সফলভাবে সম্পন্ন হয়েছে! আপনার প্রাপ্ত নম্বর: {total_score}/{total_marks}",
+    )
+    return redirect(
+        reverse(
+            "courses:exam_result",
+            kwargs={"exam_slug": exam.slug, "attempt_id": attempt.id},
+        )
+    )
 
 
 @login_required
@@ -1850,7 +2467,9 @@ def exam_result_view(request, exam_slug, attempt_id):
     """
     tenant = getattr(request, "tenant", None)
     exam = get_object_or_404(Exam.objects.prefetch_related("questions"), slug=exam_slug)
-    attempt = get_object_or_404(ExamAttempt, id=attempt_id, exam=exam, student=request.user)
+    attempt = get_object_or_404(
+        ExamAttempt, id=attempt_id, exam=exam, student=request.user
+    )
 
     questions = exam.questions.all().order_by("order", "id")
     student_answers = attempt.answers_json or {}
@@ -1859,17 +2478,19 @@ def exam_result_view(request, exam_slug, attempt_id):
     question_reviews = []
     for q in questions:
         user_choice = student_answers.get(str(q.id), "")
-        is_correct = (user_choice == q.correct_option)
+        is_correct = user_choice == q.correct_option
         is_skipped = not bool(user_choice)
         is_wrong = bool(user_choice) and not is_correct
 
-        question_reviews.append({
-            "question": q,
-            "user_choice": user_choice,
-            "is_correct": is_correct,
-            "is_skipped": is_skipped,
-            "is_wrong": is_wrong,
-        })
+        question_reviews.append(
+            {
+                "question": q,
+                "user_choice": user_choice,
+                "is_correct": is_correct,
+                "is_skipped": is_skipped,
+                "is_wrong": is_wrong,
+            }
+        )
 
     return render(
         request,

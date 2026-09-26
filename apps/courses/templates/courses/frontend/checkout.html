@@ -208,7 +208,18 @@
               </div>
             {% endif %}
 
-            {% if not course.is_free %}
+            {% if course.is_free %}
+              <!-- Free Course Notice -->
+              <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 space-y-1.5 text-center">
+                <div class="text-emerald-700 dark:text-emerald-400 font-extrabold text-sm flex items-center justify-center gap-2">
+                  <span>🎁</span>
+                  <span>১০০% সম্পূর্ণ ফ্রি কোর্স</span>
+                </div>
+                <p class="text-xs text-slate-600 dark:text-slate-400">
+                  এই কোর্সটির জন্য কোনো পেমেন্ট গেটওয়ে লাগবে না। নিচের বাটনে ক্লিক করলেই আপনার ভর্তি নিশ্চিত হবে এবং সমস্ত মডিউল আনলক হয়ে যাবে।
+                </p>
+              </div>
+            {% else %}
               <!-- Step 2: Payment Method Selection -->
               <div class="space-y-3 pt-3 border-t border-slate-200 dark:border-slate-800">
                 <label class="font-bold text-slate-900 dark:text-white block text-sm">
@@ -268,14 +279,14 @@
             <div class="pt-4">
               <button 
                 type="submit" 
-                class="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-brand-primary to-cyan-500 text-white font-black text-sm shadow-xl shadow-brand-primary/25 hover:opacity-95 hover:shadow-2xl transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                class="w-full py-4 px-6 rounded-2xl {% if course.is_free %}bg-gradient-to-r from-emerald-500 to-teal-500 shadow-emerald-500/25{% else %}bg-gradient-to-r from-brand-primary to-cyan-500 shadow-brand-primary/25{% endif %} text-white font-black text-sm shadow-xl hover:opacity-95 hover:shadow-2xl transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
               >
                 <span>🚀</span>
-                <span>ভর্তি নিশ্চিত করুন ও ক্লাসে প্রবেশ করুন →</span>
+                <span>{% if course.is_free %}সম্পূর্ণ ফ্রিতে ভর্তি নিশ্চিত করুন ও ক্লাসে প্রবেশ করুন →{% else %}ভর্তি নিশ্চিত করুন ও ক্লাসে প্রবেশ করুন →{% endif %}</span>
               </button>
               
               <p class="text-[11px] text-center text-slate-500 dark:text-slate-400 mt-3 flex items-center justify-center gap-1">
-                <span>🛡️ ১০০% নিরাপদ লেনদেন • পেমেন্টের সাথে সাথেই পুরো কোর্সের অ্যাক্সেস পাবেন</span>
+                <span>🛡️ ১০০% নিরাপদ রেজিস্ট্রেশন • ভর্তির সাথে সাথেই সমস্ত ভিডিও ও মডিউলের অ্যাক্সেস পাবেন</span>
               </p>
             </div>
 

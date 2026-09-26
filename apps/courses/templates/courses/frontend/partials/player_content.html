@@ -10,7 +10,7 @@
       left: 18%;
     }
     50% {
-      top: 25%;
+      top: 25%; 
       left: 65%;
     }
     75% {
@@ -87,16 +87,34 @@
       <!-- Video Player with Complete YouTube Branding Masking, Custom Poster & LMS Title Bar -->
       {% if lesson.video_url %}
         <div 
-          class="aspect-video w-full bg-black relative border-b border-slate-200 dark:border-slate-800 select-none overflow-hidden group shadow-inner"
+          id="custom-video-player-container"
+          class="aspect-video w-full bg-black relative border-b border-slate-200 dark:border-slate-800 select-none overflow-hidden group shadow-inner touch-pan-y"
           oncontextmenu="return false;"
-          x-data="{ hasStarted: false }"
+          x-data="{ 
+            isFullscreen: false, 
+            toggleFullscreen() { 
+              let el = document.getElementById('custom-video-player-container'); 
+              if (!document.fullscreenElement && !document.webkitFullscreenElement) { 
+                if (el.requestFullscreen) { el.requestFullscreen(); }
+                else if (el.webkitRequestFullscreen) { el.webkitRequestFullscreen(); }
+                else if (el.msRequestFullscreen) { el.msRequestFullscreen(); }
+                this.isFullscreen = true; 
+              } else { 
+                if (document.exitFullscreen) { document.exitFullscreen(); }
+                else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); }
+                else if (document.msExitFullscreen) { document.msExitFullscreen(); }
+                this.isFullscreen = false; 
+              } 
+            } 
+          }"
+          @fullscreenchange.window="isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement)"
         >
           <!-- Cropped & Scaled Video Frame: Hides default YouTube title header and bottom watermark outside viewport bounds -->
-          <div class="absolute inset-0 overflow-hidden">
+          <div class="absolute inset-0 overflow-hidden w-full h-full">
             <iframe 
               id="main-course-iframe"
               src="{{ lesson.embed_video_url|default:lesson.video_url }}" 
-              class="w-[108%] h-[126%] -top-[12%] -left-[4%] absolute" 
+              class="w-[108%] h-[126%] -top-[13%] -left-[4%] absolute pointer-events-auto" 
               frameborder="0" 
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
               referrerpolicy="strict-origin-when-cross-origin"
@@ -118,16 +136,25 @@
                   <span class="text-white/40">•</span>
                   <span class="text-[10px] font-mono text-slate-300">মডিউল {{ lesson.module.order }}</span>
                 </div>
-                <h3 class="text-xs sm:text-sm font-extrabold text-white tracking-tight drop-shadow truncate max-w-[240px] sm:max-w-md">
+                <h3 class="text-xs sm:text-sm font-extrabold text-white tracking-tight drop-shadow truncate max-w-[220px] sm:max-w-md">
                   {{ lesson.title }}
                 </h3>
               </div>
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 pointer-events-auto">
+              <button 
+                type="button" 
+                @click="toggleFullscreen()" 
+                class="px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md flex items-center gap-1.5 transition-all shadow-sm"
+                title="পূর্ণ পর্দা (Fullscreen)"
+              >
+                <span x-text="isFullscreen ? '🗗' : '⛶'"></span>
+                <span class="hidden sm:inline" x-text="isFullscreen ? 'স্বাভাবিক' : 'ফুলস্ক্রিন'"></span>
+              </button>
               <span class="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 backdrop-blur-md flex items-center gap-1">
                 <span>🔒</span>
-                <span class="hidden sm:inline">সিকিউর LMS ক্লাস</span>
+                <span class="hidden sm:inline">সিকিউর LMS</span>
               </span>
             </div>
           </div>
@@ -147,8 +174,12 @@
           <!-- Top Click Blocker Shield (Blocks clicks to channel avatar & title) -->
           <div class="video-shield-top" title=""></div>
 
-          <!-- Bottom-Right Click Blocker Shield (Blocks clicks to 'Watch on YouTube') -->
-          <div class="video-shield-bottom-right" title=""></div>
+          <!-- Bottom-Right Academy Watermark Shield (Blocks clicks to 'Watch on YouTube') -->
+          <div class="video-shield-bottom-right flex items-center justify-end pr-3 pb-2 select-none pointer-events-auto" title="">
+            <div class="px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-md border border-white/10 text-[9px] font-mono font-bold text-white/70 shadow-sm pointer-events-none">
+              {{ current_tenant.name|default:"EduPlatform" }}
+            </div>
+          </div>
         </div>
       {% endif %}
 

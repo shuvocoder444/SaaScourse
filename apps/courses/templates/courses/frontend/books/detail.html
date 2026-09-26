@@ -20,9 +20,9 @@
     <!-- Cover Column -->
     <div class="md:col-span-5 flex justify-center">
       <div class="w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 p-4">
-        <div class="h-80 sm:h-96 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
+        <div class="w-full aspect-[3/4] rounded-2xl overflow-hidden bg-gradient-to-b from-slate-100 to-slate-200/90 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center p-3 shadow-inner">
           {% if book.get_cover_url %}
-            <img src="{{ book.get_cover_url }}" alt="{{ book.title }}" class="w-full h-full object-cover">
+            <img src="{{ book.get_cover_url }}" alt="{{ book.title }}" class="max-w-full max-h-full w-auto h-auto object-contain rounded-xl drop-shadow-xl">
           {% else %}
             <span class="text-6xl">📖</span>
           {% endif %}
@@ -118,12 +118,12 @@
   {% if related_books %}
     <div class="pt-12 border-t border-slate-200 dark:border-slate-800">
       <h3 class="text-xl font-extrabold text-slate-900 dark:text-white mb-6">অন্যান্য প্রকাশনা</h3>
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 sm:gap-4">
         {% for r_book in related_books %}
-          <a href="{% url 'book_detail' r_book.slug %}" class="p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 hover:border-emerald-500 transition-all block group">
-            <div class="h-32 rounded-xl bg-slate-100 dark:bg-slate-800 overflow-hidden mb-2 flex items-center justify-center">
+          <a href="{% url 'book_detail' r_book.slug %}" class="p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 hover:border-emerald-500 hover:shadow-lg transition-all block group">
+            <div class="w-full aspect-[3/4] rounded-xl bg-gradient-to-b from-slate-100 to-slate-200/90 dark:from-slate-800 dark:to-slate-900 overflow-hidden mb-2 flex items-center justify-center p-1.5 shadow-inner">
               {% if r_book.get_cover_url %}
-                <img src="{{ r_book.get_cover_url }}" alt="{{ r_book.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
+                <img src="{{ r_book.get_cover_url }}" alt="{{ r_book.title }}" class="max-w-full max-h-full w-auto h-auto object-contain rounded-lg drop-shadow-sm group-hover:scale-105 transition-transform duration-300">
               {% else %}
                 <span class="text-3xl">📖</span>
               {% endif %}
@@ -138,4 +138,3 @@
 
 </div>
 {% endblock %}
-

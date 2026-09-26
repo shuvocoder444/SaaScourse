@@ -1,15 +1,31 @@
 from django.contrib import admin
-from apps.courses.models import (
-    Course, Module, Lesson, Enrollment, LessonProgress,
-    Book, FreeResource, BlogPost, GalleryImage,
-    FeedPost, FeedComment, FeedLike,
-    ClassRoutine, StudentResult,
-    SupportThread, SupportChatMessage,
-    StudentInvoice, BookOrder,
-    StudentClub, ClubMembership, ClubPost, ClubComment, ClubLike,
-    Exam, ExamQuestion, ExamAttempt
-)
 
+from apps.courses.models import (
+    BlogPost,
+    Book,
+    BookOrder,
+    ClassRoutine,
+    ClubPost,
+    Course,
+    Enrollment,
+    Exam,
+    ExamAttempt,
+    ExamQuestion,
+    FeedComment,
+    FeedPost,
+    FinancialLedger,
+    FreeResource,
+    GalleryImage,
+    Lesson,
+    LessonProgress,
+    LiveClassSession,
+    Module,
+    StudentClub,
+    StudentInvoice,
+    StudentResult,
+    SupportChatMessage,
+    SupportThread,
+)
 
 
 class ModuleInline(admin.StackedInline):
@@ -252,3 +268,22 @@ class ExamAttemptAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         return super().get_queryset(request).model.all_objects.all()
 
+
+@admin.register(FinancialLedger)
+class FinancialLedgerAdmin(admin.ModelAdmin):
+    list_display = ("title", "transaction_type", "category", "amount", "payment_method", "transaction_date", "tenant")
+    list_filter = ("transaction_type", "category", "payment_method", "tenant")
+    search_fields = ("title", "reference_no", "notes")
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).model.all_objects.all()
+
+
+@admin.register(LiveClassSession)
+class LiveClassSessionAdmin(admin.ModelAdmin):
+    list_display = ("title", "course", "platform", "scheduled_at", "status", "tenant")
+    list_filter = ("platform", "status", "tenant")
+    search_fields = ("title", "instructor_name")
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).model.all_objects.all()

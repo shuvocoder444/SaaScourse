@@ -1,6 +1,7 @@
-from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
-from apps.tenants.models import Tenant, SubscriptionPlan, TenantSubscription
+from django.test import Client, TestCase
+
+from apps.tenants.models import SubscriptionPlan, Tenant, TenantSubscription
 from apps.users.models import TenantMembership
 
 User = get_user_model()
@@ -69,13 +70,17 @@ class SaaSPlatformAndSubscriptionTests(TestCase):
         self.assertTrue(tenant.has_active_subscription)
 
         # Verify Admin Membership
-        membership = TenantMembership.objects.unscoped().filter(tenant=tenant, user=user).first()
+        membership = (
+            TenantMembership.objects.unscoped().filter(tenant=tenant, user=user).first()
+        )
         self.assertIsNotNone(membership)
         self.assertTrue(membership.is_admin)
 
     def test_tenant_storefront_landing(self):
         """Visiting an academy subdomain renders its own custom storefront, not the SaaS page."""
-        owner = User.objects.create_user(email="creator@test.com", password="password123")
+        owner = User.objects.create_user(
+            email="creator@test.com", password="password123"
+        )
         tenant = Tenant.objects.create(
             name="Cloud Academy",
             slug="cloud",
@@ -103,7 +108,9 @@ class SaaSPlatformAndSubscriptionTests(TestCase):
 class CustomDomainAndCaddySecurityTests(TestCase):
     def setUp(self):
         self.client = Client()
-        self.owner = User.objects.create_user(email="owner@academy.com", password="password123")
+        self.owner = User.objects.create_user(
+            email="owner@academy.com", password="password123"
+        )
         self.tenant = Tenant.objects.create(
             name="Pro Academy",
             slug="proacademy",
@@ -115,12 +122,17 @@ class CustomDomainAndCaddySecurityTests(TestCase):
 
     def test_caddy_ask_domain_missing_param(self):
         """Caddy ask request without domain query param returns 400 Bad Request."""
-        response = self.client.get("/tenants/api/caddy-check/", HTTP_HOST="localhost:8001")
+        response = self.client.get(
+            "/tenants/api/caddy-check/", HTTP_HOST="localhost:8001"
+        )
         self.assertEqual(response.status_code, 400)
 
     def test_caddy_ask_domain_unverified(self):
         """Caddy ask request for an unverified custom domain returns 400 to block TLS cert issuance."""
-        response = self.client.get("/tenants/api/caddy-check/?domain=learn.proacademy.com", HTTP_HOST="localhost:8001")
+        response = self.client.get(
+            "/tenants/api/caddy-check/?domain=learn.proacademy.com",
+            HTTP_HOST="localhost:8001",
+        )
         self.assertEqual(response.status_code, 400)
 
     def test_caddy_ask_domain_verified_success(self):
@@ -128,13 +140,19 @@ class CustomDomainAndCaddySecurityTests(TestCase):
         self.tenant.custom_domain_verified = True
         self.tenant.save()
 
-        response = self.client.get("/tenants/api/caddy-check/?domain=learn.proacademy.com", HTTP_HOST="localhost:8001")
+        response = self.client.get(
+            "/tenants/api/caddy-check/?domain=learn.proacademy.com",
+            HTTP_HOST="localhost:8001",
+        )
         self.assertEqual(response.status_code, 200)
         self.assertIn("authorized", response.content.decode().lower())
 
     def test_caddy_ask_domain_unknown_attacker_domain(self):
         """Caddy ask request for an unknown domain returns 400, preventing TLS exhaustion DoS."""
-        response = self.client.get("/tenants/api/caddy-check/?domain=attacker-domain.org", HTTP_HOST="localhost:8001")
+        response = self.client.get(
+            "/tenants/api/caddy-check/?domain=attacker-domain.org",
+            HTTP_HOST="localhost:8001",
+        )
         self.assertEqual(response.status_code, 400)
 
 
@@ -148,7 +166,9 @@ class DomainManagementTests(TestCase):
             max_courses=25,
             custom_domain_allowed=True,
         )
-        self.owner = User.objects.create_user(email="sarah@alpha.io", password="password123")
+        self.owner = User.objects.create_user(
+            email="sarah@alpha.io", password="password123"
+        )
         self.tenant = Tenant.objects.create(
             name="Alpha Academy",
             slug="alpha",
@@ -185,7 +205,9 @@ class DomainManagementTests(TestCase):
 
     def test_change_subdomain_duplicate_fails(self):
         """Cannot take a subdomain that belongs to another tenant."""
-        other_owner = User.objects.create_user(email="other@test.com", password="password123")
+        other_owner = User.objects.create_user(
+            email="other@test.com", password="password123"
+        )
         Tenant.objects.create(name="Beta", slug="beta", owner=other_owner)
 
         self.client.force_login(self.owner)
@@ -217,7 +239,9 @@ class DomainManagementTests(TestCase):
         self.tenant.refresh_from_db()
         self.assertEqual(self.tenant.custom_domain, "learn.mybrand.com")
         self.assertFalse(self.tenant.custom_domain_verified)
-        self.assertTrue(self.tenant.custom_domain_token.startswith("saascourse-verify-"))
+        self.assertTrue(
+            self.tenant.custom_domain_token.startswith("saascourse-verify-")
+        )
 
     def test_tenant_branding_visual_assets(self):
         """Tenant properties get_logo_url, get_banner_url, get_favicon_url resolve correctly."""
@@ -249,6 +273,7 @@ class DomainManagementTests(TestCase):
         self.assertEqual(response.status_code, 302)
 
         from apps.tenants.models import TenantSMSSetting
+
         sms_setting = TenantSMSSetting.objects.get(tenant=self.tenant)
         self.assertTrue(sms_setting.is_enabled)
         self.assertEqual(sms_setting.provider, TenantSMSSetting.Provider.SSL_WIRELESS)
@@ -263,4 +288,52 @@ class DomainManagementTests(TestCase):
         self.assertEqual(test_response.status_code, 200)
         self.assertIn("SMS Sent Successfully", test_response.content.decode())
 
+    def test_non_domain_updates_preserve_custom_domain(self):
+        """Updating header, footer, branding, or template settings must NEVER detach or erase custom domain."""
+        self.tenant.custom_domain = "learn.alpha-academy.com"
+        self.tenant.custom_domain_verified = True
+        self.tenant.save()
 
+        self.client.force_login(self.owner)
+
+        # 1. Update Header & Footer settings
+        response = self.client.post(
+            "/tenants/settings/",
+            data={
+                "active_tab": "header_footer",
+                "header_style": "header_2",
+                "footer_style": "footer_2",
+                "contact_phone": "+8801999999999",
+                "whatsapp_number": "+8801888888888",
+                "header_checkbox_sent": "1",
+                "show_header_notice": "on",
+            },
+            HTTP_HOST="alpha.localhost:8001",
+        )
+        self.assertEqual(response.status_code, 302)
+        self.tenant.refresh_from_db()
+        self.assertEqual(self.tenant.custom_domain, "learn.alpha-academy.com")
+        self.assertTrue(self.tenant.custom_domain_verified)
+        self.assertEqual(self.tenant.slug, "alpha")
+        self.assertEqual(self.tenant.branding.get("contact_phone"), "+8801999999999")
+        self.assertEqual(self.tenant.branding.get("whatsapp_number"), "+8801888888888")
+
+        # 2. Update Branding & SEO settings
+        response = self.client.post(
+            "/tenants/settings/",
+            data={
+                "active_tab": "branding",
+                "name": "Alpha Academy Updated",
+                "primary_color": "#10b981",
+                "meta_title": "Best Academy Online",
+            },
+            HTTP_HOST="alpha.localhost:8001",
+        )
+        self.assertEqual(response.status_code, 302)
+        self.tenant.refresh_from_db()
+        self.assertEqual(self.tenant.custom_domain, "learn.alpha-academy.com")
+        self.assertTrue(self.tenant.custom_domain_verified)
+        self.assertEqual(self.tenant.slug, "alpha")
+        self.assertEqual(self.tenant.name, "Alpha Academy Updated")
+        self.assertEqual(self.tenant.branding.get("primary_color"), "#10b981")
+        self.assertEqual(self.tenant.branding.get("meta_title"), "Best Academy Online")

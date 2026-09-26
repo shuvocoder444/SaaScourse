@@ -2,8 +2,8 @@
 <header class="sticky top-0 z-50 transition-colors shadow-sm font-sans" x-data="{ searchOpen: false }">
 
   <!-- 1. Top Announcement & Hotline Bar -->
-  {% if current_tenant.branding.show_header_notice|default:True %}
-    <div class="bg-gradient-to-r from-brand-primary to-emerald-700 text-white text-xs py-1.5 px-4 sm:px-6 shadow-inner">
+  {% if current_tenant and current_tenant.branding.show_header_notice != False %}
+    <div class="bg-gradient-to-r from-brand-primary to-emerald-700 text-white text-xs py-1.5 px-4 sm:px-6 lg:px-8 shadow-inner">
       <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
         
         <!-- Left: Dynamic Notice / Announcement -->
@@ -60,7 +60,7 @@
           {% endif %}
           <div>
             <span class="font-bold text-lg tracking-tight text-slate-900 dark:text-white block group-hover:text-emerald-500 transition-colors">
-              {{ current_tenant.name|default:"CourseFlow" }}
+              {% if current_tenant %}{{ current_tenant.name }}{% else %}CourseFlow{% endif %}
             </span>
             <span class="text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 -mt-1 block">
               {% if current_tenant %}{{ current_tenant.slug }}.platform{% else %}Multi-Tenant Cloud{% endif %}
@@ -69,29 +69,14 @@
         </a>
       </div>
 
-      <!-- Center Search Bar (EdTech specific quick course finder) -->
-      {% if current_tenant.branding.show_header_search|default:True %}
-        <div class="hidden md:flex flex-1 max-w-xs mx-2">
-          <form action="/courses/" method="GET" class="w-full relative">
-            <input 
-              type="text" 
-              name="q" 
-              placeholder="কোর্স বা বিষয় অনুসন্ধান..." 
-              class="w-full pl-9 pr-4 py-1.5 rounded-full text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
-            >
-            <span class="absolute left-3 top-2 text-slate-400 text-xs">🔍</span>
-          </form>
-        </div>
-      {% endif %}
-
-      <!-- Center Navigation Links -->
+      <!-- Center Navigation Links (Clean, Transparent, Larger Bold Text) -->
       {% if current_tenant %}
-        <nav class="hidden lg:flex items-center gap-1 bg-slate-100/90 dark:bg-slate-800/90 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700">
+        <nav class="hidden lg:flex items-center gap-2">
           {% for item in tenant_menu_items %}
             <a 
               href="{{ item.url }}" 
               {% if item.open_in_new_tab %}target="_blank" rel="noopener noreferrer"{% endif %}
-              class="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-brand-primary hover:bg-white dark:hover:bg-slate-900 transition-all shadow-none hover:shadow-sm"
+              class="px-3.5 py-2 rounded-xl text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100 hover:text-brand-primary dark:hover:text-emerald-400 transition-colors"
             >
               {{ item.title }}
             </a>
@@ -100,60 +85,71 @@
       {% endif %}
 
       <!-- Right Action Items & Theme Switcher -->
-      <div class="flex items-center gap-2 sm:gap-3">
+      <div class="flex items-center gap-2 sm:gap-2.5 shrink-0">
         {% if user.is_authenticated %}
-          <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-brand-primary text-white hover:opacity-90 shadow-md shadow-brand-primary/20 transition-all">
-            <span>⚡ ড্যাশবোর্ড</span>
-          </a>
-
-          {% if current_tenant and current_tenant.owner == user or user.is_superuser %}
-            <a href="{% url 'courses:manage_dashboard' %}" class="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-all" title="Instructor Studio">
-              <span>🛠️ স্টুডিও</span>
+          <!-- Compact Dashboard & Dark Mode Group (No Logout in Header, Closely Spaced) -->
+          <div class="flex items-center p-1 rounded-2xl bg-slate-100/90 dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 shadow-sm gap-1 backdrop-blur-md">
+            <!-- 1. ড্যাশবোর্ড বাটন -->
+            <a 
+              href="{% url 'dashboard' %}" 
+              class="inline-flex items-center justify-center px-3.5 py-1.5 rounded-xl text-xs font-black bg-brand-primary text-white hover:opacity-90 shadow-sm shadow-brand-primary/20 transition-all"
+            >
+              ড্যাশবোর্ড
             </a>
-            <a href="/tenants/settings/?tab=header_footer" class="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold text-brand-primary bg-brand-primary/10 hover:bg-brand-primary/20 border border-brand-primary/20 transition-all" title="Customize Header, Footer & Landing">
-              <span>🎨 কাস্টমাইজ</span>
-            </a>
-          {% endif %}
 
-          <a href="{% url 'users:logout' %}" class="text-xs font-mono text-slate-500 hover:text-rose-500 dark:text-slate-400 dark:hover:text-rose-400 transition-colors px-2 py-1 hidden sm:block">
-            লগআউট
-          </a>
+            <!-- 2. Dark Mode Toggle (Compact, Right Beside Dashboard) -->
+            <button 
+              type="button"
+              @click="
+                isDark = !isDark;
+                if (isDark) {
+                  document.documentElement.classList.add('dark');
+                  localStorage.theme = 'dark';
+                } else {
+                  document.documentElement.classList.remove('dark');
+                  localStorage.theme = 'light';
+                }
+              "
+              class="p-1.5 sm:p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-amber-400 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-all flex items-center justify-center cursor-pointer"
+              title="থিম পরিবর্তন করুন"
+              aria-label="Theme toggle"
+            >
+              <span x-show="!isDark" class="text-sm leading-none">🌙</span>
+              <span x-show="isDark" x-cloak class="text-sm leading-none">☀️</span>
+            </button>
+          </div>
         {% else %}
           <a href="{% url 'users:login' %}" class="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-semibold transition-all shadow-sm">
             লগইন
           </a>
           <a 
-            href="{{ current_tenant.branding.header_cta_link|default:'/courses/' }}" 
+            href="{% if current_tenant %}{{ current_tenant.branding.header_cta_link|default:'/courses/' }}{% else %}/courses/{% endif %}" 
             class="hidden sm:inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-brand-primary to-emerald-500 hover:opacity-90 text-white text-xs font-bold shadow-md shadow-brand-primary/20 transition-all"
           >
-            <span>{{ current_tenant.branding.header_cta_text|default:"ভর্তি আবেদন" }}</span>
+            <span>{% if current_tenant %}{{ current_tenant.branding.header_cta_text|default:'ভর্তি আবেদন' }}{% else %}ভর্তি আবেদন{% endif %}</span>
             <span>→</span>
           </a>
-        {% endif %}
 
-        <!-- Theme Toggle -->
-        <button 
-          type="button"
-          @click="
-            isDark = !isDark;
-            if (isDark) {
-              document.documentElement.classList.add('dark');
-              localStorage.theme = 'dark';
-            } else {
-              document.documentElement.classList.remove('dark');
-              localStorage.theme = 'light';
-            }
-          "
-          class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-amber-400 hover:text-amber-500 transition-all shadow-sm"
-          title="Toggle Theme"
-        >
-          <svg x-show="isDark" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: none;">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
-          </svg>
-          <svg x-show="!isDark" class="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
-          </svg>
-        </button>
+          <!-- Theme Toggle for Guests -->
+          <button 
+            type="button"
+            @click="
+              isDark = !isDark;
+              if (isDark) {
+                document.documentElement.classList.add('dark');
+                localStorage.theme = 'dark';
+              } else {
+                document.documentElement.classList.remove('dark');
+                localStorage.theme = 'light';
+              }
+            "
+            class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-amber-400 hover:text-amber-500 transition-all shadow-sm cursor-pointer"
+            title="Toggle Theme"
+          >
+            <span x-show="!isDark" class="text-sm leading-none">🌙</span>
+            <span x-show="isDark" x-cloak class="text-sm leading-none">☀️</span>
+          </button>
+        {% endif %}
 
         <!-- Mobile Hamburger Button -->
         <button 
@@ -162,7 +158,7 @@
           class="lg:hidden p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>
           </svg>
         </button>
 
@@ -172,4 +168,3 @@
   </div>
 
 </header>
-

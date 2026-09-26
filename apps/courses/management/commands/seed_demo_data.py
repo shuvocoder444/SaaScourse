@@ -16,48 +16,71 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write(self.style.NOTICE("Seeding multi-tenant SaaS, 3 templates, books, resources, blogs, and menus..."))
 
-        # 1. SaaS Subscription Plans
-        plan_starter, _ = SubscriptionPlan.objects.get_or_create(
+        # 1. SaaS Subscription Plans (500, 1000, 1500 Unlimited)
+        plan_starter, _ = SubscriptionPlan.objects.update_or_create(
             slug="starter",
             defaults={
-                "name": "Starter",
-                "price_monthly": 1500.00,
+                "name": "বেসিক প্ল্যান (Starter)",
+                "price_monthly": 500.00,
                 "max_courses": 5,
-                "max_students": 250,
+                "max_students": 500,
                 "custom_domain_allowed": False,
                 "is_popular": False,
                 "features": [
-                    "Up to 5 Published Courses",
-                    "Up to 250 Students",
-                    "Custom Subdomain (e.g. brand.platform)",
-                    "Video Lessons & Notes",
-                    "Standard Support",
+                    "সর্বোচ্চ ৫টি পূর্ণাঙ্গ কোর্স",
+                    "৫০০ জন শিক্ষার্থী ভর্তি সুবিধা",
+                    "লাইভ ক্লাস শিডিউলার (Zoom/Meet)",
+                    "অনলাইন MCQ পরীক্ষা ইঞ্জিন",
+                    "আয়-ব্যয় ও ক্যাশ লেজার হিসাব",
+                    "সাবডোমেন ও ফ্রি অটো SSL",
+                    "স্ট্যান্ডার্ড ইমেইল ও চ্যাট সাপোর্ট",
                 ],
             },
         )
 
-        plan_pro, _ = SubscriptionPlan.objects.get_or_create(
+        plan_pro, _ = SubscriptionPlan.objects.update_or_create(
             slug="pro",
             defaults={
-                "name": "Professional",
-                "price_monthly": 3500.00,
+                "name": "প্রফেশনাল প্ল্যান (Growth)",
+                "price_monthly": 1000.00,
                 "max_courses": 25,
-                "max_students": 2500,
+                "max_students": 3000,
                 "custom_domain_allowed": True,
                 "is_popular": True,
                 "features": [
-                    "Up to 25 Published Courses",
-                    "Up to 2,500 Students",
-                    "White-Label Custom CNAME Domain",
-                    "3 Premium Landing Page Templates",
-                    "Custom Menu Builder",
-                    "SMS Gateway Integration",
-                    "Books & Free Resources Storefront",
+                    "সর্বোচ্চ ২৫টি পূর্ণাঙ্গ কোর্স",
+                    "৩,০০০ জন শিক্ষার্থী ভর্তি সুবিধা",
+                    "নিজস্ব কাস্টম ডোমেন (CNAME) ও SSL",
+                    "SMS নোটিফিকেশন গেটওয়ে কানেকশন",
+                    "লাইভ ক্লাস ও আনলিমিটেড ভিডিও স্ট্রিমিং",
+                    "অনলাইন MCQ পরীক্ষা ইঞ্জিন",
+                    "আয়-ব্যয় ও ক্যাশ লেজার হিসাব",
+                    "২৪/৭ প্রায়োরিটি সাপোর্ট",
                 ],
             },
         )
 
-        plan_enterprise, _ = SubscriptionPlan.objects.get_or_create(
+        plan_enterprise, _ = SubscriptionPlan.objects.update_or_create(
+            slug="enterprise",
+            defaults={
+                "name": "আনলিমিটেড এন্টারপ্রাইজ (Unlimited)",
+                "price_monthly": 1500.00,
+                "max_courses": 99999,
+                "max_students": 99999,
+                "custom_domain_allowed": True,
+                "is_popular": False,
+                "features": [
+                    "আনলিমিটেড কোর্স তৈরি (No Limit)",
+                    "আনলিমিটেড শিক্ষার্থী ভর্তি (No Limit)",
+                    "নিজস্ব কাস্টম ডোমেন ও হোয়াইট-লেবেল ব্র্যান্ডিং",
+                    "কাস্টম থিম ও হেডার-ফুটার ডিজাইন",
+                    "SMS গেটওয়ে ও অটোমেটেড নোটিস",
+                    "লাইভ ক্লাস, এক্সাম ও লেজার সিস্টেম",
+                    "০% প্ল্যাটফর্ম ট্রানজেকশন ফি",
+                    "ভিআইপি ডেডিকেটেড ম্যানেজার সাপোর্ট",
+                ],
+            },
+        )
             slug="enterprise",
             defaults={
                 "name": "Enterprise",

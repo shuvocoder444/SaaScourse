@@ -1,194 +1,661 @@
 {% extends "base.html" %}
 
-{% block title %}{{ course.title }} - {{ current_tenant.name }}{% endblock %}
+{% block title %}{{ course.title }} — {{ current_tenant.name|default:"অনলাইন একাডেমি" }}{% endblock %}
+
+{% block meta_description %}{{ course.description|default:course.title|truncatechars:160 }}{% endblock %}
+{% block meta_keywords %}{{ course.title }}, {{ current_tenant.name }}, অনলাইন কোর্স, লাইভ ক্লাস, মডেল টেস্ট, লেকচার শিট{% endblock %}
+
+{% block og_type %}article{% endblock %}
+{% block og_title %}{{ course.title }} | {{ current_tenant.name }}{% endblock %}
+{% block og_description %}{{ course.description|default:course.title|truncatechars:200 }}{% endblock %}
+{% block og_image %}{% if course.intro_video_url %}https://img.youtube.com/vi/{{ course.intro_video_url|slice:":11" }}/maxresdefault.jpg{% elif current_tenant.get_banner_url %}{{ current_tenant.get_banner_url }}{% else %}{{ current_tenant.get_logo_url }}{% endif %}{% endblock %}
+
+{% block extra_schema %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Course",
+  "name": "{{ course.title|escapejs }}",
+  "description": "{{ course.description|default:course.title|escapejs }}",
+  "provider": {
+    "@type": "EducationalOrganization",
+    "name": "{{ current_tenant.name|escapejs }}",
+    "sameAs": "{{ request.scheme }}://{{ request.get_host }}"
+  },
+  "offers": {
+    "@type": "Offer",
+    "price": "{% if course.is_free %}0.00{% else %}{{ course.price|default:'0.00' }}{% endif %}",
+    "priceCurrency": "BDT",
+    "category": "{% if course.is_free %}Free{% else %}Paid{% endif %}"
+  },
+  "hasCourseInstance": {
+    "@type": "CourseInstance",
+    "courseMode": "Online",
+    "courseWorkload": "PT{{ total_lessons_count|default:10 }}H"
+  }
+}
+</script>
+{% endblock %}
 
 {% block content %}
-<div class="py-12 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-  
-  <!-- Breadcrumb -->
-  <nav class="mb-6 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-mono">
-    <a href="{% url 'courses:list' %}" class="hover:text-slate-900 dark:hover:text-white transition-colors">Courses</a>
-    <span>/</span>
-    <span class="text-slate-900 dark:text-slate-200 font-semibold truncate">{{ course.title }}</span>
-  </nav>
+<div 
+  x-data="{
+    copied: false,
+    copyCourseUrl() {
+      navigator.clipboard.writeText(window.location.href);
+      this.copied = true;
+      setTimeout(() => { this.copied = false; }, 2500);
+    },
+    shareToFacebook() {
+      window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(window.location.href), '_blank', 'width=600,height=400');
+    },
+    shareToWhatsApp() {
+      window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent('🎓 {{ course.title|escapejs }} কোর্সে ভর্তি চলছে! বিস্তারিত দেখুন: ' + window.location.href), '_blank');
+    },
+    shareToTelegram() {
+      window.open('https://t.me/share/url?url=' + encodeURIComponent(window.location.href) + '&text=' + encodeURIComponent('{{ course.title|escapejs }}'), '_blank');
+    }
+  }"
+  class="min-h-screen bg-slate-50/60 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans transition-colors py-8 lg:py-12"
+>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    
+    <!-- Top Breadcrumb & Share Trigger -->
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+      <nav class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+        <a href="{% url 'home' %}" class="hover:text-brand-primary transition-colors">হোম</a>
+        <span>/</span>
+        <a href="{% url 'courses:list' %}" class="hover:text-brand-primary transition-colors">কোর্সসমূহ</a>
+        <span>/</span>
+        <span class="text-slate-900 dark:text-slate-200 font-bold truncate max-w-[200px] sm:max-w-sm">{{ course.title }}</span>
+      </nav>
 
-  <!-- Course Header -->
-  <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 p-8 sm:p-10 mb-10 shadow-sm">
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
-      <div class="max-w-2xl">
-        <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-4">
-          {{ course.title }}
-        </h1>
-        <p class="text-sm sm:text-base text-slate-600 dark:text-slate-400 leading-relaxed">
-          {{ course.description }}
-        </p>
-        <div class="mt-6 flex flex-wrap items-center gap-4 text-xs text-slate-500 dark:text-slate-400 font-mono">
-          <span>Instructor: <strong class="text-slate-800 dark:text-slate-200">{{ course.instructor.get_full_name|default:course.instructor.email }}</strong></span>
-          <span>•</span>
-          <span>Status: <span class="text-emerald-600 dark:text-emerald-400 font-bold uppercase">{{ course.status }}</span></span>
+      <div class="flex items-center gap-2">
+        <button 
+          type="button" 
+          @click="copyCourseUrl()" 
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:text-brand-primary text-xs font-bold shadow-sm transition-all"
+        >
+          <span x-show="!copied">🔗 লিঙ্ক কপি করুন</span>
+          <span x-show="copied" x-cloak class="text-emerald-600 font-bold">✓ কপি হয়েছে!</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Grid: 8 Cols (Content) + 4 Cols (Sticky Action Sidebar) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      
+      <!-- ========================================== -->
+      <!-- LEFT COLUMN: COURSE CONTENT (8 Cols)       -->
+      <!-- ========================================== -->
+      <div class="lg:col-span-8 space-y-8">
+        
+        <!-- 1. Course Hero Card -->
+        <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-5">
+          <div class="flex flex-wrap items-center gap-2.5">
+            {% if course.is_free %}
+              <span class="px-3 py-1 rounded-full text-xs font-black bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                🎁 ১০০% সম্পূর্ণ ফ্রি কোর্স
+              </span>
+            {% else %}
+              <span class="px-3 py-1 rounded-full text-xs font-black bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                ⭐ প্রিমিয়াম সার্টিফিকেট কোর্স
+              </span>
+            {% endif %}
+
+            <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+              🎓 {{ course.modules.count }}টি মডিউল
+            </span>
+            <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+              🎥 {{ total_lessons_count }}টি ক্লাস
+            </span>
+          </div>
+
+          <h1 class="text-2xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-snug">
+            {{ course.title }}
+          </h1>
+
+          <p class="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed">
+            {{ course.description|default:"এই কোর্সে প্র্যাকটিক্যাল প্রজেক্ট ও রিয়েল-ওয়ার্ল্ড উদাহরণের মাধ্যমে সম্পূর্ণ স্কিল শেখানো হবে।" }}
+          </p>
+
+          <!-- Instructor & Info Bar -->
+          <div class="flex flex-wrap items-center gap-4 pt-4 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-full bg-brand-primary/20 text-brand-primary flex items-center justify-center font-black text-xs">
+                {{ course.instructor.first_name|default:course.instructor.email|slice:":1"|upper }}
+              </div>
+              <div>
+                <span class="text-slate-400 text-[10px] block">কোর্স ইন্সট্রাক্টর:</span>
+                <strong class="text-slate-800 dark:text-slate-200 font-bold">
+                  {{ course.instructor.get_full_name|default:course.instructor.email }}
+                </strong>
+              </div>
+            </div>
+
+            <div class="hidden sm:block h-6 w-px bg-slate-200 dark:bg-slate-800"></div>
+
+            <div>
+              <span class="text-slate-400 text-[10px] block">কোর্স ল্যাঙ্গুয়েজ:</span>
+              <span class="font-bold text-slate-800 dark:text-slate-200">বাংলা (Bengali)</span>
+            </div>
+
+            <div class="hidden sm:block h-6 w-px bg-slate-200 dark:bg-slate-800"></div>
+
+            <div>
+              <span class="text-slate-400 text-[10px] block">অ্যাক্সেস সময়সীমা:</span>
+              <span class="font-bold text-emerald-600 dark:text-emerald-400">আজীবন অ্যাক্সেস (Lifetime)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Course Preview / Intro Video Player -->
+        {% if course.intro_video_url %}
+          <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="text-lg">🎬</span>
+                <h3 class="text-base font-extrabold text-slate-900 dark:text-white">কোর্স প্রিভিউ ও ওরিয়েন্টেশন ক্লাস</h3>
+              </div>
+              <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
+                ফ্রি প্রিভিউ
+              </span>
+            </div>
+
+            <div 
+              id="intro-video-player-container"
+              class="aspect-video w-full rounded-2xl overflow-hidden bg-black shadow-xl border border-slate-200 dark:border-slate-800 relative select-none group touch-pan-y"
+              oncontextmenu="return false;"
+              x-data="{ 
+                isFullscreen: false, 
+                toggleFullscreen() { 
+                  let el = document.getElementById('intro-video-player-container'); 
+                  if (!document.fullscreenElement && !document.webkitFullscreenElement) { 
+                    if (el.requestFullscreen) { el.requestFullscreen(); }
+                    else if (el.webkitRequestFullscreen) { el.webkitRequestFullscreen(); }
+                    else if (el.msRequestFullscreen) { el.msRequestFullscreen(); }
+                    this.isFullscreen = true; 
+                  } else { 
+                    if (document.exitFullscreen) { document.exitFullscreen(); }
+                    else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); }
+                    else if (document.msExitFullscreen) { document.msExitFullscreen(); }
+                    this.isFullscreen = false; 
+                  } 
+                } 
+              }"
+              @fullscreenchange.window="isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement)"
+            >
+              <div class="absolute inset-0 overflow-hidden w-full h-full">
+                <iframe 
+                  src="{{ course.embed_intro_video_url }}" 
+                  class="w-[108%] h-[126%] -top-[13%] -left-[4%] absolute pointer-events-auto" 
+                  frameborder="0" 
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                  referrerpolicy="strict-origin-when-cross-origin"
+                  allowfullscreen>
+                </iframe>
+              </div>
+
+              <!-- Top Click Shield & Branding Bar -->
+              <div class="absolute top-0 left-0 right-0 z-20 px-4 py-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent flex items-center justify-between pointer-events-none">
+                <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 rounded-lg bg-brand-primary text-white flex items-center justify-center font-bold text-xs shadow">
+                    {{ current_tenant.name|slice:":1"|upper|default:"A" }}
+                  </div>
+                  <span class="text-xs font-bold text-white drop-shadow truncate max-w-[200px] sm:max-w-md">{{ course.title }}</span>
+                </div>
+                <div class="pointer-events-auto flex items-center gap-2">
+                  <button 
+                    type="button" 
+                    @click="toggleFullscreen()" 
+                    class="px-2 py-1 rounded-md text-[10px] font-mono font-bold bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md flex items-center gap-1 transition-all"
+                  >
+                    <span x-text="isFullscreen ? '🗗' : '⛶'"></span>
+                    <span x-text="isFullscreen ? 'স্বাভাবিক' : 'ফুলস্ক্রিন'"></span>
+                  </button>
+                </div>
+              </div>
+              <!-- Transparent Click Shields -->
+              <div class="absolute top-0 left-0 right-0 h-14 z-20 pointer-events-auto bg-transparent"></div>
+              <div class="absolute bottom-0 right-0 w-36 h-12 z-20 pointer-events-auto flex items-end justify-end pr-2 pb-2">
+                <div class="px-2 py-0.5 rounded bg-black/75 backdrop-blur-sm border border-white/10 text-[9px] font-mono font-bold text-white/70 select-none pointer-events-none">
+                  {{ current_tenant.name|default:"EduPlatform" }}
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+        <!-- 3. What You Will Learn (Features & Highlights) -->
+        <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-5">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">✨</span>
+            <h3 class="text-lg font-extrabold text-slate-900 dark:text-white">এই কোর্স থেকে আপনি কী কী শিখবেন?</h3>
+          </div>
+
+          <div class="grid sm:grid-cols-2 gap-3.5 pt-1">
+            <div class="flex items-start gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200/70 dark:border-slate-800/70">
+              <span class="text-emerald-500 font-bold text-base mt-0.5">✓</span>
+              <span class="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+                বেসিক থেকে অ্যাডভান্সড লেভেলের সম্পূর্ণ কনসেপ্ট ও রিয়েল-লাইফ প্রজেক্ট।
+              </span>
+            </div>
+            <div class="flex items-start gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200/70 dark:border-slate-800/70">
+              <span class="text-emerald-500 font-bold text-base mt-0.5">✓</span>
+              <span class="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+                প্রতিটি লেকচারের সাথে সোর্স কোড, নোট ও প্র্যাকটিস ফাইল ডাউনলোড সুবিধা।
+              </span>
+            </div>
+            <div class="flex items-start gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200/70 dark:border-slate-800/70">
+              <span class="text-emerald-500 font-bold text-base mt-0.5">✓</span>
+              <span class="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+                অনলাইন MCQ পরীক্ষা ও কুইজের মাধ্যমে নিজের অগ্রগতি যাচাইয়ের সুযোগ।
+              </span>
+            </div>
+            <div class="flex items-start gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200/70 dark:border-slate-800/70">
+              <span class="text-emerald-500 font-bold text-base mt-0.5">✓</span>
+              <span class="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+                কোর্স সম্পন্ন করার পর ভেরিফায়েড অফিসিয়াল সার্টিফিকেট অর্জন।
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Curriculum & Modules Accordion (With Clear Lock/Unlock Badges) -->
+        <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-4">
+            <div>
+              <h3 class="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                <span>📚</span> কোর্স কারিকুলাম ও মডিউল তালিকা
+              </h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                মোট {{ course.modules.count }}টি মডিউল • {{ total_lessons_count }}টি লেকচার • {{ total_duration_hours }} ঘণ্টা
+              </p>
+            </div>
+
+            {% if not is_enrolled %}
+              <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs font-bold border border-amber-500/20">
+                <span>🔒 ক্লাস আনলক করতে এনরোল করুন</span>
+              </div>
+            {% else %}
+              <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold border border-emerald-500/20">
+                <span>🔓 সব ক্লাস আপনার জন্য আনলকড</span>
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Modules List -->
+          <div class="space-y-4">
+            {% for module in course.modules.all %}
+              <div 
+                class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/60 overflow-hidden transition-all" 
+                x-data="{ open: true }"
+              >
+                <!-- Module Header Accordion Trigger -->
+                <button 
+                  type="button"
+                  @click="open = !open" 
+                  class="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-slate-100/70 dark:hover:bg-slate-900 transition-colors"
+                >
+                  <div class="flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-xl bg-brand-primary/10 text-brand-primary flex items-center justify-center font-mono font-bold text-xs">
+                      {{ forloop.counter }}
+                    </span>
+                    <div>
+                      <span class="text-xs font-mono uppercase tracking-wider text-brand-primary block font-bold">
+                        মডিউল {{ forloop.counter }}
+                      </span>
+                      <span class="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
+                        {{ module.title }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-3">
+                    <span class="text-xs text-slate-500 font-mono hidden sm:inline-block">
+                      {{ module.lessons.count }}টি ক্লাস
+                    </span>
+                    <span class="text-slate-400 transform transition-transform text-xs font-bold" :class="{ 'rotate-180': open }">
+                      ▼
+                    </span>
+                  </div>
+                </button>
+
+                <!-- Lessons in Module -->
+                <div x-show="open" x-collapse class="border-t border-slate-200 dark:border-slate-800 divide-y divide-slate-200/80 dark:divide-slate-800/60 bg-white dark:bg-slate-900">
+                  {% for lesson in module.lessons.all %}
+                    <div class="px-5 py-3.5 flex items-center justify-between text-xs sm:text-sm hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors gap-3">
+                      
+                      <!-- Lesson Title & Order -->
+                      <div class="flex items-center gap-3 min-w-0">
+                        <span class="text-slate-400 font-mono text-xs font-bold">
+                          #{{ lesson.order }}
+                        </span>
+
+                        <!-- Lock / Unlock / Preview Icon -->
+                        {% if is_enrolled %}
+                          <span class="text-emerald-500 text-sm font-bold" title="আনলক করা">🔓</span>
+                        {% elif lesson.is_preview %}
+                          <span class="text-cyan-500 text-sm font-bold" title="ফ্রি প্রিভিউ ক্লাস">🎁</span>
+                        {% else %}
+                          <span class="text-amber-500 text-sm font-bold" title="লক করা">🔒</span>
+                        {% endif %}
+
+                        <span class="font-bold text-slate-800 dark:text-slate-200 truncate">
+                          {{ lesson.title }}
+                        </span>
+
+                        {% if lesson.is_preview %}
+                          <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 shrink-0">
+                            ফ্রি ট্রায়াল
+                          </span>
+                        {% endif %}
+                      </div>
+
+                      <!-- Lesson Action & Duration -->
+                      <div class="flex items-center gap-3 shrink-0">
+                        <span class="text-[11px] text-slate-400 font-mono hidden sm:inline-block">
+                          {{ lesson.duration_minutes }} মিনিট
+                        </span>
+
+                        {% if is_enrolled %}
+                          <!-- Enrolled: Direct Start Lesson Button -->
+                          <a 
+                            href="{% url 'courses:player' course.slug lesson.slug %}" 
+                            class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+                          >
+                            <span>▶ ক্লাস দেখুন</span>
+                          </a>
+                        {% elif lesson.is_preview %}
+                          <!-- Not Enrolled but Free Preview: Start Preview Button -->
+                          <a 
+                            href="{% url 'courses:player' course.slug lesson.slug %}" 
+                            class="px-3.5 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+                          >
+                            <span>▶ প্রিভিউ দেখুন</span>
+                          </a>
+                        {% else %}
+                          <!-- Locked: Prompts Checkout -->
+                          <a 
+                            href="{% url 'courses:checkout' course.slug %}" 
+                            class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-brand-primary text-slate-600 dark:text-slate-300 hover:text-white text-xs font-bold transition-all flex items-center gap-1"
+                            title="কোর্সে ভর্তি হয়ে ক্লাসটি আনলক করুন"
+                          >
+                            <span>🔒 লক করা</span>
+                          </a>
+                        {% endif %}
+                      </div>
+
+                    </div>
+                  {% empty %}
+                    <div class="px-5 py-4 text-xs text-slate-500">এই মডিউলে এখনও কোনো লেকচার যোগ করা হয়নি।</div>
+                  {% endfor %}
+                </div>
+              </div>
+            {% empty %}
+              <div class="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 p-8 text-center text-slate-500 text-sm">
+                কোর্স কারিকুলাম প্রস্তুত করা হচ্ছে।
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- 5. Instructor Profile Bio Card -->
+        <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-4">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">👨‍🏫</span>
+            <h3 class="text-lg font-extrabold text-slate-900 dark:text-white">ইন্সট্রাক্টর পরিচিতি</h3>
+          </div>
+
+          <div class="flex items-center gap-4 pt-2">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-brand-primary to-emerald-400 flex items-center justify-center text-white text-2xl font-black shadow-lg shadow-brand-primary/20 shrink-0">
+              {{ course.instructor.first_name|default:course.instructor.email|slice:":1"|upper }}
+            </div>
+            <div>
+              <h4 class="text-base font-extrabold text-slate-900 dark:text-white">
+                {{ course.instructor.get_full_name|default:course.instructor.email }}
+              </h4>
+              <p class="text-xs text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">
+                {{ current_tenant.name }} — সিনিয়র মেন্টর ও প্রশিক্ষক
+              </p>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                অভিজ্ঞ শিক্ষক মণ্ডলীর তত্ত্বাবধানে শিক্ষার্থীদের বাস্তবমুখী দক্ষতায় গড়ে তোলাই মূল লক্ষ্য।
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ========================================== -->
+      <!-- RIGHT COLUMN: STICKY ENROLLMENT CARD (4 Cols)-->
+      <!-- ========================================== -->
+      <div class="lg:col-span-4 lg:sticky lg:top-20 space-y-6">
+        
+        <!-- Main Action Card -->
+        <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xl space-y-6">
+          
+          <!-- Course Thumbnail / Visual -->
+          <div class="h-44 rounded-2xl bg-gradient-to-tr from-brand-primary/20 via-slate-800 to-slate-900 overflow-hidden relative flex items-center justify-center border border-slate-200 dark:border-slate-800">
+            {% if course.thumbnail %}
+              <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}" class="w-full h-full object-cover">
+            {% else %}
+              <div class="text-center p-4">
+                <div class="text-4xl mb-2">🎓</div>
+                <div class="text-xs font-bold text-white uppercase tracking-wider">{{ current_tenant.name }}</div>
+              </div>
+            {% endif %}
+
+            <div class="absolute top-3 right-3">
+              {% if course.is_free %}
+                <span class="px-3 py-1 rounded-full text-xs font-black bg-emerald-500 text-white shadow-md">
+                  ফ্রি কোর্স
+                </span>
+              {% else %}
+                <span class="px-3 py-1 rounded-full text-xs font-black bg-amber-500 text-slate-950 shadow-md">
+                  ৳{{ course.price }}
+                </span>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Price & Discount Details -->
+          <div class="space-y-1">
+            <div class="flex items-baseline gap-3">
+              <span class="text-3xl font-black text-slate-900 dark:text-white">
+                {% if course.is_free %}
+                  সম্পূর্ণ ফ্রি
+                {% else %}
+                  ৳{{ course.price }}
+                {% endif %}
+              </span>
+              {% if not course.is_free %}
+                <span class="text-sm font-semibold text-slate-400 line-through">
+                  ৳{{ course.price|add:500 }}
+                </span>
+                <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                  ডিসকাউন্ট অফার
+                </span>
+              {% endif %}
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              {% if course.is_free %}
+                ✓ কোনো হিডেন চার্জ নেই, আজীবন ফ্রি অ্যাক্সেস
+              {% else %}
+                ✓ এককালীন পেমেন্ট, আজীবন সম্পূর্ণ অ্যাক্সেস
+              {% endif %}
+            </p>
+          </div>
+
+          <!-- Primary Call To Action (Enrollment Flow) -->
+          <div class="space-y-3 pt-2">
+            {% if is_enrolled %}
+              <!-- ALREADY ENROLLED -->
+              <div class="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-center space-y-2">
+                <div class="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 flex items-center justify-center gap-1.5">
+                  <span>✓</span>
+                  <span>আপনি এই কোর্সে সফলভাবে ভর্তি আছেন</span>
+                </div>
+                {% if first_lesson %}
+                  <a 
+                    href="{% url 'courses:player' course.slug first_lesson.slug %}" 
+                    class="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-lg shadow-emerald-600/25 transition-all flex items-center justify-center gap-2"
+                  >
+                    <span>▶ ক্লাসে প্রবেশ করুন</span>
+                    <span>→</span>
+                  </a>
+                {% endif %}
+              </div>
+            {% else %}
+              <!-- COURSE ENROLLMENT (BOTH FREE & PAID GO TO CHECKOUT) -->
+              <a 
+                href="{% url 'courses:checkout' course.slug %}" 
+                class="w-full py-4 px-6 rounded-2xl {% if course.is_free %}bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-emerald-500/25{% else %}bg-gradient-to-r from-brand-primary to-cyan-500 hover:opacity-95 shadow-brand-primary/25{% endif %} text-white font-black text-sm shadow-xl transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2 text-center"
+              >
+                <span>🛒</span>
+                <span>{% if course.is_free %}ফ্রিতে ভর্তি হোন (চেকআউট) →{% else %}এখনই ভর্তি হোন (৳{{ course.price }}) →{% endif %}</span>
+              </a>
+            {% endif %}
+
+            <!-- WhatsApp Direct Consultation Button -->
+            <a 
+              href="https://wa.me/{{ current_tenant.branding.whatsapp_number|default:current_tenant.branding.contact_phone|default:'8801800000000'|cut:' '|cut:'-'|cut:'+' }}?text=Hello%2C%20I%20want%20to%20know%20more%20about%20{{ course.title|urlencode }}" 
+              target="_blank" 
+              class="w-full py-3 px-4 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm"
+            >
+              <span class="text-base">💬</span>
+              <span>হোয়াটসঅ্যাপে পরামর্শ নিন</span>
+            </a>
+          </div>
+
+          <!-- Social Share Bar ("শেয়ার করুন") -->
+          <div class="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-2.5">
+            <span class="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+              📢 বন্ধুদের সাথে শেয়ার করুন:
+            </span>
+            <div class="grid grid-cols-4 gap-2">
+              <button 
+                type="button" 
+                @click="shareToFacebook()" 
+                class="p-2.5 rounded-xl bg-blue-600/10 hover:bg-blue-600 text-blue-600 hover:text-white border border-blue-600/20 text-xs font-bold transition-all flex items-center justify-center"
+                title="ফেসবুকে শেয়ার করুন"
+              >
+                <span>Facebook</span>
+              </button>
+              <button 
+                type="button" 
+                @click="shareToWhatsApp()" 
+                class="p-2.5 rounded-xl bg-emerald-600/10 hover:bg-emerald-600 text-emerald-600 hover:text-white border border-emerald-600/20 text-xs font-bold transition-all flex items-center justify-center"
+                title="হোয়াটসঅ্যাপে শেয়ার করুন"
+              >
+                <span>WhatsApp</span>
+              </button>
+              <button 
+                type="button" 
+                @click="shareToTelegram()" 
+                class="p-2.5 rounded-xl bg-sky-600/10 hover:bg-sky-600 text-sky-600 hover:text-white border border-sky-600/20 text-xs font-bold transition-all flex items-center justify-center"
+                title="টেলিগ্রামে শেয়ার করুন"
+              >
+                <span>Telegram</span>
+              </button>
+              <button 
+                type="button" 
+                @click="copyCourseUrl()" 
+                class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-brand-primary text-slate-700 dark:text-slate-200 hover:text-white text-xs font-bold transition-all flex items-center justify-center"
+                title="লিঙ্ক কপি করুন"
+              >
+                <span x-text="copied ? '✓' : 'Copy'"></span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Course Features Checklist -->
+          <div class="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3 text-xs">
+            <span class="font-extrabold text-slate-900 dark:text-white uppercase tracking-wider block text-[11px]">
+              কোর্সের বিশেষ সুবিধাসমূহ:
+            </span>
+            <ul class="space-y-2.5 text-slate-600 dark:text-slate-300">
+              <li class="flex items-center gap-2.5">
+                <span class="text-emerald-500 font-bold">✓</span>
+                <span>মোট মডিউল: <strong class="text-slate-800 dark:text-slate-200">{{ course.modules.count }}টি</strong></span>
+              </li>
+              <li class="flex items-center gap-2.5">
+                <span class="text-emerald-500 font-bold">✓</span>
+                <span>মোট লেকচার: <strong class="text-slate-800 dark:text-slate-200">{{ total_lessons_count }}টি ক্লাস</strong></span>
+              </li>
+              <li class="flex items-center gap-2.5">
+                <span class="text-emerald-500 font-bold">✓</span>
+                <span>কোর্স ডিউরেশন: <strong class="text-slate-800 dark:text-slate-200">{{ total_duration_hours }} ঘণ্টা</strong></span>
+              </li>
+              <li class="flex items-center gap-2.5">
+                <span class="text-emerald-500 font-bold">✓</span>
+                <span>মোবাইল ও কম্পিউটার ফ্রেন্ডলি লার্নিং</span>
+              </li>
+              <li class="flex items-center gap-2.5">
+                <span class="text-emerald-500 font-bold">✓</span>
+                <span>আজীবন অ্যাক্সেস (Lifetime Access)</span>
+              </li>
+              <li class="flex items-center gap-2.5">
+                <span class="text-emerald-500 font-bold">✓</span>
+                <span>কোর্স সমাপ্তির অফিসিয়াল সার্টিফিকেট</span>
+              </li>
+            </ul>
+          </div>
+
+        </div>
+
+        <!-- 100% Security Guarantee Badge -->
+        <div class="p-4 rounded-2xl bg-slate-100/80 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-1">
+          <div class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-center gap-1.5">
+            <span>🛡️</span>
+            <span>১০০% নিরাপদ ও ভেরিফায়েড প্ল্যাটফর্ম</span>
+          </div>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400">
+            যেকোনো প্রয়োজনে আমাদের সাপোর্ট টিম সর্বদা আপনার পাশে রয়েছে।
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Sticky Mobile Course Action Bar (Native App Style - Visible only on Mobile/Tablet) -->
+    <div class="fixed bottom-14 inset-x-0 z-30 lg:hidden p-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 shadow-2xl flex items-center justify-between gap-3">
+      <div>
+        <div class="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase">কোর্স ফি</div>
+        <div class="text-base font-black text-slate-900 dark:text-white leading-tight">
+          {% if course.is_free %}
+            <span class="text-emerald-600 dark:text-emerald-400">১০০% ফ্রি</span>
+          {% else %}
+            <span>৳{{ course.price }}</span>
+            {% if course.discount_price %}
+              <span class="text-xs text-slate-400 line-through ml-1">৳{{ course.discount_price }}</span>
+            {% endif %}
+          {% endif %}
         </div>
       </div>
-      <div class="text-right flex flex-col items-start md:items-end gap-2">
-        <div class="text-3xl font-black text-slate-900 dark:text-white">
-          {% if course.is_free %}ফ্রি (Free){% else %}৳{{ course.price }}{% endif %}
-        </div>
-        
+
+      <div class="flex items-center gap-2">
         {% if is_enrolled %}
-          <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-            ✓ আপনি এই কোর্সে ভর্তি আছেন
-          </span>
-          <div class="flex flex-wrap items-center gap-2 mt-2">
-            {% if first_lesson %}
-              <a 
-                href="{% url 'courses:player' course.slug first_lesson.slug %}"
-                class="px-6 py-3 rounded-2xl text-xs sm:text-sm font-black bg-gradient-to-r from-emerald-500 to-teal-500 hover:opacity-95 text-slate-950 shadow-xl shadow-emerald-500/25 transition-all transform hover:-translate-y-0.5 flex items-center gap-2"
-              >
-                <span>▶</span>
-                <span>ক্লাসে প্রবেশ করুন</span>
-              </a>
-            {% endif %}
+          {% if first_lesson %}
             <a 
-              href="/dashboard/?tab=my_courses"
-              class="px-4 py-3 rounded-2xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all border border-slate-300 dark:border-slate-700"
+              href="{% url 'courses:player' course.slug first_lesson.slug %}" 
+              class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-md app-tap"
             >
-              🎓 কোর্স ড্যাশবোর্ড
+              ▶ ক্লাসে প্রবেশ করুন
             </a>
-          </div>
+          {% endif %}
         {% else %}
-          <span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-            ⚡ ইনস্ট্যান্ট কোর্স অ্যাক্সেস
-          </span>
-          <div class="flex flex-wrap items-center gap-2 mt-2">
-            <a 
-              href="{% url 'courses:checkout' course.slug %}"
-              class="px-6 py-3 rounded-2xl text-xs sm:text-sm font-black bg-gradient-to-r from-brand-primary to-cyan-500 hover:opacity-95 text-white shadow-xl shadow-brand-primary/25 transition-all transform hover:-translate-y-0.5 flex items-center gap-2"
-            >
-              <span>🛒</span>
-              <span>কোর্সটিতে ভর্তি হোন</span>
-            </a>
-            {% if first_lesson %}
-              <a 
-                href="{% url 'courses:player' course.slug first_lesson.slug %}"
-                class="px-4 py-3 rounded-2xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all border border-slate-300 dark:border-slate-700"
-              >
-                ▶ প্রিভিউ ক্লাস
-              </a>
-            {% endif %}
-          </div>
+          <a 
+            href="{% url 'courses:checkout' course.slug %}" 
+            class="px-6 py-2.5 rounded-xl {% if course.is_free %}bg-emerald-600 hover:bg-emerald-500{% else %}bg-brand-primary hover:opacity-95{% endif %} text-white font-black text-xs shadow-md shadow-brand-primary/25 app-tap"
+          >
+            {% if course.is_free %}ফ্রিতে ভর্তি হোন →{% else %}ভর্তি হোন →{% endif %}
+          </a>
         {% endif %}
       </div>
     </div>
 
-    {% if course.intro_video_url %}
-      <!-- Course Intro / Live Class Video Player with Custom Poster & LMS Title Bar -->
-      <div class="mt-8 pt-8 border-t border-slate-200 dark:border-slate-800">
-        <div class="flex items-center gap-2 mb-3 text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
-          <span>🎥</span>
-          <span>কোর্স প্রিভিউ ও ওরিয়েন্টেশন ক্লাস</span>
-        </div>
-        <div 
-          class="aspect-video w-full rounded-2xl overflow-hidden bg-black shadow-lg border border-slate-200 dark:border-slate-800 relative select-none group"
-          oncontextmenu="return false;"
-          x-data="{ hasStarted: false }"
-        >
-          <!-- Cropped & Scaled Video Frame -->
-          <div class="absolute inset-0 overflow-hidden">
-            <iframe 
-              src="{{ course.embed_intro_video_url }}" 
-              class="w-[108%] h-[126%] -top-[12%] -left-[4%] absolute" 
-              frameborder="0" 
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-              referrerpolicy="strict-origin-when-cross-origin"
-              allowfullscreen>
-            </iframe>
-          </div>
-
-          <!-- Custom LMS Header -->
-          <div class="absolute top-0 left-0 right-0 z-20 px-4 py-3 sm:px-6 sm:py-3.5 bg-gradient-to-b from-black/90 via-black/60 to-transparent flex items-center justify-between pointer-events-none">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-primary to-cyan-400 text-white flex items-center justify-center font-black text-xs shadow-md">
-                {{ current_tenant.name|slice:":1"|upper|default:"A" }}
-              </div>
-              <div>
-                <span class="text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-400 block">
-                  {{ course.title }}
-                </span>
-                <h3 class="text-xs sm:text-sm font-extrabold text-white tracking-tight drop-shadow truncate max-w-[240px] sm:max-w-md">
-                  কোর্স প্রিভিউ ও পরিচিতি
-                </h3>
-              </div>
-            </div>
-            <span class="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 backdrop-blur-md">
-              🔒 প্রিভিউ ক্লাস
-            </span>
-          </div>
-
-          <!-- Top and Bottom-right click shields -->
-          <div class="absolute top-0 left-0 right-0 h-14 z-20 pointer-events-auto bg-transparent"></div>
-          <div class="absolute bottom-0 right-0 w-36 h-12 z-20 pointer-events-auto bg-transparent"></div>
-        </div>
-      </div>
-    {% endif %}
   </div>
-
-  <!-- Curriculum Syllabus -->
-  <div class="space-y-6">
-    <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
-      Curriculum Syllabus
-    </h2>
-
-    {% for module in course.modules.all %}
-      <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 overflow-hidden shadow-sm" x-data="{ open: true }">
-        <button 
-          @click="open = !open" 
-          class="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
-        >
-          <div>
-            <span class="text-xs font-mono uppercase tracking-wider text-brand-primary block">
-              Module {{ forloop.counter }}
-            </span>
-            <span class="text-base font-bold text-slate-900 dark:text-white">
-              {{ module.title }}
-            </span>
-          </div>
-          <svg class="w-5 h-5 text-slate-400 transform transition-transform" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-          </svg>
-        </button>
-
-        <div x-show="open" class="border-t border-slate-200 dark:border-slate-800/80 divide-y divide-slate-200 dark:divide-slate-800/60">
-          {% for lesson in module.lessons.all %}
-            <div class="px-6 py-3.5 flex items-center justify-between text-sm hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors">
-              <div class="flex items-center gap-3">
-                <span class="text-slate-400 dark:text-slate-500 font-mono text-xs">#{{ lesson.order }}</span>
-                <span class="text-slate-800 dark:text-slate-300 font-medium">{{ lesson.title }}</span>
-                {% if lesson.is_preview %}
-                  <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border border-cyan-500/20">
-                    PREVIEW
-                  </span>
-                {% endif %}
-              </div>
-              <div class="flex items-center gap-4">
-                <span class="text-xs text-slate-500 font-mono">{{ lesson.duration_minutes }} mins</span>
-                <a 
-                  href="{% url 'courses:player' course.slug lesson.slug %}" 
-                  class="px-3 py-1 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-brand-primary hover:text-white transition-all"
-                >
-                  Start Lesson →
-                </a>
-              </div>
-            </div>
-          {% empty %}
-            <div class="px-6 py-4 text-xs text-slate-500">No lessons uploaded for this module yet.</div>
-          {% endfor %}
-        </div>
-      </div>
-    {% empty %}
-      <div class="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 p-8 text-center text-slate-500 text-sm shadow-sm">
-        Curriculum modules are currently being prepared.
-      </div>
-    {% endfor %}
-  </div>
-
 </div>
 {% endblock %}

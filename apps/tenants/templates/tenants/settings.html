@@ -2,32 +2,20 @@
 
 {% block title %}Academy Settings — {{ tenant.name }}{% endblock %}
 
+{% block header %}
+  {% include "includes/dashboard_header.html" %}
+{% endblock header %}
+
 {% block content %}
 <div 
   x-data="{ 
     sidebarOpen: false, 
     activeTab: new URLSearchParams(window.location.search).get('tab') || '{{ active_tab|default:'domain' }}' 
   }" 
-  class="min-h-[calc(100vh-4rem)] flex flex-col lg:flex-row bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors"
+  @toggle-sidebar.window="sidebarOpen = !sidebarOpen"
+  @close-sidebar.window="sidebarOpen = false"
+  class="min-h-[calc(100vh-3.5rem)] flex flex-col lg:flex-row bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors"
 >
-
-  <!-- Mobile Top Bar for Sidebar Toggle -->
-  <div class="lg:hidden flex items-center justify-between px-4 py-3 bg-white/90 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800">
-    <div class="flex items-center gap-2">
-      <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-brand-primary to-cyan-400 flex items-center justify-center font-bold text-white text-xs">
-        {{ tenant.name|slice:":1"|upper }}
-      </div>
-      <span class="text-sm font-bold text-slate-900 dark:text-white truncate max-w-[200px]">{{ tenant.name }} Settings</span>
-    </div>
-    <button 
-      @click="sidebarOpen = !sidebarOpen"
-      class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-slate-700 focus:outline-none"
-    >
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-      </svg>
-    </button>
-  </div>
 
   <!-- Mobile Off-Canvas Drawer Backdrop -->
   <div 
@@ -40,7 +28,7 @@
   {% include "includes/instructor_sidebar.html" %}
 
   <!-- Main Content Area with Persistent Sidebar -->
-  <main class="flex-1 p-6 sm:p-10 max-w-7xl overflow-y-auto">
+  <main class="flex-1 p-6 sm:p-10 max-w-7xl overflow-y-auto pb-24 lg:pb-10">
 
     {% if messages %}
       <div class="mb-6 space-y-2">
@@ -971,7 +959,162 @@
           </div>
         </div>
 
-        <!-- Section 2: General Brand Name & Colors -->
+        <!-- Section 2: Android App Package (.APK) & App Store -->
+        <div class="space-y-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+          <div class="border-b border-slate-200 dark:border-slate-800 pb-3 flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-mono uppercase text-emerald-600 dark:text-emerald-400 font-bold tracking-wider">অ্যান্ড্রয়েড মোবাইল অ্যাপ প্যাকেজ (.APK)</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">আপনার একাডেমির নিজস্ব অ্যান্ড্রয়েড অ্যাপ (.APK) আপলোড করুন অথবা এক্সটার্নাল ডাউনলোড লিংক দিন।</p>
+            </div>
+            {% if tenant.android_apk %}
+              <span class="px-3 py-1 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                ✓ APK আপলোড করা আছে
+              </span>
+            {% endif %}
+          </div>
+
+          <div class="grid sm:grid-cols-2 gap-6">
+            <!-- APK File Upload -->
+            <div class="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 space-y-4">
+              <label class="block text-xs font-bold text-slate-800 dark:text-slate-200">
+                🤖 সরাসরি APK ফাইল আপলোড (Direct .APK File)
+              </label>
+              {% if tenant.android_apk %}
+                <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-700 dark:text-emerald-300 flex items-center justify-between">
+                  <div class="truncate">
+                    <span class="font-bold">সক্রিয় প্যাকেজ:</span>
+                    <a href="{{ tenant.android_apk.url }}" class="underline ml-1 font-mono text-[11px]" target="_blank">{{ tenant.android_apk.name }}</a>
+                  </div>
+                  <label class="text-[10px] font-bold text-rose-600 flex items-center gap-1 cursor-pointer">
+                    <input type="checkbox" name="clear_android_apk" class="rounded text-rose-600 w-3.5 h-3.5">
+                    <span>মুছুন</span>
+                  </label>
+                </div>
+              {% endif %}
+              <input 
+                type="file" 
+                name="android_apk" 
+                accept=".apk,application/vnd.android.package-archive"
+                class="block w-full text-[11px] text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[11px] file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 dark:file:bg-slate-800 dark:file:text-emerald-400 cursor-pointer"
+              >
+              <p class="text-[10px] text-slate-400 font-mono">শিক্ষার্থীরা হোমপেজের 'Android App' বাটনে ক্লিক করলে এই APK ফাইলটি সরাসরি ডাউনলোড হবে।</p>
+            </div>
+
+            <!-- Fallback URLs -->
+            <div class="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 space-y-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">এক্সটার্নাল APK ডাউনলোড লিংক (URL)</label>
+                <input 
+                  type="url" 
+                  name="android_apk_url" 
+                  value="{{ branding.android_apk_url|default:'' }}" 
+                  placeholder="https://mycdn.com/app-release.apk"
+                  class="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none"
+                >
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">Google Play Store লিংক</label>
+                <input 
+                  type="url" 
+                  name="play_store_url" 
+                  value="{{ branding.play_store_url|default:'' }}" 
+                  placeholder="https://play.google.com/store/apps/details?id=..."
+                  class="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none"
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Search Engine Optimization (SEO) & Social Graph -->
+        <div class="space-y-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+          <div class="border-b border-slate-200 dark:border-slate-800 pb-3">
+            <h3 class="text-sm font-mono uppercase text-indigo-600 dark:text-cyan-400 font-bold tracking-wider">সার্চ ইঞ্জিন অপটিমাইজেশন (SEO & Social Sharing)</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">গুগল সার্চ ও সোশ্যাল মিডিয়ায় একাডেমির সঠিক টাইটেল, ডেসক্রিপশন ও প্রিভিউ কনফিগার করুন।</p>
+          </div>
+
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">SEO Meta Title (গুগল সার্চ টাইটেল)</label>
+              <input 
+                type="text" 
+                name="meta_title" 
+                value="{{ branding.meta_title|default:'' }}" 
+                placeholder="{{ tenant.name }} - সেরা অনলাইন একাডেমি ও কোর্স"
+                class="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-cyan-500 shadow-sm"
+              >
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">SEO Meta Description (সার্চ ডেসক্রিপশন - ১৬০ ক্যারেক্টার)</label>
+              <textarea 
+                name="meta_description" 
+                rows="2" 
+                placeholder="{{ tenant.meta_description }}"
+                class="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-cyan-500 shadow-sm"
+              >{{ branding.meta_description|default:'' }}</textarea>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">SEO Keywords (কমা দিয়ে আলাদা করুন)</label>
+              <input 
+                type="text" 
+                name="meta_keywords" 
+                value="{{ branding.meta_keywords|default:'' }}" 
+                placeholder="অনলাইন কোর্স, লাইভ ক্লাস, এইচএসসি, বিসিএস প্রস্তুতি, মডেল টেস্ট"
+                class="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-cyan-500 shadow-sm"
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 4: WhatsApp Live Support Configuration -->
+        <div class="space-y-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+          <div class="border-b border-slate-200 dark:border-slate-800 pb-3 flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-mono uppercase text-emerald-600 dark:text-emerald-400 font-bold tracking-wider">হোয়াটসঅ্যাপ লাইভ সাপোর্ট ও উইজেট (WhatsApp Live Support)</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">শিক্ষার্থীদের সাথে সার্বক্ষণিক সরাসরি চ্যাটের জন্য ডেডিকেটেড হোয়াটসঅ্যাপ কনফিগার করুন।</p>
+            </div>
+            {% if tenant.whatsapp_number_clean %}
+              <a href="{{ tenant.whatsapp_url }}" target="_blank" class="px-3 py-1 rounded-xl text-[10px] font-bold bg-[#25D366] text-white shadow-sm flex items-center gap-1">
+                <span>💬</span> চ্যাট টেস্ট করুন
+              </a>
+            {% endif %}
+          </div>
+
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">একাডেমির হোয়াটসঅ্যাপ নম্বর (WhatsApp Number)</label>
+              <input 
+                type="text" 
+                name="whatsapp_number" 
+                value="{{ branding.whatsapp_number|default:'+8801800123456' }}" 
+                placeholder="+88017XXXXXXXX"
+                class="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-emerald-500 shadow-sm"
+              >
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">ডিফল্ট মেসেজ (Default Pre-filled Message)</label>
+              <input 
+                type="text" 
+                name="whatsapp_default_msg" 
+                value="{{ branding.whatsapp_default_msg|default:'আসসালামু আলাইকুম, আমি আপনাদের একাডেমি সম্পর্কে বিস্তারিত জানতে চাই।' }}" 
+                class="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-emerald-500 shadow-sm"
+              >
+            </div>
+          </div>
+
+          <div class="pt-2">
+            <label class="flex items-center gap-2 cursor-pointer select-none text-xs font-bold text-slate-700 dark:text-slate-300">
+              <input type="checkbox" name="enable_whatsapp_widget" {% if branding.enable_whatsapp_widget|default:True %}checked{% endif %} class="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4">
+              <span>ওয়েবসাইটে ভাসমান হোয়াটসঅ্যাপ লাইভ সাপোর্ট উইজেট প্রদর্শন করুন (Enable Floating WhatsApp Widget)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Section 5: General Brand Name & Colors -->
         <div class="space-y-6 pt-4 border-t border-slate-200 dark:border-slate-800">
           <div>
             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Academy Brand Name</label>
@@ -1018,7 +1161,7 @@
         </div>
 
         <button type="submit" class="px-6 py-3 rounded-xl bg-brand-primary text-white text-xs font-bold hover:opacity-90 shadow-md shadow-brand-primary/20 transition-all">
-          Save All Branding & Media Changes
+          Save All Branding, SEO & App Settings
         </button>
       </form>
     </div>
@@ -1218,4 +1361,8 @@
   </main>
 
 </div>
+{% endblock content %}
+
+{% block footer %}
+  {% include "includes/dashboard_bottom_nav.html" %}
 {% endblock %}

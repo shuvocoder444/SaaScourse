@@ -34,10 +34,10 @@
               {% if current_tenant %}{{ current_tenant.name|slice:":1"|upper }}{% else %}⚡{% endif %}
             </div>
           {% endif %}
-          <span class="text-lg font-extrabold text-white">{{ current_tenant.name|default:"CourseFlow" }}</span>
+          <span class="text-lg font-extrabold text-white">{% if current_tenant %}{{ current_tenant.name }}{% else %}CourseFlow{% endif %}</span>
         </div>
         <p class="text-xs text-slate-400 leading-relaxed max-w-sm">
-          {{ current_tenant.branding.footer_about|default:"পরবর্তী প্রজন্মের ইন্টারেক্টিভ লার্নিং প্ল্যাটফর্ম। প্রফেশনাল স্কিলস ও একাডেমি ট্র্যাকের জন্য উপযুক্ত।" }}
+          {% if current_tenant %}{{ current_tenant.branding.footer_about|default:"পরবর্তী প্রজন্মের ইন্টারেক্টিভ লার্নিং প্ল্যাটফর্ম। প্রফেশনাল স্কিলস ও একাডেমি ট্র্যাকের জন্য উপযুক্ত।" }}{% else %}পরবর্তী প্রজন্মের ইন্টারেক্টিভ লার্নিং প্ল্যাটফর্ম। প্রফেশনাল স্কিলস ও একাডেমি ট্র্যাকের জন্য উপযুক্ত।{% endif %}
         </p>
         <div class="flex items-center gap-2">
           <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
@@ -63,7 +63,9 @@
           <li><a href="#" class="hover:text-indigo-400 transition-colors">ডকুমেন্টেশন</a></li>
           <li><a href="#" class="hover:text-indigo-400 transition-colors">ডাউট সলভিং ফোরাম</a></li>
           <li><a href="#" class="hover:text-indigo-400 transition-colors">কমিউনিটি ডিসকর্ড</a></li>
-          <li><a href="mailto:{{ current_tenant.branding.contact_email }}" class="hover:text-indigo-400 transition-colors font-mono">{{ current_tenant.branding.contact_email }}</a></li>
+          {% if current_tenant and current_tenant.branding.contact_email %}
+            <li><a href="mailto:{{ current_tenant.branding.contact_email }}" class="hover:text-indigo-400 transition-colors font-mono">{{ current_tenant.branding.contact_email }}</a></li>
+          {% endif %}
         </ul>
       </div>
 
@@ -71,17 +73,17 @@
       <div class="space-y-3">
         <h4 class="text-xs font-bold uppercase tracking-wider text-slate-200">কানেক্টেড থাকুন</h4>
         <div class="flex items-center gap-2.5">
-          {% if current_tenant.branding.facebook_url %}
+          {% if current_tenant and current_tenant.branding.facebook_url %}
             <a href="{{ current_tenant.branding.facebook_url }}" target="_blank" class="w-8 h-8 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center text-xs border border-slate-800">📘</a>
           {% endif %}
-          {% if current_tenant.branding.youtube_url %}
+          {% if current_tenant and current_tenant.branding.youtube_url %}
             <a href="{{ current_tenant.branding.youtube_url }}" target="_blank" class="w-8 h-8 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center text-xs border border-slate-800">🎥</a>
           {% endif %}
-          {% if current_tenant.branding.telegram_url %}
+          {% if current_tenant and current_tenant.branding.telegram_url %}
             <a href="{{ current_tenant.branding.telegram_url }}" target="_blank" class="w-8 h-8 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center text-xs border border-slate-800">✈️</a>
           {% endif %}
-          {% if current_tenant.branding.whatsapp_number %}
-            <a href="https://wa.me/{{ current_tenant.branding.whatsapp_number }}" target="_blank" class="w-8 h-8 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center text-xs border border-slate-800">💬</a>
+          {% if current_tenant and current_tenant.branding.whatsapp_number %}
+            <a href="{{ current_tenant.whatsapp_url }}" target="_blank" class="w-8 h-8 rounded-lg bg-slate-900 hover:bg-emerald-600 text-slate-300 hover:text-white flex items-center justify-center text-xs border border-slate-800 transition-colors">💬</a>
           {% endif %}
         </div>
         <p class="text-[10px] text-slate-500 pt-2">
@@ -94,7 +96,7 @@
     <!-- Bottom Copyright -->
     <div class="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
       <div>
-        {{ current_tenant.branding.footer_copyright|default:"© 2026 CourseFlow LMS." }} All rights reserved.
+        {% if current_tenant %}{{ current_tenant.branding.footer_copyright|default:"© 2026 CourseFlow LMS." }}{% else %}© 2026 CourseFlow LMS.{% endif %} All rights reserved.
       </div>
       <div class="flex items-center gap-4 text-[11px] font-mono">
         <a href="#" class="hover:text-slate-400">Terms of Service</a>

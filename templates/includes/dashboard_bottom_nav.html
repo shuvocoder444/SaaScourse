@@ -1,0 +1,128 @@
+<!-- Native Mobile Studio App Bottom Navigation Bar (Visible on Mobile/Tablet for Dashboard) -->
+<nav 
+  x-data="{
+    activeTab: new URLSearchParams(window.location.search).get('tab') || 'overview'
+  }"
+  @switch-tab.window="activeTab = $event.detail"
+  class="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-2xl border-t border-slate-200/90 dark:border-slate-800/90 shadow-[0_-4px_25px_rgba(0,0,0,0.08)] lg:hidden select-none transition-all duration-200"
+  style="padding-bottom: max(env(safe-area-inset-bottom, 0px), 6px);"
+  aria-label="Dashboard Mobile Dock"
+>
+  <div class="grid grid-cols-5 items-center h-15 px-2 max-w-md mx-auto">
+    
+    <!-- 1. Overview Tab -->
+    <a 
+      href="{% url 'dashboard' %}?tab=overview" 
+      @click="
+        if (window.location.pathname.startsWith('/dashboard')) {
+          $event.preventDefault();
+          activeTab = 'overview';
+          $dispatch('switch-tab', 'overview');
+          history.pushState(null, '', '{% url 'dashboard' %}?tab=overview');
+        }
+        $dispatch('close-sidebar');
+      "
+      class="flex flex-col items-center justify-center py-1 transition-transform active:scale-95 group text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+      :class="activeTab === 'overview' ? 'text-brand-primary font-bold' : ''"
+    >
+      <div class="relative">
+        <span class="text-lg leading-none">📊</span>
+        <span 
+          x-show="activeTab === 'overview'" 
+          class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-brand-primary"
+        ></span>
+      </div>
+      <span class="text-[10px] tracking-tight mt-1 font-semibold">ওভারভিউ</span>
+    </a>
+
+    <!-- 2. Courses Tab -->
+    <a 
+      href="{% url 'dashboard' %}?tab=courses" 
+      @click="
+        if (window.location.pathname.startsWith('/dashboard')) {
+          $event.preventDefault();
+          activeTab = 'courses';
+          $dispatch('switch-tab', 'courses');
+          history.pushState(null, '', '{% url 'dashboard' %}?tab=courses');
+        }
+        $dispatch('close-sidebar');
+      "
+      class="flex flex-col items-center justify-center py-1 transition-transform active:scale-95 group text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+      :class="activeTab === 'courses' ? 'text-brand-primary font-bold' : ''"
+    >
+      <div class="relative">
+        <span class="text-lg leading-none">🎓</span>
+        <span 
+          x-show="activeTab === 'courses'" 
+          class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-brand-primary"
+        ></span>
+      </div>
+      <span class="text-[10px] tracking-tight mt-1 font-semibold">কোর্সসমূহ</span>
+    </a>
+
+    <!-- 3. Finance / Ledger Tab -->
+    <a 
+      href="{% url 'dashboard' %}?tab=finance" 
+      @click="
+        if (window.location.pathname.startsWith('/dashboard')) {
+          $event.preventDefault();
+          activeTab = 'finance';
+          $dispatch('switch-tab', 'finance');
+          history.pushState(null, '', '{% url 'dashboard' %}?tab=finance');
+        }
+        $dispatch('close-sidebar');
+      "
+      class="flex flex-col items-center justify-center py-1 transition-transform active:scale-95 group text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+      :class="activeTab === 'finance' ? 'text-brand-primary font-bold' : ''"
+    >
+      <div class="relative">
+        <span class="text-lg leading-none">💰</span>
+        <span 
+          x-show="activeTab === 'finance'" 
+          class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-brand-primary"
+        ></span>
+      </div>
+      <span class="text-[10px] tracking-tight mt-1 font-semibold">আয়-ব্যয়</span>
+    </a>
+
+    <!-- 4. Students Tab -->
+    <a 
+      href="{% url 'dashboard' %}?tab=students" 
+      @click="
+        if (window.location.pathname.startsWith('/dashboard')) {
+          $event.preventDefault();
+          activeTab = 'students';
+          $dispatch('switch-tab', 'students');
+          history.pushState(null, '', '{% url 'dashboard' %}?tab=students');
+        }
+        $dispatch('close-sidebar');
+      "
+      class="flex flex-col items-center justify-center py-1 transition-transform active:scale-95 group text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+      :class="activeTab === 'students' ? 'text-brand-primary font-bold' : ''"
+    >
+      <div class="relative">
+        <span class="text-lg leading-none">👨‍🎓</span>
+        <span 
+          x-show="activeTab === 'students'" 
+          class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-brand-primary"
+        ></span>
+      </div>
+      <span class="text-[10px] tracking-tight mt-1 font-semibold">শিক্ষার্থী</span>
+    </a>
+
+    <!-- 5. All Menus / Studio Sidebar Trigger (ONLY THIS OPENS SIDEBAR) -->
+    <button 
+      type="button" 
+      @click="$dispatch('toggle-sidebar')"
+      class="flex flex-col items-center justify-center py-1 transition-transform active:scale-95 group text-slate-700 dark:text-slate-200 hover:text-brand-primary cursor-pointer"
+    >
+      <div class="relative w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shadow-sm group-hover:bg-brand-primary group-hover:text-white transition-colors">
+        <svg class="w-4 h-4 fill-none stroke-current" viewBox="0 0 24 24" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+      </div>
+      <span class="text-[10px] tracking-tight mt-0.5 font-bold">সকল মেনু</span>
+    </button>
+
+  </div>
+</nav>

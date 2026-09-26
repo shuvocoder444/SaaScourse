@@ -36,37 +36,37 @@
   </div>
 
   <!-- Books Grid -->
-  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 sm:gap-4 lg:gap-5">
     {% for book in books %}
-      <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 p-4 hover:border-emerald-500/50 hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+      <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 p-3 sm:p-4 hover:border-emerald-500/50 hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
         <div>
-          <!-- Book Cover -->
-          <div class="h-52 rounded-2xl bg-gradient-to-tr from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 overflow-hidden relative mb-3 shadow-inner flex items-center justify-center">
+          <!-- Book Cover (Full Tall Portrait Image Display) -->
+          <div class="w-full aspect-[3/4] rounded-2xl bg-gradient-to-b from-slate-100 to-slate-200/90 dark:from-slate-800 dark:to-slate-900/90 overflow-hidden relative mb-3 shadow-inner flex items-center justify-center p-2">
             {% if book.get_cover_url %}
-              <img src="{{ book.get_cover_url }}" alt="{{ book.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+              <img src="{{ book.get_cover_url }}" alt="{{ book.title }}" class="max-w-full max-h-full w-auto h-auto object-contain rounded-xl drop-shadow-md group-hover:scale-105 transition-transform duration-300">
             {% else %}
               <div class="text-center p-3">
                 <span class="text-4xl block mb-1">📖</span>
-                <span class="text-xs font-bold text-slate-700 dark:text-slate-300">{{ book.title|truncatechars:20 }}</span>
+                <span class="text-[11px] font-bold text-slate-700 dark:text-slate-300">{{ book.title|truncatechars:20 }}</span>
               </div>
             {% endif %}
 
-            <div class="absolute top-2.5 right-2.5">
+            <div class="absolute top-2 right-2">
               <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-500 text-slate-950 shadow-sm">
                 {{ book.edition }}
               </span>
             </div>
 
             {% if not book.in_stock %}
-              <div class="absolute inset-0 bg-slate-950/70 backdrop-blur-[1px] flex items-center justify-center">
-                <span class="px-3 py-1 rounded-xl bg-rose-600 text-white text-xs font-bold">স্টক আউট</span>
+              <div class="absolute inset-0 bg-slate-950/70 backdrop-blur-[1px] flex items-center justify-center rounded-2xl">
+                <span class="px-2.5 py-1 rounded-xl bg-rose-600 text-white text-[10px] font-bold">স্টক আউট</span>
               </div>
             {% endif %}
           </div>
 
           <!-- Info -->
-          <div class="text-[11px] text-slate-500 dark:text-slate-400 font-medium mb-1">{{ book.author }}</div>
-          <h3 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-2 leading-snug">
+          <div class="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium mb-0.5 truncate">{{ book.author }}</div>
+          <h3 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-2 leading-snug mb-1">
             <a href="{% url 'book_detail' book.slug %}">{{ book.title }}</a>
           </h3>
           {% if book.subtitle %}
@@ -74,16 +74,16 @@
           {% endif %}
         </div>
 
-        <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between mt-3">
-          <div>
-            <span class="text-base font-extrabold text-slate-900 dark:text-white">৳{{ book.price }}</span>
+        <div class="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between mt-2 gap-1">
+          <div class="truncate">
+            <span class="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white">৳{{ book.price }}</span>
             {% if book.discount_price %}
-              <span class="text-xs text-slate-400 line-through ml-1">৳{{ book.discount_price }}</span>
+              <span class="text-[10px] text-slate-400 line-through ml-0.5">৳{{ book.discount_price }}</span>
             {% endif %}
           </div>
           <a 
             href="{% url 'book_detail' book.slug %}" 
-            class="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 dark:bg-slate-700 hover:bg-emerald-600 text-white transition-colors"
+            class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-slate-900 dark:bg-slate-700 hover:bg-emerald-600 text-white transition-colors shrink-0 shadow-sm"
           >
             বিস্তারিত
           </a>
@@ -98,4 +98,3 @@
 
 </div>
 {% endblock %}
-

@@ -102,14 +102,12 @@ class RoleBasedDashboardsAndAuthTests(TestCase):
             )
 
     def test_login_page_renders_with_demo_roles(self):
-        """Login page displays 1-Click quick login buttons for all roles."""
+        """Login page renders authentication inputs and registration toggle."""
         response = self.client.get("/login/", HTTP_HOST="localhost:8001")
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()
-        self.assertIn("1-Click Demo Login", content)
-        self.assertIn("Platform SuperAdmin", content)
-        self.assertIn("Academy Creator", content)
-        self.assertIn("Student / Learner", content)
+        self.assertIn("লগইন (Sign In)", content)
+        self.assertIn("নতুন রেজিস্ট্রেশন (Sign Up)", content)
 
     def test_demo_login_instant_authentication(self):
         """1-Click demo login authenticates the user immediately."""
@@ -147,8 +145,8 @@ class RoleBasedDashboardsAndAuthTests(TestCase):
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()
         self.assertIn("Course Management Studio", content)
-        self.assertIn("Course Plan Limit", content)
-        self.assertIn("Full-Stack Django &amp; HTMX", content)
+        self.assertIn("Alpha Code Academy", content)
+        self.assertIn("কোর্স ও একাডেমি ম্যানেজমেন্ট প্যানেল", content)
 
     def test_student_dashboard_on_tenant_subdomain(self):
         """Student visiting /dashboard/ on academy subdomain sees Student Learning Dashboard."""
@@ -156,9 +154,7 @@ class RoleBasedDashboardsAndAuthTests(TestCase):
         response = self.client.get("/dashboard/", HTTP_HOST="alpha.localhost:8001")
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()
-        self.assertIn("Student Learning Dashboard", content)
-        self.assertIn("Your Learning Journey", content)
+        self.assertIn("স্টুডেন্ট ড্যাশবোর্ড", content)
+        self.assertIn("Alpha Code Academy", content)
         self.assertIn("Full-Stack Django &amp; HTMX", content)
-        self.assertIn("Resume Learning", content)
-        # Direct link to player for lesson 1 (the unfinished lesson)
-        self.assertIn("/courses/django-htmx/player/lesson-1/", content)
+

@@ -3,6 +3,7 @@ import re
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 
 from core.tenancy.models import TenantAwareModel
 
@@ -16,31 +17,47 @@ def convert_to_embed_url(url: str) -> str:
         return ""
     url = url.strip()
 
+    yt_params = "modestbranding=1&rel=0&iv_load_policy=3&controls=1&showinfo=0&disablekb=0&playsinline=1&enablejsapi=1"
+
     # 1. YouTube Live Stream: https://www.youtube.com/live/VIDEO_ID or youtu.be/live/VIDEO_ID
-    live_match = re.search(r"(?:youtube\.com|youtu\.be)/live/([a-zA-Z0-9_\-]+)", url, re.IGNORECASE)
+    live_match = re.search(
+        r"(?:youtube\.com|youtu\.be)/live/([a-zA-Z0-9_\-]+)", url, re.IGNORECASE
+    )
     if live_match:
         video_id = live_match.group(1).split("?")[0].split("&")[0]
-        return f"https://www.youtube.com/embed/{video_id}?rel=0&enablejsapi=1"
+        return f"https://www.youtube.com/embed/{video_id}?{yt_params}"
 
     # 2. YouTube Shorts: https://www.youtube.com/shorts/VIDEO_ID
-    shorts_match = re.search(r"(?:youtube\.com|youtu\.be)/shorts/([a-zA-Z0-9_\-]+)", url, re.IGNORECASE)
+    shorts_match = re.search(
+        r"(?:youtube\.com|youtu\.be)/shorts/([a-zA-Z0-9_\-]+)", url, re.IGNORECASE
+    )
     if shorts_match:
         video_id = shorts_match.group(1).split("?")[0].split("&")[0]
-        return f"https://www.youtube.com/embed/{video_id}?rel=0&enablejsapi=1"
+        return f"https://www.youtube.com/embed/{video_id}?{yt_params}"
 
     # 3. YouTube Watch / youtu.be / standard embed / unlisted
-    yt_match = re.search(r"(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^\"&?\/\s]{11})", url, re.IGNORECASE)
+    yt_match = re.search(
+        r"(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^\"&?\/\s]{11})",
+        url,
+        re.IGNORECASE,
+    )
     if yt_match:
         video_id = yt_match.group(1)
-        return f"https://www.youtube.com/embed/{video_id}?rel=0&enablejsapi=1"
+        return f"https://www.youtube.com/embed/{video_id}?{yt_params}"
 
     # 4. Vimeo: https://vimeo.com/VIDEO_ID
-    vimeo_match = re.search(r"vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/([^\/]*)\/videos\/|album\/(\d+)\/video\/|)(\d+)", url, re.IGNORECASE)
+    vimeo_match = re.search(
+        r"vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/([^\/]*)\/videos\/|album\/(\d+)\/video\/|)(\d+)",
+        url,
+        re.IGNORECASE,
+    )
     if vimeo_match:
         vimeo_id = vimeo_match.group(3)
-        return f"https://player.vimeo.com/video/{vimeo_id}"
+        return f"https://player.vimeo.com/video/{vimeo_id}?badge=0&autopause=0&player_id=0&app_id=58479"
 
     # 5. Direct URL / already embed format
+    if "youtube.com/embed/" in url and "?" not in url:
+        return f"{url}?{yt_params}"
     return url
 
 
@@ -61,7 +78,9 @@ class Course(TenantAwareModel):
         default="",
         help_text="YouTube (Standard / Unlisted), YouTube Live, or Vimeo video URL for course intro / live class.",
     )
-    thumbnail = models.ImageField(upload_to="courses/thumbnails/", null=True, blank=True)
+    thumbnail = models.ImageField(
+        upload_to="courses/thumbnails/", null=True, blank=True
+    )
     instructor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
@@ -98,7 +117,11 @@ class Course(TenantAwareModel):
     @property
     def first_lesson(self):
         """Returns the first lesson of the course in curriculum order."""
-        return Lesson.objects.filter(module__course=self).order_by("module__order", "order").first()
+        return (
+            Lesson.objects.filter(module__course=self)
+            .order_by("module__order", "order")
+            .first()
+        )
 
     def get_user_progress(self, user):
         """Calculates completed lesson IDs, count, and overall percentage for a user."""
@@ -151,8 +174,14 @@ class Module(TenantAwareModel):
         ordering = ["order"]
 
     def clean(self):
-        if self.course_id and self.tenant_id and self.tenant_id != self.course.tenant_id:
-            raise ValidationError("Cross-tenant violation: Module tenant must match Course tenant.")
+        if (
+            self.course_id
+            and self.tenant_id
+            and self.tenant_id != self.course.tenant_id
+        ):
+            raise ValidationError(
+                "Cross-tenant violation: Module tenant must match Course tenant."
+            )
 
     def __str__(self):
         return f"{self.course.title} - Module: {self.title}"
@@ -178,8 +207,15 @@ class Lesson(TenantAwareModel):
         choices=ContentType.choices,
         default=ContentType.VIDEO,
     )
-    video_url = models.CharField(max_length=500, blank=True, default="", help_text="YouTube (Standard/Unlisted/Live), Vimeo, or Direct video URL.")
-    content = models.TextField(blank=True, help_text="Reading material in Markdown or HTML.")
+    video_url = models.CharField(
+        max_length=500,
+        blank=True,
+        default="",
+        help_text="YouTube (Standard/Unlisted/Live), Vimeo, or Direct video URL.",
+    )
+    content = models.TextField(
+        blank=True, help_text="Reading material in Markdown or HTML."
+    )
     duration_minutes = models.PositiveIntegerField(default=0)
     order = models.PositiveIntegerField(default=0)
     is_preview = models.BooleanField(
@@ -206,8 +242,14 @@ class Lesson(TenantAwareModel):
         ordering = ["order"]
 
     def clean(self):
-        if self.module_id and self.tenant_id and self.tenant_id != self.module.tenant_id:
-            raise ValidationError("Cross-tenant violation: Lesson tenant must match Module tenant.")
+        if (
+            self.module_id
+            and self.tenant_id
+            and self.tenant_id != self.module.tenant_id
+        ):
+            raise ValidationError(
+                "Cross-tenant violation: Lesson tenant must match Module tenant."
+            )
 
     def __str__(self):
         return f"{self.module.title} - Lesson: {self.title}"
@@ -224,7 +266,9 @@ class Lesson(TenantAwareModel):
 
         # Subsequent module in the same course
         next_module = (
-            Module.objects.filter(course=self.module.course, order__gt=self.module.order)
+            Module.objects.filter(
+                course=self.module.course, order__gt=self.module.order
+            )
             .order_by("order")
             .first()
         )
@@ -244,7 +288,9 @@ class Lesson(TenantAwareModel):
             return prev_in_module
 
         prev_module = (
-            Module.objects.filter(course=self.module.course, order__lt=self.module.order)
+            Module.objects.filter(
+                course=self.module.course, order__lt=self.module.order
+            )
             .order_by("-order")
             .first()
         )
@@ -289,8 +335,14 @@ class Enrollment(TenantAwareModel):
         ordering = ["-enrolled_at"]
 
     def clean(self):
-        if self.course_id and self.tenant_id and self.tenant_id != self.course.tenant_id:
-            raise ValidationError("Cross-tenant violation: Enrollment tenant must match Course tenant.")
+        if (
+            self.course_id
+            and self.tenant_id
+            and self.tenant_id != self.course.tenant_id
+        ):
+            raise ValidationError(
+                "Cross-tenant violation: Enrollment tenant must match Course tenant."
+            )
 
     def __str__(self):
         return f"{self.user.email} -> {self.course.title} ({self.status})"
@@ -322,8 +374,14 @@ class LessonProgress(TenantAwareModel):
         ]
 
     def clean(self):
-        if self.lesson_id and self.tenant_id and self.tenant_id != self.lesson.tenant_id:
-            raise ValidationError("Cross-tenant violation: Progress tenant must match Lesson tenant.")
+        if (
+            self.lesson_id
+            and self.tenant_id
+            and self.tenant_id != self.lesson.tenant_id
+        ):
+            raise ValidationError(
+                "Cross-tenant violation: Progress tenant must match Lesson tenant."
+            )
 
     def __str__(self):
         state = "Completed" if self.is_completed else "In Progress"
@@ -340,7 +398,9 @@ class Book(TenantAwareModel):
     cover_image = models.ImageField(upload_to="books/covers/", null=True, blank=True)
     cover_url = models.URLField(blank=True, default="")
     price = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
-    discount_price = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    discount_price = models.DecimalField(
+        max_digits=8, decimal_places=2, null=True, blank=True
+    )
     edition = models.CharField(max_length=100, blank=True, default="২০২৬ সংস্করণ")
     pages = models.PositiveIntegerField(default=0)
     in_stock = models.BooleanField(default=True)
@@ -387,9 +447,15 @@ class FreeResource(TenantAwareModel):
         choices=ResourceType.choices,
         default=ResourceType.PDF_NOTE,
     )
-    category = models.CharField(max_length=100, default="এইচএসসি ও ভর্তি", help_text="e.g. HSC, DU, Medical, BUET")
+    category = models.CharField(
+        max_length=100,
+        default="এইচএসসি ও ভর্তি",
+        help_text="e.g. HSC, DU, Medical, BUET",
+    )
     file = models.FileField(upload_to="resources/files/", null=True, blank=True)
-    file_url = models.URLField(blank=True, default="", help_text="External Google Drive / Dropbox link")
+    file_url = models.URLField(
+        blank=True, default="", help_text="External Google Drive / Dropbox link"
+    )
     video_url = models.URLField(blank=True, default="")
     description = models.TextField(blank=True)
     download_count = models.PositiveIntegerField(default=0)
@@ -421,11 +487,15 @@ class BlogPost(TenantAwareModel):
     title = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255)
     author_name = models.CharField(max_length=150, default="একাডেমি টিম")
-    category = models.CharField(max_length=100, default="ভর্তি পরামর্শ", help_text="e.g. প্রস্তুতি কৌশল, নোটিশ, টিপস")
+    category = models.CharField(
+        max_length=100, default="ভর্তি পরামর্শ", help_text="e.g. প্রস্তুতি কৌশল, নোটিশ, টিপস"
+    )
     cover_image = models.ImageField(upload_to="blog/covers/", null=True, blank=True)
     cover_url = models.URLField(blank=True, default="")
     excerpt = models.TextField(blank=True, help_text="Short teaser summary")
-    content = models.TextField(blank=True, help_text="Full post content (Markdown or HTML)")
+    content = models.TextField(
+        blank=True, help_text="Full post content (Markdown or HTML)"
+    )
     views_count = models.PositiveIntegerField(default=0)
     is_published = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -475,6 +545,7 @@ class GalleryImage(TenantAwareModel):
 # =====================================================================
 # STUDENT DASHBOARD MODULES
 # =====================================================================
+
 
 class FeedPost(TenantAwareModel):
     """Community news feed & student blog posts for an academy."""
@@ -537,7 +608,9 @@ class FeedLike(TenantAwareModel):
 class FeedComment(TenantAwareModel):
     """Comments on a student feed post."""
 
-    post = models.ForeignKey(FeedPost, on_delete=models.CASCADE, related_name="comments")
+    post = models.ForeignKey(
+        FeedPost, on_delete=models.CASCADE, related_name="comments"
+    )
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -558,13 +631,19 @@ class ClassRoutine(TenantAwareModel):
         THURSDAY = "thu", "বৃহস্পতিবার (Thursday)"
         FRIDAY = "fri", "শুক্রবার (Friday)"
 
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="routines")
-    day = models.CharField(max_length=20, choices=DayOfWeek.choices, default=DayOfWeek.SATURDAY)
+    course = models.ForeignKey(
+        Course, on_delete=models.CASCADE, related_name="routines"
+    )
+    day = models.CharField(
+        max_length=20, choices=DayOfWeek.choices, default=DayOfWeek.SATURDAY
+    )
     start_time = models.CharField(max_length=50, help_text="e.g. 08:00 PM")
     end_time = models.CharField(max_length=50, blank=True, help_text="e.g. 09:30 PM")
     subject = models.CharField(max_length=200, help_text="e.g. উচ্চতর গণিত - ক্যালকুলাস")
     mentor_name = models.CharField(max_length=150, default="অভিজ্ঞ মেন্টর")
-    live_url = models.URLField(blank=True, default="", help_text="Zoom / Google Meet / YouTube Live link")
+    live_url = models.URLField(
+        blank=True, default="", help_text="Zoom / Google Meet / YouTube Live link"
+    )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -583,7 +662,9 @@ class StudentResult(TenantAwareModel):
         on_delete=models.CASCADE,
         related_name="academic_results",
     )
-    exam_title = models.CharField(max_length=255, help_text="e.g. DU ICU উইকলি মডেল টেস্ট ০১")
+    exam_title = models.CharField(
+        max_length=255, help_text="e.g. DU ICU উইকলি মডেল টেস্ট ০১"
+    )
     course_name = models.CharField(max_length=200, blank=True)
     subject = models.CharField(max_length=150, default="পূর্ণাঙ্গ পরীক্ষা")
     total_marks = models.DecimalField(max_digits=6, decimal_places=2, default=100.00)
@@ -591,7 +672,9 @@ class StudentResult(TenantAwareModel):
     grade = models.CharField(max_length=20, default="A+")
     merit_position = models.PositiveIntegerField(null=True, blank=True)
     total_participants = models.PositiveIntegerField(null=True, blank=True)
-    remarks = models.CharField(max_length=255, blank=True, default="দারুণ প্রস্তুতি! নিয়মিত রিভিশন চালিয়ে যান।")
+    remarks = models.CharField(
+        max_length=255, blank=True, default="দারুণ প্রস্তুতি! নিয়মিত রিভিশন চালিয়ে যান।"
+    )
     published_date = models.DateField(auto_now_add=True)
 
     class Meta:
@@ -622,7 +705,9 @@ class SupportThread(TenantAwareModel):
     )
     subject = models.CharField(max_length=255, help_text="বিষয় বা সমস্যার বিবরণ")
     category = models.CharField(max_length=100, default="কোর্স ও ক্লাস সংক্রান্ত")
-    status = models.CharField(max_length=30, choices=Status.choices, default=Status.OPEN)
+    status = models.CharField(
+        max_length=30, choices=Status.choices, default=Status.OPEN
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -636,7 +721,9 @@ class SupportThread(TenantAwareModel):
 class SupportChatMessage(TenantAwareModel):
     """An individual text message in a support thread."""
 
-    thread = models.ForeignKey(SupportThread, on_delete=models.CASCADE, related_name="messages")
+    thread = models.ForeignKey(
+        SupportThread, on_delete=models.CASCADE, related_name="messages"
+    )
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     message = models.TextField()
     is_staff_reply = models.BooleanField(default=False)
@@ -658,7 +745,9 @@ class StudentInvoice(TenantAwareModel):
         related_name="invoices",
     )
     invoice_no = models.CharField(max_length=50, unique=True)
-    item_title = models.CharField(max_length=255, help_text="Course or Book purchase name")
+    item_title = models.CharField(
+        max_length=255, help_text="Course or Book purchase name"
+    )
     amount = models.DecimalField(max_digits=8, decimal_places=2)
     payment_method = models.CharField(max_length=50, default="bKash Online Gateway")
     transaction_id = models.CharField(max_length=100, blank=True, default="")
@@ -692,9 +781,13 @@ class BookOrder(TenantAwareModel):
     total_amount = models.DecimalField(max_digits=8, decimal_places=2)
     shipping_address = models.TextField()
     phone_number = models.CharField(max_length=50)
-    courier_name = models.CharField(max_length=100, default="Steadfast Courier / Sundarban")
+    courier_name = models.CharField(
+        max_length=100, default="Steadfast Courier / Sundarban"
+    )
     tracking_number = models.CharField(max_length=100, blank=True, default="")
-    status = models.CharField(max_length=30, choices=Status.choices, default=Status.PROCESSING)
+    status = models.CharField(
+        max_length=30, choices=Status.choices, default=Status.PROCESSING
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -741,8 +834,14 @@ class StudentClub(TenantAwareModel):
 class ClubMembership(TenantAwareModel):
     """Student membership in a study club."""
 
-    club = models.ForeignKey(StudentClub, on_delete=models.CASCADE, related_name="memberships")
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="club_memberships")
+    club = models.ForeignKey(
+        StudentClub, on_delete=models.CASCADE, related_name="memberships"
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="club_memberships",
+    )
     joined_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -757,7 +856,9 @@ class ClubMembership(TenantAwareModel):
 class ClubPost(TenantAwareModel):
     """Post created inside a student club group."""
 
-    club = models.ForeignKey(StudentClub, on_delete=models.CASCADE, related_name="posts")
+    club = models.ForeignKey(
+        StudentClub, on_delete=models.CASCADE, related_name="posts"
+    )
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     title = models.CharField(max_length=255, blank=True)
     content = models.TextField()
@@ -797,7 +898,9 @@ class ClubLike(TenantAwareModel):
 class ClubComment(TenantAwareModel):
     """Comment on a club post."""
 
-    post = models.ForeignKey(ClubPost, on_delete=models.CASCADE, related_name="comments")
+    post = models.ForeignKey(
+        ClubPost, on_delete=models.CASCADE, related_name="comments"
+    )
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -810,6 +913,7 @@ class ClubComment(TenantAwareModel):
 # ONLINE MCQ EXAM ENGINE MODELS
 # =====================================================================
 
+
 class Exam(TenantAwareModel):
     """Online MCQ Exam / Quiz created by an Academy Instructor."""
 
@@ -821,13 +925,22 @@ class Exam(TenantAwareModel):
         related_name="exams",
         help_text="ঐচ্ছিক: কোনো নির্দিষ্ট কোর্সের সাথে যুক্ত করতে পারেন",
     )
-    title = models.CharField(max_length=255, help_text="পরীক্ষার শিরোনাম (যেমন: ভেক্টর সাপ্তাহিক মডেল টেস্ট)")
+    title = models.CharField(
+        max_length=255, help_text="পরীক্ষার শিরোনাম (যেমন: ভেক্টর সাপ্তাহিক মডেল টেস্ট)"
+    )
     slug = models.SlugField(max_length=255)
     description = models.TextField(blank=True, help_text="পরীক্ষার সিলেবাস ও নির্দেশিকা")
-    duration_minutes = models.PositiveIntegerField(default=30, help_text="পরীক্ষার সময়কাল (মিনিটে)")
-    pass_mark = models.DecimalField(max_digits=5, decimal_places=2, default=40.00, help_text="পাস মার্ক বা পার্সেন্টেজ")
+    duration_minutes = models.PositiveIntegerField(
+        default=30, help_text="পরীক্ষার সময়কাল (মিনিটে)"
+    )
+    pass_mark = models.DecimalField(
+        max_digits=5, decimal_places=2, default=40.00, help_text="পাস মার্ক বা পার্সেন্টেজ"
+    )
     negative_mark_per_question = models.DecimalField(
-        max_digits=4, decimal_places=2, default=0.25, help_text="প্রতি ভুল উত্তরের জন্য কাটা নম্বর (যেমন: 0.25)"
+        max_digits=4,
+        decimal_places=2,
+        default=0.25,
+        help_text="প্রতি ভুল উত্তরের জন্য কাটা নম্বর (যেমন: 0.25)",
     )
     total_marks = models.DecimalField(max_digits=6, decimal_places=2, default=100.00)
     is_published = models.BooleanField(default=True)
@@ -867,12 +980,16 @@ class ExamQuestion(TenantAwareModel):
 
     exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name="questions")
     question_text = models.TextField(help_text="প্রশ্নটি লিখুন (ম্যাথ ফর্মুলা বা টেক্সট)")
-    image_url = models.URLField(blank=True, default="", help_text="ঐচ্ছিক: কোনো চিত্র বা ডায়াগ্রামের লিংক")
+    image_url = models.URLField(
+        blank=True, default="", help_text="ঐচ্ছিক: কোনো চিত্র বা ডায়াগ্রামের লিংক"
+    )
     option_a = models.CharField(max_length=500, help_text="অপশন ক")
     option_b = models.CharField(max_length=500, help_text="অপশন খ")
     option_c = models.CharField(max_length=500, help_text="অপশন গ")
     option_d = models.CharField(max_length=500, help_text="অপশন ঘ")
-    correct_option = models.CharField(max_length=2, choices=CorrectOption.choices, default=CorrectOption.A)
+    correct_option = models.CharField(
+        max_length=2, choices=CorrectOption.choices, default=CorrectOption.A
+    )
     explanation = models.TextField(blank=True, help_text="সঠিক উত্তরের ব্যাখ্যা ও সমাধান কৌশল")
     marks = models.DecimalField(max_digits=4, decimal_places=2, default=1.00)
     order = models.PositiveIntegerField(default=1)
@@ -900,7 +1017,9 @@ class ExamAttempt(TenantAwareModel):
     wrong_count = models.PositiveIntegerField(default=0)
     skipped_count = models.PositiveIntegerField(default=0)
     is_passed = models.BooleanField(default=False)
-    answers_json = models.JSONField(default=dict, help_text="Keyed by question_id: selected_option")
+    answers_json = models.JSONField(
+        default=dict, help_text="Keyed by question_id: selected_option"
+    )
     time_taken_seconds = models.PositiveIntegerField(default=0)
     submitted_at = models.DateTimeField(auto_now_add=True)
 
@@ -915,3 +1034,109 @@ class ExamAttempt(TenantAwareModel):
         if self.total_marks and self.total_marks > 0:
             return round((float(self.score) / float(self.total_marks)) * 100, 1)
         return 0.0
+
+
+class FinancialLedger(TenantAwareModel):
+    """
+    Complete Financial Accounts Ledger for Course Management Studio:
+    Tracks Income, Expense, Course Sales, Honorarium, and Cash Balance.
+    """
+
+    class TransactionType(models.TextChoices):
+        INCOME = "income", "আয় (Income)"
+        EXPENSE = "expense", "ব্যয় (Expense)"
+
+    class Category(models.TextChoices):
+        # Income Categories
+        COURSE_FEE = "course_fee", "কোর্স ফি / ভর্তি"
+        BOOK_SALE = "book_sale", "বই বিক্রয়"
+        OFFLINE_PAYMENT = "offline_payment", "অফলাইন ফি / ক্যাশ"
+        OTHER_INCOME = "other_income", "অন্যান্য আয়"
+        # Expense Categories
+        INSTRUCTOR_SALARY = "instructor_salary", "শিক্ষক / মেন্টর সম্মানী"
+        MARKETING_ADS = "marketing_ads", "মার্কেটিং ও ফেসবুক অ্যাড"
+        SERVER_SOFTWARE = "server_software", "সার্ভার, ডোমেন ও সফটওয়্যার"
+        OFFICE_RENT_UTILITY = "office_utility", "অফিস ভাড়া ও ইউটিলিটি"
+        OTHER_EXPENSE = "other_expense", "অন্যান্য ব্যয়"
+
+    title = models.CharField(max_length=255, help_text="বিবরণ / শিরোনাম")
+    transaction_type = models.CharField(
+        max_length=20, choices=TransactionType.choices, default=TransactionType.INCOME
+    )
+    category = models.CharField(
+        max_length=50, choices=Category.choices, default=Category.COURSE_FEE
+    )
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_method = models.CharField(
+        max_length=50, default="bKash", help_text="bKash, Nagad, Rocket, Bank, Cash"
+    )
+    reference_no = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="TrxID / Invoice No / Receipt No",
+    )
+    notes = models.TextField(blank=True, default="")
+    transaction_date = models.DateField(default=timezone.now)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-transaction_date", "-id"]
+
+    def __str__(self):
+        return f"[{self.tenant.slug}] {self.get_transaction_type_display()} - {self.title}: ৳{self.amount}"
+
+
+class LiveClassSession(TenantAwareModel):
+    """
+    Live Online Class management: Zoom, Google Meet, YouTube Live, or Facebook Live.
+    """
+
+    class Platform(models.TextChoices):
+        ZOOM = "zoom", "Zoom Meeting"
+        MEET = "meet", "Google Meet"
+        YOUTUBE_LIVE = "youtube_live", "YouTube Live"
+        FACEBOOK_LIVE = "facebook_live", "Facebook Live"
+        CUSTOM = "custom", "অন্যান্য লাইভ লিংক"
+
+    class Status(models.TextChoices):
+        UPCOMING = "upcoming", "আসন্ন (Upcoming)"
+        LIVE_NOW = "live_now", "🔴 লাইভ চলছে (Live Now)"
+        COMPLETED = "completed", "সম্পন্ন (Completed)"
+
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.CASCADE,
+        related_name="live_sessions",
+        null=True,
+        blank=True,
+    )
+    title = models.CharField(max_length=255, help_text="লাইভ ক্লাসের বিষয় / শিরোনাম")
+    platform = models.CharField(
+        max_length=30, choices=Platform.choices, default=Platform.ZOOM
+    )
+    meeting_url = models.URLField(
+        max_length=500, help_text="Zoom/Meet/YouTube Live URL"
+    )
+    meeting_id = models.CharField(
+        max_length=100, blank=True, default="", help_text="Meeting ID (ঐচ্ছিক)"
+    )
+    passcode = models.CharField(
+        max_length=100, blank=True, default="", help_text="Passcode / Password (ঐচ্ছিক)"
+    )
+    instructor_name = models.CharField(max_length=150, default="কোর্স ইন্সট্রাক্টর")
+    scheduled_at = models.DateTimeField(help_text="লাইভ ক্লাসের তারিখ ও সময়")
+    duration_minutes = models.PositiveIntegerField(default=60)
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.UPCOMING
+    )
+    recording_url = models.URLField(
+        max_length=500, blank=True, default="", help_text="ক্লাস শেষের রেকর্ডিং লিংক"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-scheduled_at"]
+
+    def __str__(self):
+        return f"[{self.tenant.slug}] Live: {self.title} ({self.scheduled_at})"

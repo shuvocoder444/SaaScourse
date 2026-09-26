@@ -43,6 +43,17 @@
               <span class="text-xs font-bold">{{ plan.name }}</span>
               <span class="text-sm font-extrabold mt-1 text-slate-900 dark:text-white">৳{{ plan.price_monthly|floatformat:0 }}<span class="text-[10px] text-slate-500 font-normal">/mo</span></span>
               <span class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">{{ plan.max_courses }} courses</span>
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold">{{ plan.name }}</span>
+                {% if plan.badge_text %}
+                  <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400">{{ plan.badge_text }}</span>
+                {% endif %}
+              </div>
+              <span class="text-sm font-extrabold mt-1 text-slate-900 dark:text-white">৳{{ plan.price_monthly|floatformat:0 }}<span class="text-[10px] text-slate-500 font-normal">/{{ plan.billing_period|default:"মাস" }}</span></span>
+              {% if plan.description %}
+                <span class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">{{ plan.description }}</span>
+              {% endif %}
+              <span class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">সর্বোচ্চ {{ plan.max_courses }}টি কোর্স • {{ plan.max_students }} জন</span>
             </label>
           {% endfor %}
         </div>

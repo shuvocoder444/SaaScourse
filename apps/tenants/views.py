@@ -1,15 +1,21 @@
 import re
 from datetime import timedelta
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login, get_user_model
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.utils import timezone
-from django.http import HttpResponseForbidden, HttpResponse
-from django.core.cache import cache
-from django.conf import settings
 
-from apps.tenants.models import Tenant, SubscriptionPlan, TenantSubscription, TenantSMSSetting
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import get_user_model, login
+from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
+from django.http import FileResponse, Http404, HttpResponse, HttpResponseForbidden
+from django.shortcuts import redirect, render
+from django.utils import timezone
+
+from apps.tenants.models import (
+    SubscriptionPlan,
+    Tenant,
+    TenantSMSSetting,
+    TenantSubscription,
+)
 from apps.users.models import TenantMembership
 
 User = get_user_model()
@@ -21,6 +27,9 @@ def platform_landing_view(request):
     Presents platform capabilities, pricing subscription tiers, and customer showcases.
     """
     plans = SubscriptionPlan.objects.all().order_by("price_monthly")
+    plans = SubscriptionPlan.objects.filter(is_active=True).order_by(
+        "order", "price_monthly"
+    )
     showcase_tenants = Tenant.objects.filter(is_active=True).order_by("-created_at")[:6]
 
     return render(
@@ -39,6 +48,9 @@ def tenant_registration_view(request):
     Provisions User, Tenant, 14-day Free Trial Subscription, and Admin Membership.
     """
     plans = SubscriptionPlan.objects.all().order_by("price_monthly")
+    plans = SubscriptionPlan.objects.filter(is_active=True).order_by(
+        "order", "price_monthly"
+    )
     selected_plan_slug = request.GET.get("plan", "pro")
 
     if request.method == "POST":
@@ -56,10 +68,14 @@ def tenant_registration_view(request):
             errors.append("All fields are required.")
 
         if not re.match(r"^[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?$", subdomain):
-            errors.append("Subdomain must be lowercase letters, numbers, or hyphens only.")
+            errors.append(
+                "Subdomain must be lowercase letters, numbers, or hyphens only."
+            )
 
         if Tenant.objects.filter(slug=subdomain).exists():
-            errors.append(f"The subdomain '{subdomain}' is already taken. Please choose another.")
+            errors.append(
+                f"The subdomain '{subdomain}' is already taken. Please choose another."
+            )
 
         plan = SubscriptionPlan.objects.filter(slug=plan_slug).first()
         if not plan:
@@ -81,7 +97,9 @@ def tenant_registration_view(request):
         user = User.objects.filter(email=email).first()
         if not user:
             first_name = full_name.split()[0] if full_name else ""
-            last_name = " ".join(full_name.split()[1:]) if len(full_name.split()) > 1 else ""
+            last_name = (
+                " ".join(full_name.split()[1:]) if len(full_name.split()) > 1 else ""
+            )
             user = User.objects.create_user(
                 email=email,
                 password=password,
@@ -132,15 +150,20 @@ def tenant_registration_view(request):
         port = request.get_host().split(":")[1] if ":" in request.get_host() else ""
         port_str = f":{port}" if port else ""
         scheme = "https" if request.is_secure() else "http"
-        main_domain = getattr(settings, "PLATFORM_MAIN_DOMAIN", "platform.com").split(":")[0]
+        main_domain = getattr(settings, "PLATFORM_MAIN_DOMAIN", "platform.com").split(
+            ":"
+        )[0]
 
         if "localhost" in host or "127.0.0.1" in host:
-            academy_url = f"http://{subdomain}.localhost{port_str}/courses/manage/dashboard/"
+            academy_url = (
+                f"http://{subdomain}.localhost{port_str}/courses/manage/dashboard/"
+            )
         else:
-            academy_url = f"{scheme}://{subdomain}.{main_domain}/courses/manage/dashboard/"
+            academy_url = (
+                f"{scheme}://{subdomain}.{main_domain}/courses/manage/dashboard/"
+            )
 
         return redirect(academy_url)
-
 
     return render(
         request,
@@ -164,9 +187,15 @@ def tenant_branding_settings_view(request):
 
     # Verify user is tenant admin/owner
     if tenant.owner != request.user and not request.user.is_superuser:
-        membership = TenantMembership.objects.unscoped().filter(tenant=tenant, user=request.user).first()
+        membership = (
+            TenantMembership.objects.unscoped()
+            .filter(tenant=tenant, user=request.user)
+            .first()
+        )
         if not membership or not membership.is_admin:
-            return HttpResponseForbidden("Admin access required to modify academy settings.")
+            return HttpResponseForbidden(
+                "Admin access required to modify academy settings."
+            )
 
     branding = tenant.branding or {}
     subscription = getattr(tenant, "subscription", None)
@@ -175,142 +204,203 @@ def tenant_branding_settings_view(request):
     if request.method == "POST":
         target_tab = request.POST.get("active_tab", "domain")
 
-        # 1. Update Subdomain if provided
-        new_subdomain = request.POST.get("subdomain", "").strip().lower()
+        # 1. Update Subdomain if provided (Only on domain tab when explicitly submitted)
         subdomain_changed = False
-        if new_subdomain and new_subdomain != tenant.slug:
-            # Subdomain format validation
-            if not re.match(r"^[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?$", new_subdomain):
-                messages.error(request, "Subdomain must contain only lowercase letters, numbers, and hyphens (without spaces).")
-                return redirect(f"{request.path}?tab={target_tab}")
-
-            reserved_slugs = ["admin", "api", "platform", "www", "mail", "cname", "static", "media", "app", "dashboard", "login", "signup"]
-            if new_subdomain in reserved_slugs:
-                messages.error(request, f"The subdomain '{new_subdomain}' is a reserved platform keyword. Please choose another.")
-                return redirect(f"{request.path}?tab={target_tab}")
-
-            if Tenant.objects.exclude(id=tenant.id).filter(slug=new_subdomain).exists():
-                messages.error(request, f"The subdomain '{new_subdomain}' is already taken by another academy. Please choose a unique name.")
-                return redirect(f"{request.path}?tab={target_tab}")
-
-            old_slug = tenant.slug
-            cache.delete(f"tenant:slug:{old_slug}")
-            tenant.slug = new_subdomain
-            subdomain_changed = True
-
-        # 2. Update Custom Domain if provided
-        custom_domain_input = request.POST.get("custom_domain", "").strip().lower()
-        if custom_domain_input.startswith("http://"):
-            custom_domain_input = custom_domain_input[7:]
-        elif custom_domain_input.startswith("https://"):
-            custom_domain_input = custom_domain_input[8:]
-        custom_domain_input = custom_domain_input.split("/")[0].strip()
-
-        if custom_domain_input != (tenant.custom_domain or ""):
-            if not custom_domain_input:
-                if tenant.custom_domain:
-                    cache.delete(f"tenant:domain:{tenant.custom_domain}")
-                tenant.custom_domain = None
-                tenant.custom_domain_verified = False
-                messages.info(request, "Custom domain has been detached.")
-            else:
-                if "." not in custom_domain_input or len(custom_domain_input) < 4:
-                    messages.error(request, "Please enter a valid domain format (e.g., learn.myacademy.com).")
+        if target_tab == "domain" and "subdomain" in request.POST:
+            new_subdomain = request.POST.get("subdomain", "").strip().lower()
+            if new_subdomain and new_subdomain != tenant.slug:
+                # Subdomain format validation
+                if not re.match(
+                    r"^[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?$", new_subdomain
+                ):
+                    messages.error(
+                        request,
+                        "Subdomain must contain only lowercase letters, numbers, and hyphens (without spaces).",
+                    )
                     return redirect(f"{request.path}?tab={target_tab}")
 
-                if Tenant.objects.exclude(id=tenant.id).filter(custom_domain=custom_domain_input).exists():
-                    messages.error(request, f"The custom domain '{custom_domain_input}' is already registered to another academy.")
+                reserved_slugs = [
+                    "admin",
+                    "api",
+                    "platform",
+                    "www",
+                    "mail",
+                    "cname",
+                    "static",
+                    "media",
+                    "app",
+                    "dashboard",
+                    "login",
+                    "signup",
+                ]
+                if new_subdomain in reserved_slugs:
+                    messages.error(
+                        request,
+                        f"The subdomain '{new_subdomain}' is a reserved platform keyword. Please choose another.",
+                    )
                     return redirect(f"{request.path}?tab={target_tab}")
 
-                if tenant.custom_domain:
-                    cache.delete(f"tenant:domain:{tenant.custom_domain}")
-                tenant.custom_domain = custom_domain_input
-                tenant.custom_domain_verified = False
-                tenant.generate_domain_token()
-                cache.delete(f"tenant:domain:{custom_domain_input}")
-                messages.success(request, f"Custom domain updated to '{custom_domain_input}'. Follow the DNS instructions below and verify SSL.")
+                if (
+                    Tenant.objects.exclude(id=tenant.id)
+                    .filter(slug=new_subdomain)
+                    .exists()
+                ):
+                    messages.error(
+                        request,
+                        f"The subdomain '{new_subdomain}' is already taken by another academy. Please choose a unique name.",
+                    )
+                    return redirect(f"{request.path}?tab={target_tab}")
+
+                old_slug = tenant.slug
+                cache.delete(f"tenant:slug:{old_slug}")
+                tenant.slug = new_subdomain
+                subdomain_changed = True
+
+        # 2. Update Custom Domain if provided (Only on domain tab when explicitly submitted)
+        if target_tab == "domain" and "custom_domain" in request.POST:
+            custom_domain_input = request.POST.get("custom_domain", "").strip().lower()
+            if custom_domain_input.startswith("http://"):
+                custom_domain_input = custom_domain_input[7:]
+            elif custom_domain_input.startswith("https://"):
+                custom_domain_input = custom_domain_input[8:]
+            custom_domain_input = custom_domain_input.split("/")[0].strip()
+
+            if custom_domain_input != (tenant.custom_domain or ""):
+                if not custom_domain_input:
+                    if tenant.custom_domain:
+                        cache.delete(f"tenant:domain:{tenant.custom_domain}")
+                    tenant.custom_domain = None
+                    tenant.custom_domain_verified = False
+                    messages.info(request, "Custom domain has been detached.")
+                else:
+                    if "." not in custom_domain_input or len(custom_domain_input) < 4:
+                        messages.error(
+                            request,
+                            "Please enter a valid domain format (e.g., learn.myacademy.com).",
+                        )
+                        return redirect(f"{request.path}?tab={target_tab}")
+
+                    if (
+                        Tenant.objects.exclude(id=tenant.id)
+                        .filter(custom_domain=custom_domain_input)
+                        .exists()
+                    ):
+                        messages.error(
+                            request,
+                            f"The custom domain '{custom_domain_input}' is already registered to another academy.",
+                        )
+                        return redirect(f"{request.path}?tab={target_tab}")
+
+                    if tenant.custom_domain:
+                        cache.delete(f"tenant:domain:{tenant.custom_domain}")
+                    tenant.custom_domain = custom_domain_input
+                    tenant.custom_domain_verified = False
+                    tenant.generate_domain_token()
+                    cache.delete(f"tenant:domain:{custom_domain_input}")
+                    messages.success(
+                        request,
+                        f"Custom domain updated to '{custom_domain_input}'. Follow the DNS instructions below and verify SSL.",
+                    )
 
         # 3. Update Brand Name, Template, Colors, and Copy
         if "name" in request.POST:
             tenant.name = request.POST.get("name", tenant.name).strip()
 
         if "landing_template" in request.POST:
-            tenant.landing_template = request.POST.get("landing_template", tenant.landing_template).strip()
+            tenant.landing_template = request.POST.get(
+                "landing_template", tenant.landing_template
+            ).strip()
 
         if "header_style" in request.POST:
-            tenant.header_style = request.POST.get("header_style", tenant.header_style).strip()
+            tenant.header_style = request.POST.get(
+                "header_style", tenant.header_style
+            ).strip()
 
         if "footer_style" in request.POST:
-            tenant.footer_style = request.POST.get("footer_style", tenant.footer_style).strip()
+            tenant.footer_style = request.POST.get(
+                "footer_style", tenant.footer_style
+            ).strip()
 
-        if "primary_color" in request.POST:
-            branding["primary_color"] = request.POST.get("primary_color", branding.get("primary_color", "#16a34a"))
-            branding["accent_color"] = request.POST.get("accent_color", branding.get("accent_color", "#f59e0b"))
-            branding["tagline"] = request.POST.get("tagline", branding.get("tagline", ""))
-            branding["hero_badge"] = request.POST.get("hero_badge", branding.get("hero_badge", "HSC 2026 • DU ICU BATCH"))
-            branding["hero_headline"] = request.POST.get("hero_headline", branding.get("hero_headline", ""))
-            branding["hero_subheadline"] = request.POST.get("hero_subheadline", branding.get("hero_subheadline", ""))
-            branding["cta_text"] = request.POST.get("cta_text", branding.get("cta_text", "সেরা কোর্স বেছে নাও"))
-            branding["cta_link"] = request.POST.get("cta_link", branding.get("cta_link", "#courses"))
-            branding["cta_secondary_text"] = request.POST.get("cta_secondary_text", branding.get("cta_secondary_text", "আমাদের বইসমূহ"))
-            branding["cta_secondary_link"] = request.POST.get("cta_secondary_link", branding.get("cta_secondary_link", "/books/"))
-            branding["notice_text"] = request.POST.get("notice_text", branding.get("notice_text", ""))
-            branding["about_heading"] = request.POST.get("about_heading", branding.get("about_heading", "কেন আমাদের সাথে শিখবেন?"))
-            branding["about_text"] = request.POST.get("about_text", branding.get("about_text", ""))
-            
-            # App Promo & Contact Info
-            branding["app_promo_title"] = request.POST.get("app_promo_title", branding.get("app_promo_title", ""))
-            branding["app_promo_subtitle"] = request.POST.get("app_promo_subtitle", branding.get("app_promo_subtitle", ""))
-            branding["app_rating"] = request.POST.get("app_rating", branding.get("app_rating", "4.8★"))
-            branding["app_downloads"] = request.POST.get("app_downloads", branding.get("app_downloads", "৫০,০০০+"))
-            branding["play_store_url"] = request.POST.get("play_store_url", branding.get("play_store_url", "#"))
-            branding["app_store_url"] = request.POST.get("app_store_url", branding.get("app_store_url", "#"))
-            branding["contact_phone"] = request.POST.get("contact_phone", branding.get("contact_phone", "+880 1800-123456"))
-            branding["contact_email"] = request.POST.get("contact_email", branding.get("contact_email", "support@academy.edu.bd"))
-            branding["contact_address"] = request.POST.get("contact_address", branding.get("contact_address", "ফার্মগেট, ঢাকা"))
+        # Update all branding dictionary fields safely if present in request.POST
+        branding_text_fields = [
+            "primary_color",
+            "accent_color",
+            "tagline",
+            "hero_badge",
+            "hero_headline",
+            "hero_subheadline",
+            "cta_text",
+            "cta_link",
+            "cta_secondary_text",
+            "cta_secondary_link",
+            "notice_text",
+            "about_heading",
+            "about_text",
+            "app_promo_title",
+            "app_promo_subtitle",
+            "app_rating",
+            "app_downloads",
+            "play_store_url",
+            "app_store_url",
+            "android_apk_url",
+            "contact_phone",
+            "contact_email",
+            "contact_address",
+            "meta_title",
+            "meta_description",
+            "meta_keywords",
+            "whatsapp_number",
+            "whatsapp_default_msg",
+            "trade_license",
+            "govt_reg_no",
+            "facebook_url",
+            "youtube_url",
+            "telegram_url",
+            "header_cta_text",
+            "header_cta_link",
+            "footer_about",
+            "footer_copyright",
+            "logo_url",
+            "banner_url",
+            "favicon_url",
+        ]
 
-        # Header & Footer specific field handler (tab=header_footer or general save)
-        if "trade_license" in request.POST or "footer_copyright" in request.POST or "header_cta_text" in request.POST or target_tab == "header_footer":
-            if "notice_text" in request.POST:
-                branding["notice_text"] = request.POST.get("notice_text", branding.get("notice_text", ""))
-            if "contact_phone" in request.POST:
-                branding["contact_phone"] = request.POST.get("contact_phone", branding.get("contact_phone", "+880 1800-123456"))
-            if "contact_email" in request.POST:
-                branding["contact_email"] = request.POST.get("contact_email", branding.get("contact_email", "support@academy.edu.bd"))
-            if "contact_address" in request.POST:
-                branding["contact_address"] = request.POST.get("contact_address", branding.get("contact_address", ""))
-            branding["trade_license"] = request.POST.get("trade_license", branding.get("trade_license", "")).strip()
-            branding["govt_reg_no"] = request.POST.get("govt_reg_no", branding.get("govt_reg_no", "")).strip()
-            branding["whatsapp_number"] = request.POST.get("whatsapp_number", branding.get("whatsapp_number", "")).strip()
-            branding["facebook_url"] = request.POST.get("facebook_url", branding.get("facebook_url", "")).strip()
-            branding["youtube_url"] = request.POST.get("youtube_url", branding.get("youtube_url", "")).strip()
-            branding["telegram_url"] = request.POST.get("telegram_url", branding.get("telegram_url", "")).strip()
-            branding["header_cta_text"] = request.POST.get("header_cta_text", branding.get("header_cta_text", "ভর্তি আবেদন")).strip()
-            branding["header_cta_link"] = request.POST.get("header_cta_link", branding.get("header_cta_link", "/courses/")).strip()
-            branding["footer_about"] = request.POST.get("footer_about", branding.get("footer_about", "")).strip()
-            branding["footer_copyright"] = request.POST.get("footer_copyright", branding.get("footer_copyright", "© 2026 সর্বস্বত্ব সংরক্ষিত।")).strip()
-            
-            if "header_checkbox_sent" in request.POST:
-                branding["show_header_notice"] = request.POST.get("show_header_notice") == "on"
-                branding["show_header_search"] = request.POST.get("show_header_search") == "on"
-                branding["show_footer_payments"] = request.POST.get("show_footer_payments") == "on"
-                branding["show_footer_apps"] = request.POST.get("show_footer_apps") == "on"
+        for field in branding_text_fields:
+            if field in request.POST:
+                branding[field] = request.POST.get(field, "").strip()
 
-        # 4. Update Brand Image Files (Logo, Banner, Favicon)
+        # WhatsApp widget toggle
+        if "enable_whatsapp_widget" in request.POST:
+            branding["enable_whatsapp_widget"] = request.POST.get(
+                "enable_whatsapp_widget"
+            ) in ["on", "true", "True", True]
+        elif target_tab == "branding":
+            branding["enable_whatsapp_widget"] = False
+
+        # Header / Footer checkbox toggles
+        if "header_checkbox_sent" in request.POST:
+            branding["show_header_notice"] = (
+                request.POST.get("show_header_notice") == "on"
+            )
+            branding["show_header_search"] = (
+                request.POST.get("show_header_search") == "on"
+            )
+            branding["show_footer_payments"] = (
+                request.POST.get("show_footer_payments") == "on"
+            )
+            branding["show_footer_apps"] = request.POST.get("show_footer_apps") == "on"
+
+        # 4. Update Brand Image Files (Logo, Banner, Favicon, Android APK)
         if "logo" in request.FILES:
             tenant.logo = request.FILES["logo"]
         if "banner" in request.FILES:
             tenant.banner = request.FILES["banner"]
         if "favicon" in request.FILES:
             tenant.favicon = request.FILES["favicon"]
-
-        # Support optional direct image URLs if specified
-        if "logo_url" in request.POST:
-            branding["logo_url"] = request.POST.get("logo_url", "").strip()
-        if "banner_url" in request.POST:
-            branding["banner_url"] = request.POST.get("banner_url", "").strip()
-        if "favicon_url" in request.POST:
-            branding["favicon_url"] = request.POST.get("favicon_url", "").strip()
+        if "android_apk" in request.FILES:
+            tenant.android_apk = request.FILES["android_apk"]
+        if request.POST.get("clear_android_apk") == "on":
+            tenant.android_apk = None
 
         tenant.branding = branding
         tenant.save()
@@ -324,6 +414,7 @@ def tenant_branding_settings_view(request):
             open_in_new_tab = request.POST.get("menu_new_tab") == "on"
             if menu_title and menu_url:
                 from apps.tenants.models import TenantMenuItem
+
                 TenantMenuItem.objects.create(
                     tenant=tenant,
                     title=menu_title,
@@ -337,11 +428,13 @@ def tenant_branding_settings_view(request):
         elif menu_action == "delete_menu":
             menu_id = request.POST.get("menu_id")
             from apps.tenants.models import TenantMenuItem
+
             TenantMenuItem.objects.filter(tenant=tenant, id=menu_id).delete()
             messages.success(request, "মেনু আইটেমটি মুছে ফেলা হয়েছে।")
 
         elif menu_action == "reset_menus":
             from apps.tenants.models import TenantMenuItem
+
             TenantMenuItem.objects.filter(tenant=tenant).delete()
             tenant.ensure_default_menus()
             messages.success(request, "মেনু আইটেমসমূহ ডিফল্ট অবস্থায় ফিরিয়ে আনা হয়েছে।")
@@ -349,8 +442,12 @@ def tenant_branding_settings_view(request):
         # 6. Update SMS Gateway Settings
         sms_setting, _ = TenantSMSSetting.objects.get_or_create(tenant=tenant)
         if target_tab == "sms" or "sms_provider" in request.POST:
-            sms_setting.provider = request.POST.get("sms_provider", sms_setting.provider)
-            sms_setting.is_enabled = (request.POST.get("sms_is_enabled") == "on") or (request.POST.get("sms_is_enabled") == "true")
+            sms_setting.provider = request.POST.get(
+                "sms_provider", sms_setting.provider
+            )
+            sms_setting.is_enabled = (request.POST.get("sms_is_enabled") == "on") or (
+                request.POST.get("sms_is_enabled") == "true"
+            )
             sms_setting.sender_id = request.POST.get("sms_sender_id", "").strip()
             sms_setting.api_key = request.POST.get("sms_api_key", "").strip()
             sms_setting.api_secret = request.POST.get("sms_api_secret", "").strip()
@@ -363,21 +460,21 @@ def tenant_branding_settings_view(request):
         elif not menu_action:
             messages.success(request, "সেটিংস সফলভাবে সংরক্ষিত হয়েছে!")
 
-
         # If subdomain changed, redirect to the new subdomain URL so session and routing stay valid
         if subdomain_changed:
             host_parts = request.get_host().split(":")
             port = f":{host_parts[1]}" if len(host_parts) > 1 else ""
             host = host_parts[0]
             scheme = "https" if request.is_secure() else "http"
-            main_domain = getattr(settings, "PLATFORM_MAIN_DOMAIN", "platform.com").split(":")[0]
+            main_domain = getattr(
+                settings, "PLATFORM_MAIN_DOMAIN", "platform.com"
+            ).split(":")[0]
 
             if "localhost" in host or "127.0.0.1" in host:
                 target_url = f"http://{tenant.slug}.localhost{port}/courses/manage/dashboard/?tab={target_tab}"
             else:
                 target_url = f"{scheme}://{tenant.slug}.{main_domain}/courses/manage/dashboard/?tab={target_tab}"
             return redirect(target_url)
-
 
         return redirect(f"/tenants/settings/?tab={target_tab}")
 
@@ -405,7 +502,11 @@ def send_test_sms_view(request):
     """
     tenant = getattr(request, "tenant", None)
     tenant_id = request.POST.get("tenant_id")
-    if not tenant and tenant_id and (request.user.is_superuser or request.user.is_staff):
+    if (
+        not tenant
+        and tenant_id
+        and (request.user.is_superuser or request.user.is_staff)
+    ):
         tenant = Tenant.objects.filter(id=tenant_id).first()
 
     if not tenant:
@@ -415,7 +516,11 @@ def send_test_sms_view(request):
 
     # Verify user is tenant admin/owner
     if tenant.owner != request.user and not request.user.is_superuser:
-        membership = TenantMembership.objects.unscoped().filter(tenant=tenant, user=request.user).first()
+        membership = (
+            TenantMembership.objects.unscoped()
+            .filter(tenant=tenant, user=request.user)
+            .first()
+        )
         if not membership or not membership.is_admin:
             return HttpResponseForbidden("Admin access required.")
 
@@ -430,18 +535,20 @@ def send_test_sms_view(request):
     result = sms_setting.send_sms(recipient=phone, message=test_msg)
 
     if result.get("success"):
-        mode_badge = " (Simulation Mode)" if result.get("simulated") else " (Live Gateway)"
+        mode_badge = (
+            " (Simulation Mode)" if result.get("simulated") else " (Live Gateway)"
+        )
         return HttpResponse(
             f'<div class="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs space-y-1">'
             f'<div class="font-bold flex items-center gap-1.5"><span>✓ SMS Sent Successfully!</span><span class="font-mono text-[10px] uppercase px-1.5 py-0.5 rounded bg-emerald-500/20">{mode_badge}</span></div>'
             f'<div class="font-mono text-[11px] text-slate-600 dark:text-slate-300">Recipient: <strong>{result.get("recipient")}</strong> | Sender ID: <strong>{result.get("sender_id")}</strong></div>'
             f'<div class="text-[11px] italic mt-1 text-slate-500 dark:text-slate-400">Preview: "{test_msg}"</div>'
-            f'</div>'
+            f"</div>"
         )
     else:
         return HttpResponse(
             f'<div class="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold">'
-            f'✗ Failed to dispatch SMS: {result.get("error", "Unknown error")}</div>'
+            f"✗ Failed to dispatch SMS: {result.get('error', 'Unknown error')}</div>"
         )
 
 
@@ -453,6 +560,7 @@ def check_dns_txt_or_cname(domain: str, expected_token: str) -> bool:
     """
     try:
         import dns.resolver
+
         challenge_host = f"_saascourse-challenge.{domain}"
         answers = dns.resolver.resolve(challenge_host, "TXT")
         for rdata in answers:
@@ -465,6 +573,7 @@ def check_dns_txt_or_cname(domain: str, expected_token: str) -> bool:
     # Socket resolution fallback
     try:
         import socket
+
         ip = socket.gethostbyname(domain)
         if ip:
             return True
@@ -483,7 +592,7 @@ def verify_custom_domain_view(request):
     if not tenant or not tenant.custom_domain:
         return HttpResponse(
             '<div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-mono">'
-            '⚠️ Please save a custom domain first before verifying.</div>'
+            "⚠️ Please save a custom domain first before verifying.</div>"
         )
 
     token = tenant.generate_domain_token()
@@ -493,15 +602,16 @@ def verify_custom_domain_view(request):
         tenant.custom_domain_verified = True
         tenant.save(update_fields=["custom_domain_verified"])
         from django.core.cache import cache
+
         cache.delete(f"tenant:domain:{tenant.custom_domain}")
         return HttpResponse(
             '<div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono flex items-center gap-2">'
-            f'<span>✓ Success! Domain <strong>{tenant.custom_domain}</strong> is verified and SSL-active.</span></div>'
+            f"<span>✓ Success! Domain <strong>{tenant.custom_domain}</strong> is verified and SSL-active.</span></div>"
         )
 
     return HttpResponse(
         '<div class="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-mono flex items-center gap-2">'
-        '<span>✗ DNS record not detected. Please verify your CNAME/TXT records and allow up to 10 mins for propagation.</span></div>'
+        "<span>✗ DNS record not detected. Please verify your CNAME/TXT records and allow up to 10 mins for propagation.</span></div>"
     )
 
 
@@ -524,9 +634,13 @@ def caddy_ask_domain(request):
     ).exists()
 
     if is_authorized:
-        return HttpResponse("Domain authorized for automated TLS certificate issuance", status=200)
+        return HttpResponse(
+            "Domain authorized for automated TLS certificate issuance", status=200
+        )
 
-    return HttpResponse(f"Domain '{domain}' is not authorized or pending DNS verification", status=400)
+    return HttpResponse(
+        f"Domain '{domain}' is not authorized or pending DNS verification", status=400
+    )
 
 
 @login_required
@@ -541,10 +655,16 @@ def platform_admin_dashboard_view(request):
 
     from apps.courses.models import Course, Enrollment
 
-    tenants = Tenant.objects.all().select_related("owner", "subscription__plan").order_by("-created_at")
+    tenants = (
+        Tenant.objects.all()
+        .select_related("owner", "subscription__plan")
+        .order_by("-created_at")
+    )
     total_tenants = tenants.count()
     active_tenants = tenants.filter(is_active=True).count()
-    trialing_tenants = TenantSubscription.objects.filter(status=TenantSubscription.Status.TRIALING).count()
+    trialing_tenants = TenantSubscription.objects.filter(
+        status=TenantSubscription.Status.TRIALING
+    ).count()
 
     # Selected tenant for centralized settings
     selected_tenant_id = request.GET.get("tenant_id") or request.POST.get("tenant_id")
@@ -556,7 +676,9 @@ def platform_admin_dashboard_view(request):
 
     selected_sms_setting = None
     if selected_tenant:
-        selected_sms_setting, _ = TenantSMSSetting.objects.get_or_create(tenant=selected_tenant)
+        selected_sms_setting, _ = TenantSMSSetting.objects.get_or_create(
+            tenant=selected_tenant
+        )
 
     # Handle Settings Updates from SuperAdmin Control Plane
     if request.method == "POST":
@@ -564,7 +686,9 @@ def platform_admin_dashboard_view(request):
 
         if action == "update_tenant_settings" and selected_tenant:
             if "name" in request.POST:
-                selected_tenant.name = request.POST.get("name", selected_tenant.name).strip()
+                selected_tenant.name = request.POST.get(
+                    "name", selected_tenant.name
+                ).strip()
 
             # Uploads
             if "logo" in request.FILES:
@@ -591,25 +715,162 @@ def platform_admin_dashboard_view(request):
 
             # SMS Gateway settings for this coaching center
             if selected_sms_setting and "sms_provider" in request.POST:
-                selected_sms_setting.provider = request.POST.get("sms_provider", selected_sms_setting.provider)
-                selected_sms_setting.is_enabled = (request.POST.get("sms_is_enabled") == "on") or (request.POST.get("sms_is_enabled") == "true")
-                selected_sms_setting.sender_id = request.POST.get("sms_sender_id", "").strip()
-                selected_sms_setting.api_key = request.POST.get("sms_api_key", "").strip()
-                selected_sms_setting.api_secret = request.POST.get("sms_api_secret", "").strip()
-                selected_sms_setting.api_url = request.POST.get("sms_api_url", "").strip()
+                selected_sms_setting.provider = request.POST.get(
+                    "sms_provider", selected_sms_setting.provider
+                )
+                selected_sms_setting.is_enabled = (
+                    request.POST.get("sms_is_enabled") == "on"
+                ) or (request.POST.get("sms_is_enabled") == "true")
+                selected_sms_setting.sender_id = request.POST.get(
+                    "sms_sender_id", ""
+                ).strip()
+                selected_sms_setting.api_key = request.POST.get(
+                    "sms_api_key", ""
+                ).strip()
+                selected_sms_setting.api_secret = request.POST.get(
+                    "sms_api_secret", ""
+                ).strip()
+                selected_sms_setting.api_url = request.POST.get(
+                    "sms_api_url", ""
+                ).strip()
                 selected_sms_setting.template_enrollment = request.POST.get(
                     "sms_template_enrollment", selected_sms_setting.template_enrollment
                 ).strip()
                 selected_sms_setting.save()
 
-            messages.success(request, f"Settings for '{selected_tenant.name}' updated successfully!")
-            return redirect(f"/tenants/platform/dashboard/?tab=settings&tenant_id={selected_tenant.id}")
+            messages.success(
+                request, f"Settings for '{selected_tenant.name}' updated successfully!"
+            )
+            return redirect(
+                f"/tenants/platform/dashboard/?tab=settings&tenant_id={selected_tenant.id}"
+            )
+
+        elif action == "save_subscription_plan":
+            plan_id = request.POST.get("plan_id")
+            name = request.POST.get("name", "").strip()
+            slug = request.POST.get("slug", "").strip().lower()
+            description = request.POST.get("description", "").strip()
+            price_monthly = request.POST.get("price_monthly", 0)
+            billing_period = request.POST.get("billing_period", "প্রতি মাস").strip()
+            badge_text = request.POST.get("badge_text", "").strip()
+            cta_text = request.POST.get("cta_text", "১৪ দিনের ফ্রি ট্রায়াল শুরু করুন").strip()
+            max_courses = int(request.POST.get("max_courses", 5) or 5)
+            max_students = int(request.POST.get("max_students", 250) or 250)
+            custom_domain_allowed = (
+                request.POST.get("custom_domain_allowed") == "on"
+            ) or (request.POST.get("custom_domain_allowed") == "true")
+            is_popular = (request.POST.get("is_popular") == "on") or (
+                request.POST.get("is_popular") == "true"
+            )
+            is_active = (request.POST.get("is_active") == "on") or (
+                request.POST.get("is_active") == "true"
+            )
+            order = int(request.POST.get("order", 0) or 0)
+            features_raw = request.POST.get("features_text", "")
+            features_list = [f.strip() for f in features_raw.splitlines() if f.strip()]
+
+            if not name:
+                messages.error(request, "প্ল্যানের নাম আবশ্যক।")
+                return redirect("/tenants/platform/dashboard/?tab=plans")
+
+            if not slug:
+                from django.utils.text import slugify
+
+                slug = slugify(name)
+
+            if plan_id:
+                plan = SubscriptionPlan.objects.filter(id=plan_id).first()
+                if not plan:
+                    messages.error(request, "প্ল্যান খুঁজে পাওয়া যায়নি।")
+                    return redirect("/tenants/platform/dashboard/?tab=plans")
+                plan.name = name
+                plan.slug = slug
+                plan.description = description
+                plan.price_monthly = price_monthly
+                plan.billing_period = billing_period
+                plan.badge_text = badge_text
+                plan.cta_text = cta_text
+                plan.max_courses = max_courses
+                plan.max_students = max_students
+                plan.custom_domain_allowed = custom_domain_allowed
+                plan.is_popular = is_popular
+                plan.is_active = is_active
+                plan.order = order
+                plan.features = features_list
+                plan.save()
+                messages.success(
+                    request, f"সাবস্ক্রিপশন প্ল্যান '{plan.name}' সফলভাবে আপডেট হয়েছে!"
+                )
+            else:
+                plan = SubscriptionPlan.objects.create(
+                    name=name,
+                    slug=slug,
+                    description=description,
+                    price_monthly=price_monthly,
+                    billing_period=billing_period,
+                    badge_text=badge_text,
+                    cta_text=cta_text,
+                    max_courses=max_courses,
+                    max_students=max_students,
+                    custom_domain_allowed=custom_domain_allowed,
+                    is_popular=is_popular,
+                    is_active=is_active,
+                    order=order,
+                    features=features_list,
+                )
+                messages.success(
+                    request, f"নতুন সাবস্ক্রিপশন প্ল্যান '{plan.name}' তৈরি হয়েছে!"
+                )
+            return redirect("/tenants/platform/dashboard/?tab=plans")
+
+        elif action == "delete_subscription_plan":
+            plan_id = request.POST.get("plan_id")
+            plan = SubscriptionPlan.objects.filter(id=plan_id).first()
+            if plan:
+                if TenantSubscription.objects.filter(plan=plan).exists():
+                    messages.error(
+                        request,
+                        f"প্ল্যান '{plan.name}' মুছে ফেলা সম্ভব নয় কারণ এতে সক্রিয় একাডেমি সাবস্ক্রিপশন যুক্ত রয়েছে।",
+                    )
+                else:
+                    plan_name = plan.name
+                    plan.delete()
+                    messages.success(
+                        request, f"সাবস্ক্রিপশন প্ল্যান '{plan_name}' সফলভাবে মুছে ফেলা হয়েছে।"
+                    )
+            return redirect("/tenants/platform/dashboard/?tab=plans")
+
+        elif action == "update_tenant_subscription":
+            tenant_id = request.POST.get("tenant_id")
+            target_tenant = Tenant.objects.filter(id=tenant_id).first()
+            if target_tenant:
+                plan_id = request.POST.get("plan_id")
+                sub_status = request.POST.get(
+                    "status", TenantSubscription.Status.ACTIVE
+                )
+                target_plan = SubscriptionPlan.objects.filter(id=plan_id).first()
+                if target_plan:
+                    sub, _ = TenantSubscription.objects.get_or_create(
+                        tenant=target_tenant,
+                        defaults={"plan": target_plan, "status": sub_status},
+                    )
+                    sub.plan = target_plan
+                    sub.status = sub_status
+                    sub.save()
+                    messages.success(
+                        request,
+                        f"একাডেমি '{target_tenant.name}'-এর সাবস্ক্রিপশন প্ল্যান ও স্ট্যাটাস আপডেট হয়েছে!",
+                    )
+            return redirect("/tenants/platform/dashboard/?tab=academies")
 
     # Calculate MRR ($) from active subscriptions
     subscriptions = TenantSubscription.objects.filter(
-        status__in=[TenantSubscription.Status.ACTIVE, TenantSubscription.Status.TRIALING]
+        status__in=[
+            TenantSubscription.Status.ACTIVE,
+            TenantSubscription.Status.TRIALING,
+        ]
     ).select_related("plan")
-    
+
     total_mrr = sum(sub.plan.price_monthly for sub in subscriptions if sub.plan)
 
     # Global platform metrics
@@ -618,14 +879,19 @@ def platform_admin_dashboard_view(request):
 
     # Plan tier breakdown
     plans = SubscriptionPlan.objects.all()
+    plans = SubscriptionPlan.objects.all().order_by("order", "price_monthly")
     plan_stats = []
     for plan in plans:
-        count = TenantSubscription.objects.filter(plan=plan, status=TenantSubscription.Status.ACTIVE).count()
-        plan_stats.append({
-            "plan": plan,
-            "subscribers_count": count,
-            "revenue": count * plan.price_monthly,
-        })
+        count = TenantSubscription.objects.filter(
+            plan=plan, status=TenantSubscription.Status.ACTIVE
+        ).count()
+        plan_stats.append(
+            {
+                "plan": plan,
+                "subscribers_count": count,
+                "revenue": count * plan.price_monthly,
+            }
+        )
 
     active_tab = request.GET.get("tab", "overview")
 
@@ -640,6 +906,7 @@ def platform_admin_dashboard_view(request):
             "total_mrr": total_mrr,
             "total_global_courses": total_global_courses,
             "total_global_enrollments": total_global_enrollments,
+            "plans": plans,
             "plan_stats": plan_stats,
             "active_tab": active_tab,
             "selected_tenant": selected_tenant,
@@ -649,3 +916,58 @@ def platform_admin_dashboard_view(request):
     )
 
 
+def download_academy_app(request):
+    """
+    Dedicated Android App installer and APK downloader for each coaching academy.
+    - If ?download=1 is specified and an APK is uploaded, directly streams the .apk file.
+    - Otherwise renders the dedicated multi-tenant App Download & 1-Tap Install page.
+    """
+    tenant = getattr(request, "tenant", None)
+    if not tenant:
+        tenant_id = request.GET.get("tenant_id")
+        if tenant_id:
+            tenant = Tenant.objects.filter(id=tenant_id).first()
+        if not tenant:
+            tenant = Tenant.objects.filter(is_active=True).first()
+
+    if not tenant:
+        raise Http404("Academy not found.")
+
+    branding = tenant.branding or {}
+    download_requested = request.GET.get("download") in ["1", "apk", "direct"]
+
+    # 1. Direct APK file stream if requested
+    if download_requested:
+        if tenant.android_apk and tenant.android_apk.storage.exists(
+            tenant.android_apk.name
+        ):
+            response = FileResponse(
+                tenant.android_apk.open("rb"),
+                content_type="application/vnd.android.package-archive",
+                as_attachment=True,
+                filename=f"{tenant.slug}-academy-app.apk",
+            )
+            return response
+        if branding.get("android_apk_url"):
+            return redirect(branding["android_apk_url"])
+
+    # 2. Render dedicated Academy App Installation Landing Page
+    has_apk_file = bool(tenant.android_apk and tenant.android_apk.name) or bool(
+        branding.get("android_apk_url")
+    )
+    apk_download_url = (
+        "/tenants/download-app/?download=1"
+        if (tenant.android_apk and tenant.android_apk.name)
+        else branding.get("android_apk_url", "")
+    )
+
+    return render(
+        request,
+        "tenants/app_download.html",
+        {
+            "tenant": tenant,
+            "branding": branding,
+            "has_apk_file": has_apk_file,
+            "apk_download_url": apk_download_url,
+        },
+    )

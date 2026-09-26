@@ -1,0 +1,97 @@
+<!-- Native Mobile App Bottom Navigation Dock (Visible on Mobile & Tablet, Hidden on Desktop) -->
+<nav 
+  class="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl border-t border-slate-200/90 dark:border-slate-800/90 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] lg:hidden select-none transition-all duration-200"
+  style="padding-bottom: max(env(safe-area-inset-bottom, 0px), 4px);"
+  aria-label="Mobile Navigation Dock"
+>
+  <div class="grid grid-cols-5 items-center h-14 px-1 max-w-lg mx-auto">
+    
+    <!-- 1. Home -->
+    <a 
+      href="{% url 'home' %}" 
+      class="flex flex-col items-center justify-center py-1 transition-transform active:scale-90 group {% if request.path == '/' %}text-brand-primary font-bold{% else %}text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white{% endif %}"
+    >
+      <div class="relative">
+        <span class="text-lg leading-none transition-transform group-hover:scale-110">🏠</span>
+        {% if request.path == '/' %}
+          <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-brand-primary"></span>
+        {% endif %}
+      </div>
+      <span class="text-[10px] tracking-tight mt-1 font-medium">হোম</span>
+    </a>
+
+    <!-- 2. Courses -->
+    <a 
+      href="{% url 'courses' %}" 
+      class="flex flex-col items-center justify-center py-1 transition-transform active:scale-90 group {% if '/courses/' in request.path and '/manage/' not in request.path %}text-brand-primary font-bold{% else %}text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white{% endif %}"
+    >
+      <div class="relative">
+        <span class="text-lg leading-none transition-transform group-hover:scale-110">📚</span>
+        {% if '/courses/' in request.path and '/manage/' not in request.path %}
+          <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-brand-primary"></span>
+        {% endif %}
+      </div>
+      <span class="text-[10px] tracking-tight mt-1 font-medium">কোর্সসমূহ</span>
+    </a>
+
+    <!-- 3. Books -->
+    <a 
+      href="{% url 'books' %}" 
+      class="flex flex-col items-center justify-center py-1 transition-transform active:scale-90 group {% if '/books/' in request.path %}text-brand-primary font-bold{% else %}text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white{% endif %}"
+    >
+      <div class="relative">
+        <span class="text-lg leading-none transition-transform group-hover:scale-110">📖</span>
+        {% if '/books/' in request.path %}
+          <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-brand-primary"></span>
+        {% endif %}
+      </div>
+      <span class="text-[10px] tracking-tight mt-1 font-medium">বইসমূহ</span>
+    </a>
+
+    <!-- 4. Resources -->
+    <a 
+      href="{% url 'resources' %}" 
+      class="flex flex-col items-center justify-center py-1 transition-transform active:scale-90 group {% if '/resources/' in request.path %}text-brand-primary font-bold{% else %}text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white{% endif %}"
+    >
+      <div class="relative">
+        <span class="text-lg leading-none transition-transform group-hover:scale-110">📥</span>
+        {% if '/resources/' in request.path %}
+          <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-brand-primary"></span>
+        {% endif %}
+      </div>
+      <span class="text-[10px] tracking-tight mt-1 font-medium">ফ্রি নোটস</span>
+    </a>
+
+    <!-- 5. Profile / Dashboard -->
+    {% if user.is_authenticated %}
+      <a 
+        href="{% url 'dashboard' %}" 
+        class="flex flex-col items-center justify-center py-1 transition-transform active:scale-90 group {% if '/dashboard/' in request.path or '/manage/' in request.path %}text-brand-primary font-bold{% else %}text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white{% endif %}"
+      >
+        <div class="relative">
+          <div class="w-5 h-5 rounded-full bg-brand-primary text-white text-[10px] font-black flex items-center justify-center shadow-sm">
+            {{ user.first_name|default:user.email|slice:":1"|upper }}
+          </div>
+          {% if '/dashboard/' in request.path or '/manage/' in request.path %}
+            <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-brand-primary"></span>
+          {% endif %}
+        </div>
+        <span class="text-[10px] tracking-tight mt-1 font-medium">প্রোফাইল</span>
+      </a>
+    {% else %}
+      <a 
+        href="{% url 'users:login' %}" 
+        class="flex flex-col items-center justify-center py-1 transition-transform active:scale-90 group {% if '/login/' in request.path %}text-brand-primary font-bold{% else %}text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white{% endif %}"
+      >
+        <div class="relative">
+          <span class="text-lg leading-none transition-transform group-hover:scale-110">👤</span>
+          {% if '/login/' in request.path %}
+            <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-brand-primary"></span>
+          {% endif %}
+        </div>
+        <span class="text-[10px] tracking-tight mt-1 font-medium">লগইন</span>
+      </a>
+    {% endif %}
+
+  </div>
+</nav>
