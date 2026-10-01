@@ -34,7 +34,7 @@
         courses: {% if '/exams/' in request.path or '/curriculum/' in request.path or '/courses/manage/courses/' in request.path or request.GET.tab == 'courses' or request.GET.tab == 'live' %}true{% else %}false{% endif %},
         content: {% if '/books/' in request.path or '/resources/' in request.path or '/blog/' in request.path %}true{% else %}false{% endif %},
         design: {% if request.GET.tab == 'template' or request.GET.tab == 'header_footer' or request.GET.tab == 'navigation' or request.GET.tab == 'branding' %}true{% else %}false{% endif %},
-        settings: {% if '/tenants/settings/' in request.path or request.GET.tab == 'domain' or request.GET.tab == 'sms' or request.GET.tab == 'subscription' %}true{% else %}false{% endif %}
+        settings: {% if '/tenants/settings/' in request.path or request.GET.tab == 'domain' or request.GET.tab == 'sms' or request.GET.tab == 'subscription' or request.GET.tab == 'backup' %}true{% else %}false{% endif %}
       },
       init() {
         const path = window.location.pathname;
@@ -46,7 +46,7 @@
           this.openGroups.content = true;
         } else if (tab === 'template' || tab === 'header_footer' || tab === 'navigation' || tab === 'branding') {
           this.openGroups.design = true;
-        } else if (path.includes('/settings/') || tab === 'domain' || tab === 'sms' || tab === 'subscription') {
+        } else if (path.includes('/settings/') || tab === 'domain' || tab === 'sms' || tab === 'subscription' || tab === 'backup') {
           this.openGroups.settings = true;
         } else if (path.includes('/dashboard/') || tab === 'overview' || tab === 'finance' || tab === 'students') {
           this.openGroups.analytics = true;
@@ -320,6 +320,16 @@
           >
             <span class="text-sm">💎</span>
             <span>প্ল্যান ও সাবস্ক্রিপশন</span>
+          </a>
+
+          <!-- 5.4 Academy Data Backup & Restore -->
+          <a 
+            href="/tenants/settings/?tab=backup" 
+            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 {% if request.GET.tab == 'backup' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-bold{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
+          >
+            <span class="text-sm">💾</span>
+            <span>ডাটা ব্যাকআপ ও রিস্টোর</span>
+            <span class="ml-auto px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-500 dark:text-indigo-400 font-bold text-[9px]">নিরাপদ</span>
           </a>
         </div>
       </div>

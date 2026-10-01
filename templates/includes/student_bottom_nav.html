@@ -1,7 +1,7 @@
 <!-- Native Student Dashboard Bottom Navigation Dock (Visible on Mobile/Tablet) -->
 <nav 
   x-data="{
-    activeTab: new URLSearchParams(window.location.search).get('tab') || '{{ active_tab|default:'newsfeed' }}'
+    activeTab: new URLSearchParams(window.location.search).get('tab') || '{{ active_tab|default:'overview' }}'
   }"
   @switch-tab.window="activeTab = $event.detail"
   class="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-2xl border-t border-slate-200/90 dark:border-slate-800/90 shadow-[0_-4px_25px_rgba(0,0,0,0.08)] lg:hidden select-none transition-all duration-200"
@@ -10,26 +10,26 @@
 >
   <div class="grid grid-cols-5 items-center h-15 px-2 max-w-md mx-auto">
     
-    <!-- 1. Newsfeed Tab -->
+    <!-- 1. Overview Tab -->
     <a 
-      href="?tab=newsfeed" 
+      href="?tab=overview" 
       @click.prevent="
-        activeTab = 'newsfeed';
-        $dispatch('switch-tab', 'newsfeed');
-        history.pushState(null, '', '?tab=newsfeed');
+        activeTab = 'overview';
+        $dispatch('switch-tab', 'overview');
+        history.pushState(null, '', '?tab=overview');
         $dispatch('close-sidebar');
       "
       class="flex flex-col items-center justify-center py-1 transition-transform active:scale-95 group text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
-      :class="activeTab === 'newsfeed' ? 'text-brand-primary font-bold' : ''"
+      :class="activeTab === 'overview' ? 'text-brand-primary font-bold' : ''"
     >
       <div class="relative">
-        <span class="text-lg leading-none">📰</span>
+        <span class="text-lg leading-none">📊</span>
         <span 
-          x-show="activeTab === 'newsfeed'" 
+          x-show="activeTab === 'overview'" 
           class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-brand-primary"
         ></span>
       </div>
-      <span class="text-[10px] tracking-tight mt-1 font-semibold">নিউজফিড</span>
+      <span class="text-[10px] tracking-tight mt-1 font-semibold">ড্যাশবোর্ড</span>
     </a>
 
     <!-- 2. My Courses Tab -->

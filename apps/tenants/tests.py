@@ -337,3 +337,161 @@ class DomainManagementTests(TestCase):
         self.assertEqual(self.tenant.name, "Alpha Academy Updated")
         self.assertEqual(self.tenant.branding.get("primary_color"), "#10b981")
         self.assertEqual(self.tenant.branding.get("meta_title"), "Best Academy Online")
+
+
+class TenantBackupAndRestoreTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.owner = User.objects.create_user(
+            email="owner@testbackupacademy.com", password="password123"
+        )
+        self.tenant = Tenant.objects.create(
+            name="Test Backup Academy",
+            slug="testbackup",
+            owner=self.owner,
+            is_active=True,
+            branding={"tagline": "Best Learning Portal"},
+        )
+        TenantMembership.objects.unscoped().create(
+            tenant=self.tenant,
+            user=self.owner,
+            role=TenantMembership.Role.ADMIN,
+        )
+
+    def test_backup_export_view(self):
+        """Owner can export a complete JSON backup containing academy data."""
+        from apps.courses.models import Course, Exam, ExamQuestion
+
+        Course.objects.create(
+            tenant=self.tenant,
+            instructor=self.owner,
+            title="Django Masterclass",
+            slug="django-masterclass",
+            price=1500,
+        )
+        exam = Exam.objects.create(
+            tenant=self.tenant,
+            title="Django Midterm",
+            slug="django-midterm",
+            duration_minutes=20,
+        )
+        ExamQuestion.objects.create(
+            tenant=self.tenant,
+            exam=exam,
+            question_text="What is Django?",
+            option_a="Python Framework",
+            option_b="Database",
+            option_c="Browser",
+            option_d="OS",
+            correct_option="A",
+        )
+
+        self.client.force_login(self.owner)
+        response = self.client.get(
+            "/tenants/backup/export/",
+            HTTP_HOST="testbackup.localhost:8001",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/json; charset=utf-8")
+        self.assertIn("attachment; filename=", response["Content-Disposition"])
+
+        import json
+        data = json.loads(response.content.decode("utf-8"))
+        self.assertIn("data", data)
+        self.assertIn("courses", data["data"])
+        self.assertEqual(len(data["data"]["courses"]), 1)
+        self.assertEqual(data["data"]["courses"][0]["title"], "Django Masterclass")
+        self.assertEqual(len(data["data"]["exams"]), 1)
+        self.assertEqual(data["data"]["exams"][0]["title"], "Django Midterm")
+        self.assertEqual(len(data["data"]["exams"][0]["questions"]), 1)
+        self.assertEqual(data["data"]["exams"][0]["questions"][0]["question_text"], "What is Django?")
+
+    def test_backup_restore_view(self):
+        """Owner can restore courses, exams, and routines from a valid JSON backup file."""
+        import json
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from apps.courses.models import Course, Exam, ExamQuestion, ClassRoutine
+
+        backup_payload = {
+            "version": "1.0",
+            "tenant": {
+                "name": "Test Backup Academy Updated",
+                "header_style": "header_2",
+                "branding": {"tagline": "Updated via Restore"},
+            },
+            "data": {
+                "courses": [
+                    {
+                        "title": "Fullstack Web Bootcamp",
+                        "slug": "fullstack-bootcamp",
+                        "price": "2500.00",
+                        "modules": [
+                            {
+                                "title": "Module 1: Intro",
+                                "order": 1,
+                                "lessons": [
+                                    {"title": "Lesson 1: Welcome", "order": 1, "video_url": "https://youtube.com/watch?v=123"}
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "exams": [
+                    {
+                        "title": "Frontend Exam",
+                        "slug": "frontend-exam",
+                        "duration_minutes": 15,
+                        "questions": [
+                            {
+                                "question_text": "What is HTML?",
+                                "option_a": "Markup language",
+                                "option_b": "Programming language",
+                                "option_c": "Style sheet",
+                                "option_d": "None",
+                                "correct_option": "A",
+                                "order": 1
+                            }
+                        ]
+                    }
+                ],
+                "routines": [
+                    {
+                        "subject": "JavaScript Live Lab",
+                        "mentor_name": "Rahim",
+                        "day": "sat",
+                        "start_time": "18:00",
+                        "end_time": "19:30",
+                        "live_url": "https://meet.google.com/xyz",
+                    }
+                ]
+            }
+        }
+
+        file_content = json.dumps(backup_payload).encode("utf-8")
+        uploaded_file = SimpleUploadedFile("backup.json", file_content, content_type="application/json")
+
+        self.client.force_login(self.owner)
+        response = self.client.post(
+            "/tenants/backup/restore/",
+            data={"backup_file": uploaded_file, "restore_mode": "merge"},
+            HTTP_HOST="testbackup.localhost:8001",
+        )
+        self.assertEqual(response.status_code, 302)
+
+        # Verify DB records created strictly under current tenant
+        restored_course = Course.objects.filter(tenant=self.tenant, slug="fullstack-bootcamp").first()
+        self.assertIsNotNone(restored_course)
+        self.assertEqual(restored_course.title, "Fullstack Web Bootcamp")
+        self.assertEqual(restored_course.modules.count(), 1)
+        self.assertEqual(restored_course.modules.first().lessons.count(), 1)
+
+        restored_exam = Exam.objects.filter(tenant=self.tenant, slug="frontend-exam").first()
+        self.assertIsNotNone(restored_exam)
+        self.assertEqual(restored_exam.questions.count(), 1)
+        self.assertEqual(restored_exam.questions.first().question_text, "What is HTML?")
+
+        restored_routine = ClassRoutine.objects.filter(tenant=self.tenant, subject="JavaScript Live Lab").first()
+        self.assertIsNotNone(restored_routine)
+        self.assertEqual(restored_routine.mentor_name, "Rahim")
+
+

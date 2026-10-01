@@ -21,4 +21,6 @@ urlpatterns = [
     path("api/caddy-check/", views.caddy_ask_domain, name="caddy_ask"),
     path("send-test-sms/", views.send_test_sms_view, name="send_test_sms"),
     path("download-app/", views.download_academy_app, name="download_app"),
+    path("backup/export/", views.tenant_backup_export_view, name="backup_export"),
+    path("backup/restore/", views.tenant_backup_restore_view, name="backup_restore"),
 ]

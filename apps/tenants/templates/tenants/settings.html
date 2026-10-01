@@ -593,14 +593,29 @@
           </div>
 
           <!-- Toggles -->
-          <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-wrap gap-6 text-xs font-bold text-slate-700 dark:text-slate-300">
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" name="show_header_notice" {% if branding.show_header_notice|default:True %}checked{% endif %} class="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4">
-              <span>টপ নোটিশ বার দেখান (Show Notice Bar)</span>
+          <div class="pt-4 border-t border-slate-100 dark:border-slate-800 grid sm:grid-cols-2 gap-4 text-xs font-bold text-slate-700 dark:text-slate-300">
+            <label class="flex items-center gap-2.5 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors">
+              <input type="checkbox" name="show_header_notice" {% if branding.show_header_notice != False %}checked{% endif %} class="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4">
+              <div>
+                <span class="block text-slate-900 dark:text-white font-extrabold">১. টপ হেডার নোটিশ বার (Top Header Notice)</span>
+                <span class="block text-[11px] text-slate-500 font-normal">হেডারের একদম উপরে নোটিশ ও হটলাইন বার প্রদর্শন করুন</span>
+              </div>
             </label>
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" name="show_header_search" {% if branding.show_header_search|default:True %}checked{% endif %} class="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4">
-              <span>কোর্স সার্চ বার দেখান (Show Course Search Box)</span>
+
+            <label class="flex items-center gap-2.5 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors">
+              <input type="checkbox" name="show_storefront_notice" {% if branding.show_storefront_notice != False %}checked{% endif %} class="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4">
+              <div>
+                <span class="block text-slate-900 dark:text-white font-extrabold">২. স্টোরফ্রন্ট / বটম হেডার নোটিশ (Storefront Notice)</span>
+                <span class="block text-[11px] text-slate-500 font-normal">হোমপেজ ব্যানারের উপরে গ্র্যাডিয়েন্ট জরুরি নোটিশ বার দেখান</span>
+              </div>
+            </label>
+
+            <label class="flex items-center gap-2.5 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors sm:col-span-2">
+              <input type="checkbox" name="show_header_search" {% if branding.show_header_search != False %}checked{% endif %} class="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4">
+              <div>
+                <span class="block text-slate-900 dark:text-white font-extrabold">কোর্স সার্চ বার (Course Search Box)</span>
+                <span class="block text-[11px] text-slate-500 font-normal">হেডারে শিক্ষার্থীদের জন্য ইনস্ট্যান্ট কোর্স সার্চ ড্রপডাউন সক্রিয় রাখুন</span>
+              </div>
             </label>
           </div>
         </div>
@@ -1356,6 +1371,145 @@
           <div>Custom Domain: <strong>{% if subscription.plan.custom_domain_allowed %}Supported{% else %}Pro Tier{% endif %}</strong></div>
         </div>
       </div>
+    </div>
+
+    <!-- TAB: ACADEMY DATA BACKUP & RESTORE -->
+    <div x-show="activeTab === 'backup'" x-cloak class="space-y-8 animate-fade-in-up">
+      <div class="border-b border-slate-200 dark:border-slate-800 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2.5">
+            <span>💾</span>
+            <span>একাডেমি ডাটা ব্যাকআপ ও রিস্টোর</span>
+          </h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            আপনার একাডেমির সকল কোর্স, লেকচার, মডেল টেস্ট, প্রশ্ন ব্যাংক, ক্লাস রুটিন, বই ও ব্র্যান্ডিং সেটিংস আলাদাভাবে ব্যাকআপ রাখুন অথবা রিস্টোর করুন।
+          </p>
+        </div>
+        <span class="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 text-xs font-mono font-bold shrink-0">
+          🔒 Tenant Isolated Backup
+        </span>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        <!-- 1. Download Backup Card -->
+        <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-6 sm:p-8 shadow-sm flex flex-col justify-between space-y-6">
+          <div class="space-y-4">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl font-black shrink-0">
+                📥
+              </div>
+              <div>
+                <h3 class="text-lg font-black text-slate-900 dark:text-white">১-ক্লিকে ফুল ব্যাকআপ ডাউনলোড</h3>
+                <span class="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">Standard JSON Snapshot</span>
+              </div>
+            </div>
+
+            <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              আপনার বর্তমান একাডেমির সকল কনটেন্ট ও ডেটাবেজ রেকর্ড একটি পোর্টেবল <strong class="text-slate-900 dark:text-white">.json</strong> ফাইলে ব্যাকআপ হয়ে যাবে।
+            </p>
+
+            <!-- Included Content Checklist -->
+            <div class="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/50 p-4 space-y-2 text-xs">
+              <div class="font-bold text-slate-700 dark:text-slate-300 text-[11px] uppercase tracking-wider mb-2">ব্যাকআপ ফাইলে যা যা অন্তর্ভুক্ত থাকবে:</div>
+              <div class="grid grid-cols-2 gap-2 text-slate-600 dark:text-slate-400">
+                <div class="flex items-center gap-1.5"><span class="text-emerald-500 font-bold">✓</span> সকল কোর্স ও লেকচার</div>
+                <div class="flex items-center gap-1.5"><span class="text-emerald-500 font-bold">✓</span> MCQ মডেল টেস্ট ও প্রশ্ন</div>
+                <div class="flex items-center gap-1.5"><span class="text-emerald-500 font-bold">✓</span> ক্লাস রুটিন ও সময়সূচি</div>
+                <div class="flex items-center gap-1.5"><span class="text-emerald-500 font-bold">✓</span> প্রকাশিত বই ও প্রকাশনা</div>
+                <div class="flex items-center gap-1.5"><span class="text-emerald-500 font-bold">✓</span> ফ্রি শিট ও রিসোর্স</div>
+                <div class="flex items-center gap-1.5"><span class="text-emerald-500 font-bold">✓</span> হেডার, ফুটার ও ব্র্যান্ডিং</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-4 border-t border-slate-100 dark:border-slate-800">
+            <a 
+              href="{% url 'tenants:backup_export' %}" 
+              class="w-full py-3.5 px-6 rounded-2xl bg-brand-primary hover:opacity-90 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-brand-primary/20 transition-all transform hover:-translate-y-0.5 app-tap"
+            >
+              <span>📥</span>
+              <span>সম্পূর্ণ একাডেমি ব্যাকআপ ডাউনলোড করুন</span>
+              <span class="text-xs bg-white/20 px-2 py-0.5 rounded font-mono font-bold">.JSON</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- 2. Restore Backup Card -->
+        <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-6 sm:p-8 shadow-sm flex flex-col justify-between space-y-6">
+          <div class="space-y-4">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-2xl font-black shrink-0">
+                📤
+              </div>
+              <div>
+                <h3 class="text-lg font-black text-slate-900 dark:text-white">ব্যাকআপ ফাইল রিস্টোর / আপলোড</h3>
+                <span class="text-[11px] font-mono text-indigo-600 dark:text-indigo-400 font-bold">Restore & Import Database</span>
+              </div>
+            </div>
+
+            <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              পূর্বের ডাউনলোড করা <strong class="text-slate-900 dark:text-white">.json</strong> ব্যাকআপ ফাইল আপলোড করে মুহূর্তেই আপনার সমস্ত কোর্স, লেকচার ও এক্সাম রিস্টোর করুন।
+            </p>
+
+            <form 
+              action="{% url 'tenants:backup_restore' %}" 
+              method="POST" 
+              enctype="multipart/form-data" 
+              class="space-y-4"
+              onsubmit="return confirm('আপনি কি নিশ্চিত যে আপনি এই ব্যাকআপ ফাইল থেকে আপনার একাডেমি ডাটা রিস্টোর করতে চান?');"
+            >
+              {% csrf_token %}
+
+              <!-- File Input -->
+              <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">ব্যাকআপ ফাইল নির্বাচন করুন (.json)</label>
+                <input 
+                  type="file" 
+                  name="backup_file" 
+                  accept=".json,application/json" 
+                  required 
+                  class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs text-slate-900 dark:text-white file:mr-3 file:py-1.5 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer"
+                >
+              </div>
+
+              <!-- Restore Mode Option -->
+              <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">রিস্টোর মোড</label>
+                <select name="restore_mode" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs font-bold text-slate-800 dark:text-slate-200">
+                  <option value="merge" selected>মার্জ ও আপডেট (Merge & Update - প্রস্তাবিত ও নিরাপদ)</option>
+                  <option value="fresh">নতুন করে রিস্টোর (Fresh Restore)</option>
+                </select>
+                <p class="text-[10px] text-slate-400 mt-1">মার্জ মোডে নতুন আইটেমগুলো যুক্ত হবে এবং বিদ্যমানগুলো আপডেট হবে।</p>
+              </div>
+
+              <div class="pt-2">
+                <button 
+                  type="submit" 
+                  class="w-full py-3.5 px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-indigo-600/20 transition-all cursor-pointer app-tap"
+                >
+                  <span>🚀</span>
+                  <span>ডাটা রিস্টোর সম্পন্ন করুন</span>
+                </button>
+              </div>
+            </form>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Disaster Recovery Notice Card -->
+      <div class="rounded-3xl border border-amber-500/25 bg-amber-50/20 dark:bg-amber-950/20 p-6 flex items-start gap-4 text-xs text-slate-700 dark:text-slate-300">
+        <span class="text-2xl shrink-0">💡</span>
+        <div class="space-y-1">
+          <h4 class="font-bold text-slate-900 dark:text-white text-sm">ডিজাস্টার রিকভারি ও ডাটা সিকিউরিটি পরামর্শ:</h4>
+          <p class="text-slate-600 dark:text-slate-400 leading-relaxed">
+            প্রতিটি নতুন কোর্স বা মডেল টেস্ট তৈরি করার পর নিয়মিত আপনার একাডেমির ব্যাকআপ ডাউনলোড করে নিরাপদে গুগল ড্রাইভ বা নিজের কম্পিউটারে সংরক্ষণ করুন। এতে যেকোনো সময় সম্পূর্ণ একাডেমি ১-ক্লিকে রিকভার করা সম্ভব হবে।
+          </p>
+        </div>
+      </div>
+
     </div>
 
   </main>

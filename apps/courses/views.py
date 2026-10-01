@@ -977,7 +977,7 @@ def student_learning_dashboard(request):
     10. ব্রাউজ ([সকল কোর্স] ও [সকল বই])
     """
     tenant = getattr(request, "tenant", None)
-    active_tab = request.GET.get("tab") or request.POST.get("active_tab") or "newsfeed"
+    active_tab = request.GET.get("tab") or request.POST.get("active_tab") or "overview"
 
     # -------------------------------------------------------------
     # POST ACTION HANDLERS
@@ -1369,6 +1369,24 @@ def student_learning_dashboard(request):
         .order_by("-created_at")
     )
 
+    # Exam Attempts & Stats for Student Dashboard Overview
+    exam_attempts_qs = ExamAttempt.objects.filter(student=request.user)
+    total_exams_taken = exam_attempts_qs.count()
+    passed_exams_count = exam_attempts_qs.filter(is_passed=True).count()
+    recent_exam_attempts = exam_attempts_qs.select_related("exam").order_by("-submitted_at")[:6]
+    
+    if total_exams_taken > 0:
+        scores = [a.percentage for a in exam_attempts_qs]
+        avg_exam_score = round(sum(scores) / len(scores), 1)
+    else:
+        avg_exam_score = 0.0
+
+    in_progress_courses_count = max(0, total_enrolled - completed_courses_count)
+    if total_enrolled > 0:
+        overall_progress = round(sum(item["progress"]["percent"] for item in enrolled_courses_data) / total_enrolled)
+    else:
+        overall_progress = 0
+
     return render(
         request,
         "courses/frontend/student_dashboard.html",
@@ -1380,7 +1398,13 @@ def student_learning_dashboard(request):
             "enrolled_course_ids": set(enrolled_course_ids),
             "total_enrolled": total_enrolled,
             "completed_courses_count": completed_courses_count,
+            "in_progress_courses_count": in_progress_courses_count,
             "total_lessons_completed": total_lessons_completed,
+            "overall_progress": overall_progress,
+            "total_exams_taken": total_exams_taken,
+            "passed_exams_count": passed_exams_count,
+            "recent_exam_attempts": recent_exam_attempts,
+            "avg_exam_score": avg_exam_score,
             "routines": routines,
             "results": results,
             "available_exams": available_exams,

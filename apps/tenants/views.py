@@ -1,3 +1,4 @@
+import json
 import re
 from datetime import timedelta
 
@@ -6,6 +7,7 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model, login
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
+from django.core.serializers.json import DjangoJSONEncoder
 from django.http import FileResponse, Http404, HttpResponse, HttpResponseForbidden
 from django.shortcuts import redirect, render
 from django.utils import timezone
@@ -377,10 +379,13 @@ def tenant_branding_settings_view(request):
         elif target_tab == "branding":
             branding["enable_whatsapp_widget"] = False
 
-        # Header / Footer checkbox toggles
-        if "header_checkbox_sent" in request.POST:
+        # Header / Footer / Notice checkbox toggles
+        if "header_checkbox_sent" in request.POST or "show_header_notice" in request.POST or "show_storefront_notice" in request.POST or target_tab == "branding":
             branding["show_header_notice"] = (
                 request.POST.get("show_header_notice") == "on"
+            )
+            branding["show_storefront_notice"] = (
+                request.POST.get("show_storefront_notice") == "on"
             )
             branding["show_header_search"] = (
                 request.POST.get("show_header_search") == "on"
@@ -971,3 +976,91 @@ def download_academy_app(request):
             "apk_download_url": apk_download_url,
         },
     )
+
+
+# ==============================================================================
+# 💾 ACADEMY DATA BACKUP & DISASTER RECOVERY (ডাটা ব্যাকআপ ও রিস্টোর)
+# ==============================================================================
+
+@login_required
+def tenant_backup_export_view(request):
+    """
+    Exports a comprehensive JSON backup containing all courses, lessons, exams,
+    questions, routines, books, and branding settings for the authenticated tenant.
+    """
+    tenant = getattr(request, "tenant", None)
+    if not tenant:
+        tenant = Tenant.objects.filter(owner=request.user).first()
+
+    if not tenant or (tenant.owner != request.user and not request.user.is_superuser):
+        messages.error(request, "শুধুমাত্র একাডেমি ওনার বা সুপার অ্যাডমিন ব্যাকআপ ডাউনলোড করতে পারেন।")
+        return redirect("/dashboard/")
+
+    from apps.tenants.backup_service import export_tenant_backup_data
+    from django.http import HttpResponse
+
+    backup_data = export_tenant_backup_data(tenant)
+    timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"backup_{tenant.slug}_{timestamp}.json"
+
+    json_content = json.dumps(backup_data, indent=2, ensure_ascii=False, cls=DjangoJSONEncoder)
+    response = HttpResponse(json_content, content_type="application/json; charset=utf-8")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
+
+
+@login_required
+def tenant_backup_restore_view(request):
+    """
+    Restores or imports academy data from an uploaded JSON backup file.
+    Guarantees strict multi-tenant boundary isolation.
+    """
+    tenant = getattr(request, "tenant", None)
+    if not tenant:
+        tenant = Tenant.objects.filter(owner=request.user).first()
+
+    if not tenant or (tenant.owner != request.user and not request.user.is_superuser):
+        messages.error(request, "শুধুমাত্র একাডেমি ওনার ডাটা রিস্টোর করতে পারেন।")
+        return redirect("/dashboard/")
+
+    if request.method != "POST":
+        return redirect("/tenants/settings/?tab=backup")
+
+    backup_file = request.FILES.get("backup_file")
+    restore_mode = request.POST.get("restore_mode", "merge")
+
+    if not backup_file:
+        messages.error(request, "অনুগ্রহ করে একটি বৈধ ব্যাকআপ (.json) ফাইল নির্বাচন করুন।")
+        return redirect("/tenants/settings/?tab=backup")
+
+    if not backup_file.name.endswith(".json"):
+        messages.error(request, "ভুল ফাইল ফরম্যাট! শুধুমাত্র .json ব্যাকআপ ফাইল আপলোড করুন।")
+        return redirect("/tenants/settings/?tab=backup")
+
+    try:
+        raw_content = backup_file.read().decode("utf-8")
+        payload = json.loads(raw_content)
+
+        if not isinstance(payload, dict) or "data" not in payload:
+            messages.error(request, "ফাইলের ডাটা স্ট্রাকচার সঠিক নয়। এটি একটি বৈধ CourseFlow ব্যাকআপ ফাইল নয়।")
+            return redirect("/tenants/settings/?tab=backup")
+
+        from apps.tenants.backup_service import restore_tenant_backup_data
+
+        summary = restore_tenant_backup_data(tenant, payload, restore_mode=restore_mode)
+
+        messages.success(
+            request,
+            f"🎉 ডাটা ব্যাকআপ সফলভাবে রিস্টোর হয়েছে! "
+            f"(কোর্স: {summary['courses_restored']}টি, "
+            f"লেকচার: {summary['lessons_restored']}টি, "
+            f"পরীক্ষা: {summary['exams_restored']}টি, "
+            f"প্রশ্ন: {summary['questions_restored']}টি, "
+            f"রুটিন: {summary['routines_restored']}টি, "
+            f"বই: {summary['books_restored']}টি)"
+        )
+    except Exception as e:
+        messages.error(request, f"ব্যাকআপ রিস্টোর করার সময় ত্রুটি ঘটেছে: {str(e)}")
+
+    return redirect("/tenants/settings/?tab=backup")
+

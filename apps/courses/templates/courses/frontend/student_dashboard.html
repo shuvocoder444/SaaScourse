@@ -92,6 +92,18 @@
           প্রধান মেনু
         </span>
 
+        <!-- 0. [ড্যাশবোর্ড ওভারভিউ] -->
+        <button 
+          type="button"
+          @click="activeTab = 'overview'; sidebarOpen = false; window.scrollTo({top: 0, behavior: 'smooth'});" 
+          :class="activeTab === 'overview' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/20' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'"
+          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer"
+        >
+          <span class="text-sm">📊</span>
+          <span>ড্যাশবোর্ড ওভারভিউ</span>
+          <span class="ml-auto px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[9px] font-bold">হোম</span>
+        </button>
+
         <!-- 1. [নিউজ ফিড] -->
         <button 
           type="button"
@@ -101,7 +113,7 @@
         >
           <span class="text-sm">📰</span>
           <span>নিউজ ফিড</span>
-          <span class="ml-auto px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[9px] font-bold">কমিউনিটি</span>
+          <span class="ml-auto px-1.5 py-0.5 rounded bg-slate-200/60 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[9px] font-bold">কমিউনিটি</span>
         </button>
 
         <!-- 2. [আমার কোর্সসমূহ] -->
@@ -250,6 +262,409 @@
         {% endfor %}
       </div>
     {% endif %}
+
+    <!-- ============================================================= -->
+    <!-- TAB 0: [ড্যাশবোর্ড ওভারভিউ] (Student Learning Hub & Summary) -->
+    <!-- ============================================================= -->
+    <div x-show="activeTab === 'overview'" x-cloak class="space-y-8 animate-fade-in-up">
+      
+      <!-- 1. Student Welcome Hero Banner -->
+      <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 border border-emerald-500/20 p-6 sm:p-8 text-white shadow-xl shadow-emerald-950/20">
+        <!-- Glows -->
+        <div class="absolute -right-10 -top-10 w-64 h-64 bg-brand-primary/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -left-10 -bottom-10 w-64 h-64 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div class="space-y-2 max-w-2xl">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>শিক্ষার্থী লার্নিং পোর্টাল • আইডি #{{ user.id }}</span>
+            </div>
+            <h1 class="text-2xl sm:text-4xl font-black tracking-tight text-white">
+              স্বাগতম, {{ user.get_full_name|default:user.email }}! 🎓
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-300 leading-relaxed font-medium">
+              আপনার পড়াশোনা, প্রতিদিনের ক্লাস রুটিন এবং পরীক্ষার অগ্রগতি ট্র্যাক করুন এক নজরে। আজ থেকেই আপনার লক্ষ্য অর্জনে প্রস্তুতি চালিয়ে যান।
+            </p>
+          </div>
+
+          <!-- Quick Action Shortcuts -->
+          <div class="flex flex-wrap sm:flex-nowrap items-center gap-3 shrink-0">
+            <button 
+              type="button" 
+              @click="activeTab = 'my_courses'; window.scrollTo({top: 0, behavior: 'smooth'});"
+              class="px-5 py-3 rounded-2xl bg-brand-primary hover:bg-emerald-500 text-white text-xs font-black shadow-lg shadow-brand-primary/30 transition-all transform hover:-translate-y-0.5 cursor-pointer flex items-center gap-2"
+            >
+              <span>🎓</span>
+              <span>আমার কোর্সে যান</span>
+              <span>→</span>
+            </button>
+            <button 
+              type="button" 
+              @click="activeTab = 'results'; window.scrollTo({top: 0, behavior: 'smooth'});"
+              class="px-5 py-3 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-2"
+            >
+              <span>📝</span>
+              <span>অনলাইন পরীক্ষা</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Core 4 Summary Metric Stat Cards -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        
+        <!-- Metric 1: Total Enrolled Courses -->
+        <div class="p-5 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-sm hover:shadow-md transition-all group">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">মোট কোর্স</span>
+            <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg group-hover:scale-110 transition-transform">
+              🎓
+            </div>
+          </div>
+          <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+            {{ total_enrolled|default:0 }}
+          </div>
+          <div class="flex items-center gap-1.5 mt-2 text-[11px] font-bold text-slate-500 dark:text-slate-400">
+            <span class="text-emerald-600 dark:text-emerald-400 font-extrabold">{{ completed_courses_count|default:0 }} সম্পন্ন</span>
+            <span>•</span>
+            <span>{{ in_progress_courses_count|default:0 }} চলমান</span>
+          </div>
+        </div>
+
+        <!-- Metric 2: Total Exams Taken -->
+        <div class="p-5 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-sm hover:shadow-md transition-all group">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">মোট পরীক্ষা দিয়েছেন</span>
+            <div class="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-lg group-hover:scale-110 transition-transform">
+              📝
+            </div>
+          </div>
+          <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+            {{ total_exams_taken|default:0 }} <span class="text-xs font-normal text-slate-400">বার</span>
+          </div>
+          <div class="flex items-center gap-1.5 mt-2 text-[11px] font-bold text-slate-500 dark:text-slate-400">
+            <span class="text-indigo-600 dark:text-indigo-400 font-extrabold">{{ passed_exams_count|default:0 }} বার উত্তীর্ণ</span>
+            <span>•</span>
+            <span>{{ results.count|default:0 }} টি মার্কশিট</span>
+          </div>
+        </div>
+
+        <!-- Metric 3: Completed Lessons -->
+        <div class="p-5 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-sm hover:shadow-md transition-all group">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">সম্পন্ন ক্লাস/লেকচার</span>
+            <div class="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-lg group-hover:scale-110 transition-transform">
+              ⚡
+            </div>
+          </div>
+          <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+            {{ total_lessons_completed|default:0 }} <span class="text-xs font-normal text-slate-400">টি</span>
+          </div>
+          <div class="flex items-center gap-1.5 mt-2 text-[11px] font-bold text-amber-600 dark:text-amber-400">
+            <span>ভিডিও ও নোটস সম্পন্ন</span>
+          </div>
+        </div>
+
+        <!-- Metric 4: Average Score & Overall Progress -->
+        <div class="p-5 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-sm hover:shadow-md transition-all group">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">গড় পরীক্ষার স্কোর</span>
+            <div class="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center text-lg group-hover:scale-110 transition-transform">
+              📊
+            </div>
+          </div>
+          <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-mono">
+            {{ avg_exam_score|default:0 }}%
+          </div>
+          <div class="flex items-center gap-1.5 mt-2 text-[11px] font-bold text-slate-500 dark:text-slate-400">
+            <span>সার্বিক প্রগ্রেস: <strong class="text-slate-900 dark:text-white">{{ overall_progress|default:0 }}%</strong></span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 3. Continue Learning / Active Courses Section -->
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
+            <h2 class="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
+              চলমান কোর্সসমূহ (Continue Learning)
+            </h2>
+          </div>
+          <button 
+            type="button" 
+            @click="activeTab = 'my_courses'; window.scrollTo({top: 0, behavior: 'smooth'});" 
+            class="text-xs font-bold text-brand-primary hover:underline cursor-pointer"
+          >
+            সবগুলো দেখুন ({{ total_enrolled }}) →
+          </button>
+        </div>
+
+        {% if enrolled_courses_data %}
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {% for item in enrolled_courses_data|slice:":3" %}
+              <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-5 shadow-sm hover:shadow-lg transition-all flex flex-col justify-between group">
+                <div>
+                  <div class="flex items-center justify-between gap-2 mb-3">
+                    <span class="px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-extrabold uppercase tracking-wide">
+                      {{ item.course.category.name|default:"একাডেমিক কোর্স" }}
+                    </span>
+                    <span class="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">
+                      {{ item.progress.percent }}% সম্পন্ন
+                    </span>
+                  </div>
+
+                  <h3 class="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white line-clamp-2 group-hover:text-brand-primary transition-colors">
+                    {{ item.course.title }}
+                  </h3>
+
+                  <!-- Progress Bar -->
+                  <div class="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden my-4">
+                    <div 
+                      class="bg-gradient-to-r from-brand-primary to-emerald-400 h-full rounded-full transition-all duration-500" 
+                      style="width: {{ item.progress.percent }}%;"
+                    ></div>
+                  </div>
+
+                  <div class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                    <span>{{ item.progress.completed_count }}/{{ item.progress.total_lessons }} টি লেকচার সম্পন্ন</span>
+                    {% if item.is_completed %}
+                      <span class="text-emerald-500 font-bold">✓ কোর্স কমপ্লিট</span>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <div class="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800">
+                  {% if item.resume_lesson %}
+                    <a 
+                      href="{% url 'courses:lesson' item.course.slug item.resume_lesson.id %}" 
+                      class="w-full py-2.5 px-4 rounded-2xl bg-brand-primary hover:opacity-90 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md shadow-brand-primary/20 transition-all app-tap"
+                    >
+                      <span>▶</span>
+                      <span>পড়া চালিয়ে যান</span>
+                    </a>
+                  {% else %}
+                    <a 
+                      href="{% url 'courses:detail' item.course.slug %}" 
+                      class="w-full py-2.5 px-4 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1 transition-all"
+                    >
+                      <span>কোর্স কারিকুলাম দেখুন</span>
+                      <span>→</span>
+                    </a>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <!-- No Enrolled Courses Empty Card -->
+          <div class="rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900/60 p-8 text-center space-y-4">
+            <div class="w-14 h-14 rounded-3xl bg-emerald-500/10 text-brand-primary flex items-center justify-center text-2xl mx-auto">
+              🎓
+            </div>
+            <div class="max-w-md mx-auto">
+              <h3 class="font-extrabold text-base text-slate-900 dark:text-white">আপনি এখনো কোনো কোর্সে ভর্তি হননি</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">আমাদের প্রকাশিত সেরা কোর্স ও ব্যাচগুলো এক্সপ্লোর করে আজই পড়ালেখা শুরু করুন।</p>
+            </div>
+            <button 
+              type="button" 
+              @click="activeTab = 'browse_courses'; window.scrollTo({top: 0, behavior: 'smooth'});"
+              class="px-6 py-3 rounded-2xl bg-brand-primary text-white text-xs font-bold shadow-md shadow-brand-primary/20 hover:opacity-90 transition-all cursor-pointer"
+            >
+              🔍 কোর্সসমূহ এক্সপ্লোর করুন
+            </button>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- 4. Two Column Grid: [পরীক্ষার ফলাফল ও পারফরম্যান্স] & [আজকের ক্লাস রুটিন] -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Left: Recent Exam Performance -->
+        <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-6 shadow-sm space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-lg">📝</span>
+              <h3 class="font-black text-base text-slate-900 dark:text-white">সাম্প্রতিক পরীক্ষা ও স্কোর</h3>
+            </div>
+            <button 
+              type="button" 
+              @click="activeTab = 'results'; window.scrollTo({top: 0, behavior: 'smooth'});" 
+              class="text-xs font-bold text-brand-primary hover:underline cursor-pointer"
+            >
+              সকল ফলাফল →
+            </button>
+          </div>
+
+          {% if recent_exam_attempts %}
+            <div class="space-y-3">
+              {% for attempt in recent_exam_attempts %}
+                <div class="p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 flex items-center justify-between gap-3">
+                  <div class="min-w-0">
+                    <h4 class="text-xs font-bold text-slate-900 dark:text-white truncate">
+                      {{ attempt.exam.title }}
+                    </h4>
+                    <span class="text-[10px] text-slate-400 font-mono block mt-0.5">
+                      {{ attempt.submitted_at|date:"d M, Y • h:i A" }}
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-2 shrink-0">
+                    <div class="text-right">
+                      <div class="text-xs font-black text-slate-900 dark:text-white font-mono">
+                        {{ attempt.score }}/{{ attempt.total_marks }}
+                      </div>
+                      <span class="text-[9px] font-bold px-1.5 py-0.2 rounded {% if attempt.is_passed %}bg-emerald-500/10 text-emerald-600 dark:text-emerald-400{% else %}bg-rose-500/10 text-rose-500{% endif %}">
+                        {% if attempt.is_passed %}✓ উত্তীর্ণ ({{ attempt.percentage }}%){% else %}✕ অনুত্তীর্ণ ({{ attempt.percentage }}%){% endif %}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% elif results %}
+            <div class="space-y-3">
+              {% for res in results|slice:":4" %}
+                <div class="p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 flex items-center justify-between gap-3">
+                  <div class="min-w-0">
+                    <h4 class="text-xs font-bold text-slate-900 dark:text-white truncate">
+                      {{ res.exam_title }}
+                    </h4>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">
+                      বিষয়: {{ res.subject }} • গ্রেড: {{ res.grade|default:"A+" }}
+                    </span>
+                  </div>
+                  <div class="text-right shrink-0">
+                    <span class="text-xs font-mono font-black text-emerald-600 dark:text-emerald-400">
+                      {{ res.obtained_marks }}/{{ res.total_marks }}
+                    </span>
+                    <span class="text-[10px] block text-slate-400">পজিশন: #{{ res.merit_position|default:"1" }}</span>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="py-8 text-center text-xs text-slate-400 space-y-2">
+              <span class="text-2xl block">📋</span>
+              <p>আপনি এখনো কোনো অনলাইন মডেল টেস্ট বা পরীক্ষায় অংশগ্রহণ করেননি।</p>
+              <button 
+                type="button" 
+                @click="activeTab = 'results'; window.scrollTo({top: 0, behavior: 'smooth'});"
+                class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-brand-primary hover:text-white transition-colors cursor-pointer"
+              >
+                অনলাইন পরীক্ষা শুরু করুন
+              </button>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Right: Weekly Routine & Upcoming Classes -->
+        <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-6 shadow-sm space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-lg">📅</span>
+              <h3 class="font-black text-base text-slate-900 dark:text-white">ক্লাস রুটিন ও সময়সূচি</h3>
+            </div>
+            <button 
+              type="button" 
+              @click="activeTab = 'routine'; window.scrollTo({top: 0, behavior: 'smooth'});" 
+              class="text-xs font-bold text-brand-primary hover:underline cursor-pointer"
+            >
+              সম্পূর্ণ রুটিন →
+            </button>
+          </div>
+
+          {% if routines %}
+            <div class="space-y-3">
+              {% for r in routines|slice:":4" %}
+                <div class="p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 flex items-center justify-between gap-3">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-10 h-10 rounded-2xl bg-brand-primary/10 text-brand-primary font-black text-xs flex flex-col items-center justify-center shrink-0">
+                      <span>{{ r.day|slice:":3" }}</span>
+                    </div>
+                    <div class="min-w-0">
+                      <h4 class="text-xs font-bold text-slate-900 dark:text-white truncate">
+                        {{ r.subject }} ({{ r.course.title|default:"লাইভ ব্যাচ" }})
+                      </h4>
+                      <div class="text-[10px] text-slate-400 font-mono mt-0.5">
+                        ⏰ {{ r.start_time|time:"h:i A" }} - {{ r.end_time|time:"h:i A" }} • মেন্টর: {{ r.instructor_name }}
+                      </div>
+                    </div>
+                  </div>
+                  {% if r.live_link %}
+                    <a 
+                      href="{{ r.live_link }}" 
+                      target="_blank" 
+                      class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[11px] shrink-0 shadow-sm flex items-center gap-1 app-tap"
+                    >
+                      <span>🚀</span>
+                      <span>জয়েন</span>
+                    </a>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="py-8 text-center text-xs text-slate-400 space-y-2">
+              <span class="text-2xl block">🗓️</span>
+              <p>বর্তমানে কোনো লাইভ ক্লাস শিডিউল প্রকাশিত নেই।</p>
+            </div>
+          {% endif %}
+        </div>
+
+      </div>
+
+      <!-- 5. Quick Access Shortcuts (Support, Clubs, Book Store, App) -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        
+        <!-- Quick Tab 1: Live Chat Support -->
+        <button 
+          type="button" 
+          @click="activeTab = 'support'; window.scrollTo({top: 0, behavior: 'smooth'});"
+          class="p-4 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 text-left hover:border-brand-primary hover:shadow-md transition-all group cursor-pointer"
+        >
+          <span class="text-2xl block mb-2 group-hover:scale-110 transition-transform">💬</span>
+          <div class="font-extrabold text-xs text-slate-900 dark:text-white">সাপোর্ট ও মেসেজ</div>
+          <p class="text-[10px] text-slate-400 mt-0.5">মেন্টরের সরাসরি সহায়তা</p>
+        </button>
+
+        <!-- Quick Tab 2: Study Clubs -->
+        <button 
+          type="button" 
+          @click="activeTab = 'clubs'; window.scrollTo({top: 0, behavior: 'smooth'});"
+          class="p-4 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 text-left hover:border-brand-primary hover:shadow-md transition-all group cursor-pointer"
+        >
+          <span class="text-2xl block mb-2 group-hover:scale-110 transition-transform">👥</span>
+          <div class="font-extrabold text-xs text-slate-900 dark:text-white">স্টাডি ক্লাব ও গ্রুপ</div>
+          <p class="text-[10px] text-slate-400 mt-0.5">সহপাঠীদের সাথে আলোচনা</p>
+        </button>
+
+        <!-- Quick Tab 3: Books & Notes -->
+        <button 
+          type="button" 
+          @click="activeTab = 'browse_books'; window.scrollTo({top: 0, behavior: 'smooth'});"
+          class="p-4 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 text-left hover:border-brand-primary hover:shadow-md transition-all group cursor-pointer"
+        >
+          <span class="text-2xl block mb-2 group-hover:scale-110 transition-transform">📖</span>
+          <div class="font-extrabold text-xs text-slate-900 dark:text-white">প্রকাশিত বই ও নোটস</div>
+          <p class="text-[10px] text-slate-400 mt-0.5">ক্যাশ অন ডেলিভারিতে অর্ডার</p>
+        </button>
+
+        <!-- Quick Tab 4: Install PWA Mobile App -->
+        <button 
+          type="button" 
+          onclick="installPWAApp()"
+          class="p-4 rounded-3xl border border-emerald-500/30 bg-emerald-500/10 text-left hover:bg-emerald-500/20 hover:shadow-md transition-all group cursor-pointer"
+        >
+          <span class="text-2xl block mb-2 group-hover:scale-110 transition-transform">📲</span>
+          <div class="font-extrabold text-xs text-emerald-700 dark:text-emerald-300">মোবাইল অ্যাপ ইনস্টল</div>
+          <p class="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 mt-0.5">১-ট্যাপে ইনস্টল করুন</p>
+        </button>
+
+      </div>
+
+    </div>
 
     <!-- ============================================================= -->
     <!-- TAB 1: [নিউজ ফিড] (Community News Feed & Student Blog) -->

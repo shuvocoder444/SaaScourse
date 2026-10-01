@@ -7,7 +7,7 @@
 <div>
 
   <!-- 1. Top Notice Announcement Bar -->
-  {% if branding.notice_text %}
+  {% if branding.show_storefront_notice != False and branding.notice_text %}
     <div class="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white text-xs sm:text-sm py-2.5 px-4 shadow-sm">
       <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
         <div class="flex items-center gap-2 overflow-hidden">
