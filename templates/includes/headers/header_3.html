@@ -58,25 +58,25 @@
           <img 
             src="{{ current_tenant.get_logo_url }}" 
             alt="{{ current_tenant.name }}" 
-            class="h-12 max-w-[160px] object-contain rounded-lg group-hover:scale-105 transition-transform"
+            class="h-11 sm:h-12 max-w-[180px] object-contain rounded-lg group-hover:scale-105 transition-transform"
           >
         {% else %}
-          <div class="w-12 h-12 rounded-xl bg-slate-900 border-2 border-amber-500 flex items-center justify-center font-black text-amber-400 text-xl shadow-md">
+          <div class="w-11 h-11 rounded-xl bg-slate-900 border-2 border-amber-500 flex items-center justify-center font-black text-amber-400 text-xl shadow-md">
             {% if current_tenant %}
               {{ current_tenant.name|slice:":1"|upper }}
             {% else %}
               🎓
             {% endif %}
           </div>
+          <div>
+            <span class="font-black text-xl tracking-tight text-slate-900 dark:text-white block group-hover:text-amber-500 transition-colors">
+              {% if current_tenant %}{{ current_tenant.name }}{% else %}কোর্স একাডেমি{% endif %}
+            </span>
+            <span class="text-[11px] text-slate-500 dark:text-slate-400 block font-medium">
+              {% if current_tenant %}{{ current_tenant.branding.tagline|default:"স্বপ্ন হোক সফলতার সূচনা" }}{% else %}স্বপ্ন হোক সফলতার সূচনা{% endif %}
+            </span>
+          </div>
         {% endif %}
-        <div>
-          <span class="font-black text-xl tracking-tight text-slate-900 dark:text-white block group-hover:text-amber-500 transition-colors">
-            {% if current_tenant %}{{ current_tenant.name }}{% else %}কোর্স একাডেমি{% endif %}
-          </span>
-          <span class="text-[11px] text-slate-500 dark:text-slate-400 block font-medium">
-            {% if current_tenant %}{{ current_tenant.branding.tagline|default:"স্বপ্ন হোক সফলতার সূচনা" }}{% else %}স্বপ্ন হোক সফলতার সূচনা{% endif %}
-          </span>
-        </div>
       </a>
     </div>
 
@@ -165,7 +165,8 @@
       <button 
         type="button"
         @click="mobileMenuOpen = !mobileMenuOpen"
-        class="lg:hidden p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+        class="lg:hidden p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer"
+        aria-label="Toggle navigation menu"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>
@@ -176,4 +177,64 @@
 
   </div>
 
+  <!-- Mobile Drawer Menu (Directly Below Academic Navbar - Zero Overlap) -->
+  <div 
+    x-show="mobileMenuOpen" 
+    x-cloak
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-2"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-2"
+    class="lg:hidden border-t border-slate-200 dark:border-slate-800 bg-white/98 dark:bg-slate-900/98 backdrop-blur-2xl px-4 py-4 space-y-2 shadow-2xl max-h-[calc(100vh-6rem)] overflow-y-auto"
+  >
+    {% if current_tenant %}
+      <div class="font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 px-2 mb-1">মেনু আইটেমসমূহ</div>
+      {% for item in tenant_menu_items %}
+        <a 
+          href="{{ item.url }}" 
+          {% if item.open_in_new_tab %}target="_blank" rel="noopener noreferrer"{% endif %}
+          @click="mobileMenuOpen = false"
+          class="flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-amber-600 dark:hover:text-amber-400 app-tap transition-colors"
+        >
+          <span>{{ item.title }}</span>
+          <span class="text-xs text-slate-400">→</span>
+        </a>
+      {% endfor %}
+      <div class="border-t border-slate-100 dark:border-slate-800 pt-3 mt-2 space-y-2">
+        <button 
+          type="button" 
+          onclick="installPWAApp()" 
+          class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 hover:bg-amber-400 app-tap transition-all"
+        >
+          <span class="flex items-center gap-2">
+            <span>📲</span>
+            <span>মোবাইল অ্যাপ ইনস্টল করুন</span>
+          </span>
+          <span class="text-[10px] bg-black/20 px-2 py-0.5 rounded-md font-bold text-slate-900">Install</span>
+        </button>
+
+        {% if not user.is_authenticated %}
+          <a 
+            href="{{ current_tenant.branding.header_cta_link|default:'/courses/' }}" 
+            @click="mobileMenuOpen = false"
+            class="flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold bg-slate-900 dark:bg-amber-500 text-amber-400 dark:text-slate-950 border border-amber-500/30 shadow-md transition-all"
+          >
+            <span>{{ current_tenant.branding.header_cta_text|default:"ভর্তি তথ্য ও ফরম" }}</span>
+            <span>🎓</span>
+          </a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+
 </header>
+
+<!-- Mobile Menu Backdrop Overlay -->
+<div 
+  x-show="mobileMenuOpen" 
+  x-cloak 
+  @click="mobileMenuOpen = false" 
+  class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden transition-opacity"
+></div>

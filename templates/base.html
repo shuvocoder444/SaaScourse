@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en" class="scroll-smooth">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -116,6 +116,7 @@
     }
     body {
       -webkit-overflow-scrolling: touch;
+      overflow-x: clip;
     }
     .bg-brand-primary { background-color: var(--brand-primary); }
     .text-brand-primary { color: var(--brand-primary); }
@@ -147,7 +148,7 @@
 </head>
 <body 
   x-data="{ isDark: document.documentElement.classList.contains('dark'), mobileMenuOpen: false, sidebarOpen: false }"
-  class="h-full bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex flex-col font-sans antialiased transition-colors duration-200 selection:bg-brand-primary selection:text-white" 
+  class="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex flex-col font-sans antialiased transition-colors duration-200 selection:bg-brand-primary selection:text-white" 
   hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
 >
 
@@ -160,64 +161,9 @@
     {% else %}
       {% include 'includes/headers/header_1.html' %}
     {% endif %}
-
-    <!-- Mobile Drawer Menu (Global for all Header Styles) -->
-    <div 
-      x-show="mobileMenuOpen" 
-      x-transition:enter="transition ease-out duration-200"
-      x-transition:enter-start="opacity-0 -translate-y-2"
-      x-transition:enter-end="opacity-100 translate-y-0"
-      x-transition:leave="transition ease-in duration-150"
-      x-transition:leave-start="opacity-100 translate-y-0"
-      x-transition:leave-end="opacity-0 -translate-y-2"
-      @click.away="mobileMenuOpen = false"
-      class="lg:hidden fixed inset-x-0 top-14 sm:top-16 z-40 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl px-4 py-4 space-y-2 shadow-2xl"
-      style="display: none;"
-    >
-      {% if current_tenant %}
-        <div class="font-bold text-xs uppercase tracking-wider text-slate-400 px-2 mb-1">মেনু আইটেমসমূহ</div>
-        {% for item in tenant_menu_items %}
-          <a 
-            href="{{ item.url }}" 
-            {% if item.open_in_new_tab %}target="_blank" rel="noopener noreferrer"{% endif %}
-            @click="mobileMenuOpen = false"
-            class="flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-brand-primary app-tap transition-colors"
-          >
-            <span>{{ item.title }}</span>
-            <span class="text-xs text-slate-400">→</span>
-          </a>
-        {% endfor %}
-        <div class="border-t border-slate-100 dark:border-slate-800 pt-2 mt-2 space-y-1.5">
-          <button 
-            type="button" 
-            onclick="installPWAApp()" 
-            class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold bg-brand-primary text-white shadow-md shadow-brand-primary/20 hover:opacity-90 app-tap transition-all"
-          >
-            <span class="flex items-center gap-2">
-              <span>📲</span>
-              <span>মোবাইল অ্যাপ ইনস্টল করুন</span>
-            </span>
-            <span class="text-[10px] bg-white/20 px-2 py-0.5 rounded-md font-bold">Install</span>
-          </button>
-
-          {% if user.is_authenticated %}
-            <a href="{% url 'dashboard' %}" class="block px-3.5 py-2 rounded-2xl text-xs font-bold text-brand-primary hover:bg-brand-primary/10">
-              ড্যাশবোর্ড
-            </a>
-            <a href="{% url 'users:logout' %}" class="block px-3.5 py-2 rounded-2xl text-xs font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30">
-              লগআউট
-            </a>
-          {% else %}
-            <a href="{% url 'users:login' %}" class="block px-3.5 py-2 rounded-2xl text-xs font-bold text-slate-800 dark:text-slate-100">
-              লগইন করুন
-            </a>
-          {% endif %}
-        </div>
-      {% endif %}
-    </div>
   {% endblock header %}
 
-  <!-- Main Content (pb-20 on mobile ensures bottom dock never covers content) -->
+  <!-- Main Content (pb-16 on mobile ensures bottom dock never covers content) -->
   <main class="flex-1 pb-16 lg:pb-0">
     {% block content %}{% endblock %}
   </main>

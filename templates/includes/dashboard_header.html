@@ -5,9 +5,13 @@
   <div class="flex items-center gap-3.5 min-w-0">
     <!-- Studio / Academy Branding -->
     <a href="{% if user.is_superuser and not current_tenant %}{% url 'tenants:platform_dashboard' %}{% else %}{% url 'dashboard' %}{% endif %}" class="flex items-center gap-3 min-w-0 group">
-      <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl {% if user.is_superuser and not current_tenant %}bg-gradient-to-tr from-amber-500 to-indigo-600{% else %}bg-brand-primary{% endif %} flex items-center justify-center font-black text-white text-sm sm:text-base shadow-md shadow-brand-primary/20 shrink-0 group-hover:scale-105 transition-transform">
-        {% if user.is_superuser and not current_tenant %}👑{% else %}{{ current_tenant.name|default:"⚡"|slice:":1"|upper }}{% endif %}
-      </div>
+      {% if current_tenant and current_tenant.get_logo_url %}
+        <img src="{{ current_tenant.get_logo_url }}" alt="{{ current_tenant.name }}" class="h-9 sm:h-10 max-w-[150px] object-contain rounded-xl shadow-sm shrink-0">
+      {% else %}
+        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl {% if user.is_superuser and not current_tenant %}bg-gradient-to-tr from-amber-500 to-indigo-600{% else %}bg-brand-primary{% endif %} flex items-center justify-center font-black text-white text-sm sm:text-base shadow-md shadow-brand-primary/20 shrink-0 group-hover:scale-105 transition-transform">
+          {% if user.is_superuser and not current_tenant %}👑{% else %}{{ current_tenant.name|default:"⚡"|slice:":1"|upper }}{% endif %}
+        </div>
+      {% endif %}
       <div class="truncate min-w-0">
         <span class="text-xs sm:text-sm font-black text-slate-900 dark:text-white truncate block max-w-[150px] sm:max-w-[300px] tracking-tight">
           {% if user.is_superuser and not current_tenant %}SaaS Platform Control Plane{% else %}{{ current_tenant.name|default:"CourseFlow Studio" }}{% endif %}
@@ -15,7 +19,7 @@
         <div class="flex items-center gap-1.5 mt-0.5">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 animate-pulse"></span>
           <span class="text-[11px] font-mono font-bold text-emerald-600 dark:text-emerald-400 truncate">
-            {% if user.is_superuser and not current_tenant %}সুপার অ্যাডমিন ড্যাশবোর্ড{% elif current_tenant and current_tenant.owner == user %}এডমিন স্টুডিও কন্ট্রোল{% else %}স্টুডিও ড্যাশবোর্ড{% endif %}
+            {% if user.is_superuser and not current_tenant %}সুপার অ্যাডমিন ড্যাশবোর্ড{% elif current_tenant and current_tenant.owner == user %}এডমিন স্টুডিও কন্ট্রোল{% elif is_student or current_tenant and current_tenant.owner != user %}শিক্ষার্থী ড্যাশবোর্ড{% else %}স্টুডিও ড্যাশবোর্ড{% endif %}
           </span>
         </div>
       </div>

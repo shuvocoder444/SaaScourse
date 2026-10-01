@@ -10,6 +10,7 @@ from apps.users.models import TenantMembership
 User = get_user_model()
 
  
+ 
 def login_view(request):
     """
     Modern Authentication & Student Registration Portal.

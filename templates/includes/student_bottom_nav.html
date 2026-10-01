@@ -1,0 +1,116 @@
+<!-- Native Student Dashboard Bottom Navigation Dock (Visible on Mobile/Tablet) -->
+<nav 
+  x-data="{
+    activeTab: new URLSearchParams(window.location.search).get('tab') || '{{ active_tab|default:'newsfeed' }}'
+  }"
+  @switch-tab.window="activeTab = $event.detail"
+  class="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-2xl border-t border-slate-200/90 dark:border-slate-800/90 shadow-[0_-4px_25px_rgba(0,0,0,0.08)] lg:hidden select-none transition-all duration-200"
+  style="padding-bottom: max(env(safe-area-inset-bottom, 0px), 6px);"
+  aria-label="Student Dashboard Mobile Dock"
+>
+  <div class="grid grid-cols-5 items-center h-15 px-2 max-w-md mx-auto">
+    
+    <!-- 1. Newsfeed Tab -->
+    <a 
+      href="?tab=newsfeed" 
+      @click.prevent="
+        activeTab = 'newsfeed';
+        $dispatch('switch-tab', 'newsfeed');
+        history.pushState(null, '', '?tab=newsfeed');
+        $dispatch('close-sidebar');
+      "
+      class="flex flex-col items-center justify-center py-1 transition-transform active:scale-95 group text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+      :class="activeTab === 'newsfeed' ? 'text-brand-primary font-bold' : ''"
+    >
+      <div class="relative">
+        <span class="text-lg leading-none">📰</span>
+        <span 
+          x-show="activeTab === 'newsfeed'" 
+          class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-brand-primary"
+        ></span>
+      </div>
+      <span class="text-[10px] tracking-tight mt-1 font-semibold">নিউজফিড</span>
+    </a>
+
+    <!-- 2. My Courses Tab -->
+    <a 
+      href="?tab=my_courses" 
+      @click.prevent="
+        activeTab = 'my_courses';
+        $dispatch('switch-tab', 'my_courses');
+        history.pushState(null, '', '?tab=my_courses');
+        $dispatch('close-sidebar');
+      "
+      class="flex flex-col items-center justify-center py-1 transition-transform active:scale-95 group text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+      :class="activeTab === 'my_courses' ? 'text-brand-primary font-bold' : ''"
+    >
+      <div class="relative">
+        <span class="text-lg leading-none">🎓</span>
+        <span 
+          x-show="activeTab === 'my_courses'" 
+          class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-brand-primary"
+        ></span>
+      </div>
+      <span class="text-[10px] tracking-tight mt-1 font-semibold">আমার কোর্স</span>
+    </a>
+
+    <!-- 3. Class Routine Tab -->
+    <a 
+      href="?tab=routine" 
+      @click.prevent="
+        activeTab = 'routine';
+        $dispatch('switch-tab', 'routine');
+        history.pushState(null, '', '?tab=routine');
+        $dispatch('close-sidebar');
+      "
+      class="flex flex-col items-center justify-center py-1 transition-transform active:scale-95 group text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+      :class="activeTab === 'routine' ? 'text-brand-primary font-bold' : ''"
+    >
+      <div class="relative">
+        <span class="text-lg leading-none">📅</span>
+        <span 
+          x-show="activeTab === 'routine'" 
+          class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-brand-primary"
+        ></span>
+      </div>
+      <span class="text-[10px] tracking-tight mt-1 font-semibold">রুটিন</span>
+    </a>
+
+    <!-- 4. Results & Exams Tab -->
+    <a 
+      href="?tab=results" 
+      @click.prevent="
+        activeTab = 'results';
+        $dispatch('switch-tab', 'results');
+        history.pushState(null, '', '?tab=results');
+        $dispatch('close-sidebar');
+      "
+      class="flex flex-col items-center justify-center py-1 transition-transform active:scale-95 group text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+      :class="activeTab === 'results' ? 'text-brand-primary font-bold' : ''"
+    >
+      <div class="relative">
+        <span class="text-lg leading-none">📊</span>
+        <span 
+          x-show="activeTab === 'results'" 
+          class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-brand-primary"
+        ></span>
+      </div>
+      <span class="text-[10px] tracking-tight mt-1 font-semibold">ফলাফল</span>
+    </a>
+
+    <!-- 5. All Menus / Sidebar Trigger -->
+    <button 
+      type="button" 
+      @click="$dispatch('toggle-sidebar')"
+      class="flex flex-col items-center justify-center py-1 transition-transform active:scale-95 group text-slate-700 dark:text-slate-200 hover:text-brand-primary cursor-pointer"
+    >
+      <div class="relative w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shadow-sm group-hover:bg-brand-primary group-hover:text-white transition-colors">
+        <svg class="w-4 h-4 fill-none stroke-current" viewBox="0 0 24 24" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+      </div>
+      <span class="text-[10px] tracking-tight mt-0.5 font-bold">সকল মেনু</span>
+    </button>
+
+  </div>
+</nav>

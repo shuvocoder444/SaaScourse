@@ -28,13 +28,13 @@
       <div class="col-span-2 space-y-4">
         <div class="flex items-center gap-3">
           {% if current_tenant and current_tenant.get_logo_url %}
-            <img src="{{ current_tenant.get_logo_url }}" alt="{{ current_tenant.name }}" class="h-9 max-w-[130px] object-contain">
+            <img src="{{ current_tenant.get_logo_url }}" alt="{{ current_tenant.name }}" class="h-9 max-w-[150px] object-contain">
           {% else %}
             <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center font-bold text-white text-base">
               {% if current_tenant %}{{ current_tenant.name|slice:":1"|upper }}{% else %}⚡{% endif %}
             </div>
+            <span class="text-lg font-extrabold text-white">{% if current_tenant %}{{ current_tenant.name }}{% else %}CourseFlow{% endif %}</span>
           {% endif %}
-          <span class="text-lg font-extrabold text-white">{% if current_tenant %}{{ current_tenant.name }}{% else %}CourseFlow{% endif %}</span>
         </div>
         <p class="text-xs text-slate-400 leading-relaxed max-w-sm">
           {% if current_tenant %}{{ current_tenant.branding.footer_about|default:"পরবর্তী প্রজন্মের ইন্টারেক্টিভ লার্নিং প্ল্যাটফর্ম। প্রফেশনাল স্কিলস ও একাডেমি ট্র্যাকের জন্য উপযুক্ত।" }}{% else %}পরবর্তী প্রজন্মের ইন্টারেক্টিভ লার্নিং প্ল্যাটফর্ম। প্রফেশনাল স্কিলস ও একাডেমি ট্র্যাকের জন্য উপযুক্ত।{% endif %}

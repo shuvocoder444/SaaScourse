@@ -7,6 +7,30 @@
 {% endblock header %}
 
 {% block content %}
+<style>
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-in-up {
+    animation: fadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.25);
+    border-radius: 9999px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.45);
+  }
+</style>
+
 <div 
   x-data="{ 
     sidebarOpen: false, 
@@ -17,7 +41,7 @@
   @toggle-sidebar.window="sidebarOpen = !sidebarOpen"
   @close-sidebar.window="sidebarOpen = false"
   @switch-tab.window="activeTab = $event.detail; sidebarOpen = false; window.scrollTo({top: 0, behavior: 'smooth'});"
-  class="min-h-[calc(100vh-3.5rem)] flex flex-col lg:flex-row bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans transition-colors pb-20 lg:pb-0"
+  class="min-h-[calc(100vh-3.5rem)] flex flex-col lg:flex-row bg-slate-50/50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans transition-colors relative"
 >
 
   <!-- Mobile Off-Canvas Drawer Backdrop -->
@@ -25,7 +49,7 @@
     x-show="sidebarOpen" 
     x-cloak 
     @click="sidebarOpen = false" 
-    class="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden transition-opacity"
+    class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden transition-opacity"
   ></div>
 
   <!-- LEFT SIDEBAR MENU (PERSISTENT & COMPLETE) -->
@@ -33,23 +57,33 @@
     :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
     class="fixed lg:sticky lg:top-14 sm:lg:top-16 inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between transition-transform duration-300 ease-in-out h-screen lg:h-[calc(100vh-3.5rem)] sm:lg:h-[calc(100vh-4rem)] max-h-screen overflow-hidden shadow-2xl lg:shadow-none shrink-0"
   >
-    <div class="p-5 space-y-6 overflow-y-auto flex-1">
+    <div class="p-5 space-y-6 overflow-y-auto flex-1 custom-scrollbar">
       
-      <!-- Academy & Student Card -->
-      <div class="pb-4 border-b border-slate-200 dark:border-slate-800">
-        <div class="flex items-center gap-3">
-          <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-brand-primary to-emerald-400 flex items-center justify-center font-black text-white text-lg shadow-lg shadow-brand-primary/20">
+      <!-- Academy & Student Card with Mobile Close Button -->
+      <div class="pb-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-brand-primary to-emerald-400 flex items-center justify-center font-black text-white text-lg shadow-lg shadow-brand-primary/20 shrink-0">
             {{ user.first_name|default:user.email|slice:":1"|upper }}
           </div>
-          <div class="truncate max-w-[150px]">
+          <div class="truncate min-w-0">
             <span class="font-extrabold text-sm text-slate-900 dark:text-white block truncate">
               {{ user.get_full_name|default:user.email }}
             </span>
-            <span class="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 block truncate">
+            <span class="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 block truncate font-bold">
               ● শিক্ষার্থী আইডি #{{ user.id }}
             </span>
           </div>
         </div>
+
+        <!-- Mobile Drawer Close Button -->
+        <button 
+          type="button" 
+          @click="sidebarOpen = false" 
+          class="lg:hidden p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+          title="মেনু বন্ধ করুন"
+        >
+          ✕
+        </button>
       </div>
 
       <!-- Main Navigation Menu -->
@@ -61,9 +95,9 @@
         <!-- 1. [নিউজ ফিড] -->
         <button 
           type="button"
-          @click="activeTab = 'newsfeed'; sidebarOpen = false" 
+          @click="activeTab = 'newsfeed'; sidebarOpen = false; window.scrollTo({top: 0, behavior: 'smooth'});" 
           :class="activeTab === 'newsfeed' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/20' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'"
-          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
+          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer"
         >
           <span class="text-sm">📰</span>
           <span>নিউজ ফিড</span>
@@ -73,9 +107,9 @@
         <!-- 2. [আমার কোর্সসমূহ] -->
         <button 
           type="button"
-          @click="activeTab = 'my_courses'; sidebarOpen = false" 
+          @click="activeTab = 'my_courses'; sidebarOpen = false; window.scrollTo({top: 0, behavior: 'smooth'});" 
           :class="activeTab === 'my_courses' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/20' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'"
-          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
+          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer"
         >
           <span class="text-sm">🎓</span>
           <span>আমার কোর্সসমূহ</span>
@@ -87,9 +121,9 @@
         <!-- 3. [ক্লাস রুটিন] -->
         <button 
           type="button"
-          @click="activeTab = 'routine'; sidebarOpen = false" 
+          @click="activeTab = 'routine'; sidebarOpen = false; window.scrollTo({top: 0, behavior: 'smooth'});" 
           :class="activeTab === 'routine' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/20' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'"
-          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
+          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer"
         >
           <span class="text-sm">📅</span>
           <span>ক্লাস রুটিন</span>
@@ -98,20 +132,20 @@
         <!-- 4. [ফলাফল] -->
         <button 
           type="button"
-          @click="activeTab = 'results'; sidebarOpen = false" 
+          @click="activeTab = 'results'; sidebarOpen = false; window.scrollTo({top: 0, behavior: 'smooth'});" 
           :class="activeTab === 'results' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/20' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'"
-          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
+          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer"
         >
           <span class="text-sm">📊</span>
-          <span>ফলাফল</span>
+          <span>ফলাফল ও পরীক্ষা</span>
         </button>
 
         <!-- 5. [সাপোর্ট] -->
         <button 
           type="button"
-          @click="activeTab = 'support'; sidebarOpen = false" 
+          @click="activeTab = 'support'; sidebarOpen = false; window.scrollTo({top: 0, behavior: 'smooth'});" 
           :class="activeTab === 'support' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/20' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'"
-          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
+          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer"
         >
           <span class="text-sm">💬</span>
           <span>সাপোর্ট ও চ্যাট</span>
@@ -121,9 +155,9 @@
         <!-- 6. [প্রোফাইল] -->
         <button 
           type="button"
-          @click="activeTab = 'profile'; sidebarOpen = false" 
+          @click="activeTab = 'profile'; sidebarOpen = false; window.scrollTo({top: 0, behavior: 'smooth'});" 
           :class="activeTab === 'profile' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/20' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'"
-          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
+          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer"
         >
           <span class="text-sm">👤</span>
           <span>প্রোফাইল সেটিংস</span>
@@ -132,9 +166,9 @@
         <!-- 7. [ইনভয়েস] -->
         <button 
           type="button"
-          @click="activeTab = 'invoices'; sidebarOpen = false" 
+          @click="activeTab = 'invoices'; sidebarOpen = false; window.scrollTo({top: 0, behavior: 'smooth'});" 
           :class="activeTab === 'invoices' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/20' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'"
-          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
+          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer"
         >
           <span class="text-sm">🧾</span>
           <span>ইনভয়েস ও মানি রিসিপ্ট</span>
@@ -143,9 +177,9 @@
         <!-- 8. [আমার অর্ডার] -->
         <button 
           type="button"
-          @click="activeTab = 'orders'; sidebarOpen = false" 
+          @click="activeTab = 'orders'; sidebarOpen = false; window.scrollTo({top: 0, behavior: 'smooth'});" 
           :class="activeTab === 'orders' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/20' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'"
-          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
+          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer"
         >
           <span class="text-sm">📦</span>
           <span>আমার বই অর্ডার</span>
@@ -154,9 +188,9 @@
         <!-- 9. [ক্লাব] -->
         <button 
           type="button"
-          @click="activeTab = 'clubs'; sidebarOpen = false" 
+          @click="activeTab = 'clubs'; sidebarOpen = false; window.scrollTo({top: 0, behavior: 'smooth'});" 
           :class="activeTab === 'clubs' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/20' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'"
-          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left"
+          class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer"
         >
           <span class="text-sm">🏛️</span>
           <span>স্টাডি ক্লাব ও গ্রুপ</span>
@@ -173,9 +207,9 @@
         <!-- 10. [সকল কোর্স] -->
         <button 
           type="button"
-          @click="activeTab = 'browse_courses'; sidebarOpen = false" 
+          @click="activeTab = 'browse_courses'; sidebarOpen = false; window.scrollTo({top: 0, behavior: 'smooth'});" 
           :class="activeTab === 'browse_courses' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/20' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'"
-          class="w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all text-left"
+          class="w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer"
         >
           <span class="text-sm">🔍</span>
           <span>সকল কোর্সসমূহ</span>
@@ -184,9 +218,9 @@
         <!-- 11. [সকল বই] -->
         <button 
           type="button"
-          @click="activeTab = 'browse_books'; sidebarOpen = false" 
+          @click="activeTab = 'browse_books'; sidebarOpen = false; window.scrollTo({top: 0, behavior: 'smooth'});" 
           :class="activeTab === 'browse_books' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/20' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'"
-          class="w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all text-left"
+          class="w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer"
         >
           <span class="text-sm">📖</span>
           <span>সকল বইসমূহ</span>
@@ -203,11 +237,11 @@
     </div>
   </aside>
 
-  <!-- MAIN DASHBOARD CONTENT AREA -->
-  <main class="flex-1 p-4 sm:p-8 max-w-7xl overflow-y-auto">
+  <!-- MAIN DASHBOARD CONTENT AREA (pb-24 ensures bottom mobile dock never covers controls) -->
+  <main class="flex-1 p-4 sm:p-8 lg:p-10 max-w-7xl overflow-y-auto pb-24 lg:pb-10">
 
     {% if messages %}
-      <div class="mb-6 space-y-2">
+      <div class="mb-6 space-y-2 animate-fade-in-up">
         {% for message in messages %}
           <div class="p-4 rounded-2xl border text-xs font-bold flex items-center gap-2 shadow-sm {% if message.tags == 'error' %}bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400{% else %}bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400{% endif %}">
             <span>{% if message.tags == 'error' %}⚠️{% else %}✓{% endif %}</span>
@@ -312,7 +346,7 @@
             </div>
 
             <!-- Post Actions (Like & Comment Toggles) -->
-            <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4" x-data="{ commentBoxOpen: false }">
+            <div class="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-3" x-data="{ commentBoxOpen: false }">
               <div class="flex items-center gap-3">
                 
                 <!-- Like Form -->
@@ -321,7 +355,7 @@
                   <input type="hidden" name="active_tab" value="newsfeed">
                   <input type="hidden" name="action" value="like_feed_post">
                   <input type="hidden" name="post_id" value="{{ post.id }}">
-                  <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all {% if post.id in user_liked_feed_ids %}bg-rose-500/10 text-rose-500 border border-rose-500/20{% else %}bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-rose-500{% endif %}">
+                  <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer {% if post.id in user_liked_feed_ids %}bg-rose-500/10 text-rose-500 border border-rose-500/20{% else %}bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-rose-500{% endif %}">
                     <span>❤️</span>
                     <span>{{ post.likes_count }} লাইক</span>
                   </button>
@@ -331,7 +365,7 @@
                 <button 
                   type="button" 
                   @click="commentBoxOpen = !commentBoxOpen"
-                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-emerald-500 text-xs font-bold transition-all"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-emerald-500 text-xs font-bold transition-all cursor-pointer"
                 >
                   <span>💬</span>
                   <span>{{ post.comments_count }} মন্তব্য</span>
@@ -339,7 +373,7 @@
               </div>
 
               <!-- Comment Section Accordion -->
-              <div x-show="commentBoxOpen" class="w-full mt-3 space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800" style="display: none;">
+              <div x-show="commentBoxOpen" x-cloak class="w-full space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                 
                 <!-- Existing Comments -->
                 <div class="space-y-2">
@@ -347,7 +381,7 @@
                     <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 text-xs space-y-1">
                       <div class="flex items-center justify-between text-[11px]">
                         <span class="font-bold text-slate-900 dark:text-white">{{ comment.author.get_full_name|default:comment.author.email }}</span>
-                        <span class="text-[10px] text-slate-400">{{ comment.created_at|timesince }} আগে</span>
+                        <span class="text-[10px] text-slate-400 font-mono">{{ comment.created_at|timesince }} আগে</span>
                       </div>
                       <p class="text-slate-600 dark:text-slate-300">{{ comment.content }}</p>
                     </div>
@@ -357,7 +391,7 @@
                 </div>
 
                 <!-- Add Comment Form -->
-                <form method="POST" class="flex gap-2">
+                <form method="POST" class="flex items-center gap-2">
                   {% csrf_token %}
                   <input type="hidden" name="active_tab" value="newsfeed">
                   <input type="hidden" name="action" value="comment_feed_post">
@@ -367,9 +401,9 @@
                     name="comment_text" 
                     required 
                     placeholder="আপনার মন্তব্য লিখুন..." 
-                    class="flex-1 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500 min-w-0"
                   >
-                  <button type="submit" class="px-4 py-2 rounded-xl bg-slate-900 dark:bg-slate-750 text-white text-xs font-bold hover:bg-emerald-600 transition-colors">
+                  <button type="submit" class="px-4 py-2.5 rounded-xl bg-slate-900 dark:bg-slate-750 text-white text-xs font-bold hover:bg-emerald-600 transition-colors shrink-0 cursor-pointer">
                     পাঠান
                   </button>
                 </form>
@@ -1339,4 +1373,6 @@
 </div>
 {% endblock content %}
 
-{% block footer %}{% endblock %}
+{% block footer %}
+  {% include "includes/student_bottom_nav.html" %}
+{% endblock %}
