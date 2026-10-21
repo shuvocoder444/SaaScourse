@@ -125,8 +125,8 @@
       <div class="flex flex-wrap items-center justify-between text-xs font-bold text-slate-700 pt-2 border-t border-dashed border-slate-300 mt-3 px-2">
         <div>সময়: <span class="font-mono font-black">{{ exam.duration_minutes }}</span> মিনিট</div>
         <div>পূর্ণমান: <span class="font-mono font-black">{{ exam.calculated_total_marks|floatformat:0 }}</span></div>
-        <div>পাস মার্ক: <span class="font-mono font-black">{{ exam.pass_mark|floatformat:0 }}%</span></div>
-        <div>নেগেটিভ মার্কিং: <span class="font-mono font-black">{{ exam.negative_mark_per_question }}</span></div>
+        {% if exam.should_display_pass_mark %}<div>পাস মার্ক: <span class="font-mono font-black">{{ exam.pass_mark|floatformat:0 }}%</span></div>{% endif %}
+        {% if exam.should_display_negative_mark %}<div>নেগেটিভ মার্কিং: <span class="font-mono font-black">{{ exam.negative_mark_per_question }}</span></div>{% endif %}
       </div>
 
       <!-- Student Fill-in Box -->
@@ -139,7 +139,7 @@
 
     <!-- General Instructions Notice -->
     <div class="text-[11px] text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-200 font-medium">
-      <span class="font-bold text-slate-800">বিশেষ দ্রষ্টব্য:</span> প্রতিটি প্রশ্নের মান সমান। সঠিক উত্তরের পাশের বৃত্তটি ভরাট করুন। প্রতিটি ভুল উত্তরের জন্য {{ exam.negative_mark_per_question }} নম্বর কাটা যাবে।
+      <span class="font-bold text-slate-800">বিশেষ দ্রষ্টব্য:</span> প্রতিটি প্রশ্নের মান সমান। সঠিক উত্তরের পাশের বৃত্তটি ভরাট করুন।{% if exam.should_display_negative_mark %} প্রতিটি ভুল উত্তরের জন্য {{ exam.negative_mark_per_question }} নম্বর কাটা যাবে।{% endif %}
     </div>
 
     <!-- Questions 2-Column Grid -->
@@ -149,7 +149,7 @@
           
           <!-- Question Title -->
           <div class="font-bold text-slate-900 text-xs sm:text-[13px] mb-1.5 flex items-start gap-1.5">
-            <span class="font-black text-slate-950 font-mono">{{ item.num_bn }}।</span>
+            <span class="font-black text-slate-950 font-mono">{% if item.q.is_english %}{{ forloop.counter }}.{% else %}{{ item.num_bn }}।{% endif %}</span>
             <div class="flex-1">
               {{ item.q.question_text|linebreaksbr }}
             </div>
@@ -165,22 +165,22 @@
           <!-- 4 Options in 2x2 Clean Grid -->
           <div class="grid grid-cols-2 gap-x-2 gap-y-1 text-slate-800 text-[11px] sm:text-xs pl-4">
             <div class="flex items-center gap-1.5 {% if show_answers and item.q.correct_option == 'A' %}font-bold text-emerald-700 bg-emerald-50 px-1 rounded{% endif %}">
-              <span class="w-4 h-4 rounded-full border border-slate-400 flex items-center justify-center text-[9px] font-bold shrink-0 {% if show_answers and item.q.correct_option == 'A' %}bg-emerald-600 text-white border-emerald-600{% endif %}">ক</span>
+              <span class="w-4 h-4 rounded-full border border-slate-400 flex items-center justify-center text-[9px] font-bold shrink-0 {% if show_answers and item.q.correct_option == 'A' %}bg-emerald-600 text-white border-emerald-600{% endif %}">{{ item.q.opt_a_label }}</span>
               <span>{{ item.q.option_a }}</span>
             </div>
 
             <div class="flex items-center gap-1.5 {% if show_answers and item.q.correct_option == 'B' %}font-bold text-emerald-700 bg-emerald-50 px-1 rounded{% endif %}">
-              <span class="w-4 h-4 rounded-full border border-slate-400 flex items-center justify-center text-[9px] font-bold shrink-0 {% if show_answers and item.q.correct_option == 'B' %}bg-emerald-600 text-white border-emerald-600{% endif %}">খ</span>
+              <span class="w-4 h-4 rounded-full border border-slate-400 flex items-center justify-center text-[9px] font-bold shrink-0 {% if show_answers and item.q.correct_option == 'B' %}bg-emerald-600 text-white border-emerald-600{% endif %}">{{ item.q.opt_b_label }}</span>
               <span>{{ item.q.option_b }}</span>
             </div>
 
             <div class="flex items-center gap-1.5 {% if show_answers and item.q.correct_option == 'C' %}font-bold text-emerald-700 bg-emerald-50 px-1 rounded{% endif %}">
-              <span class="w-4 h-4 rounded-full border border-slate-400 flex items-center justify-center text-[9px] font-bold shrink-0 {% if show_answers and item.q.correct_option == 'C' %}bg-emerald-600 text-white border-emerald-600{% endif %}">গ</span>
+              <span class="w-4 h-4 rounded-full border border-slate-400 flex items-center justify-center text-[9px] font-bold shrink-0 {% if show_answers and item.q.correct_option == 'C' %}bg-emerald-600 text-white border-emerald-600{% endif %}">{{ item.q.opt_c_label }}</span>
               <span>{{ item.q.option_c }}</span>
             </div>
 
             <div class="flex items-center gap-1.5 {% if show_answers and item.q.correct_option == 'D' %}font-bold text-emerald-700 bg-emerald-50 px-1 rounded{% endif %}">
-              <span class="w-4 h-4 rounded-full border border-slate-400 flex items-center justify-center text-[9px] font-bold shrink-0 {% if show_answers and item.q.correct_option == 'D' %}bg-emerald-600 text-white border-emerald-600{% endif %}">ঘ</span>
+              <span class="w-4 h-4 rounded-full border border-slate-400 flex items-center justify-center text-[9px] font-bold shrink-0 {% if show_answers and item.q.correct_option == 'D' %}bg-emerald-600 text-white border-emerald-600{% endif %}">{{ item.q.opt_d_label }}</span>
               <span>{{ item.q.option_d }}</span>
             </div>
           </div>

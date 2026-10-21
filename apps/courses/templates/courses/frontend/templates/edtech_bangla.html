@@ -74,47 +74,49 @@
       </div>
 
       <!-- Quick Exam/Category Pills Bar -->
+      {% if branding.show_hero_category_pills != False %}
       <div class="mt-14 pt-8 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-4xl mx-auto">
-        <a href="{% url 'courses:list' %}?category=du" class="p-3.5 rounded-2xl bg-white/5 hover:bg-emerald-500/15 border border-white/10 hover:border-emerald-500/40 backdrop-blur-md transition-all group flex items-center gap-3 text-left">
+        <a href="{{ branding.hero_pill_1_url|default:'/courses/?category=du' }}" class="p-3.5 rounded-2xl bg-white/5 hover:bg-emerald-500/15 border border-white/10 hover:border-emerald-500/40 backdrop-blur-md transition-all group flex items-center gap-3 text-left">
           <div class="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center text-lg font-bold group-hover:scale-110 transition-transform">
-            🏛️
+            {{ branding.hero_pill_1_icon|default:"🏛️" }}
           </div>
           <div>
-            <div class="text-xs font-bold text-white group-hover:text-emerald-300 transition-colors">DU (খ/গ ইউনিট)</div>
-            <div class="text-[10px] text-slate-400">লাইভ ও এক্সাম ব্যাচ</div>
+            <div class="text-xs font-bold text-white group-hover:text-emerald-300 transition-colors">{{ branding.hero_pill_1_title|default:"DU (খ/গ ইউনিট)" }}</div>
+            <div class="text-[10px] text-slate-400">{{ branding.hero_pill_1_sub|default:"লাইভ ও এক্সাম ব্যাচ" }}</div>
           </div>
         </a>
 
-        <a href="{% url 'courses:list' %}?category=medical" class="p-3.5 rounded-2xl bg-white/5 hover:bg-emerald-500/15 border border-white/10 hover:border-emerald-500/40 backdrop-blur-md transition-all group flex items-center gap-3 text-left">
+        <a href="{{ branding.hero_pill_2_url|default:'/courses/?category=medical' }}" class="p-3.5 rounded-2xl bg-white/5 hover:bg-emerald-500/15 border border-white/10 hover:border-emerald-500/40 backdrop-blur-md transition-all group flex items-center gap-3 text-left">
           <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center text-lg font-bold group-hover:scale-110 transition-transform">
-            🩺
+            {{ branding.hero_pill_2_icon|default:"🩺" }}
           </div>
           <div>
-            <div class="text-xs font-bold text-white group-hover:text-emerald-300 transition-colors">মেডিকেল ভর্তি</div>
-            <div class="text-[10px] text-slate-400">মেগা প্র্যাকটিস কোর্স</div>
+            <div class="text-xs font-bold text-white group-hover:text-emerald-300 transition-colors">{{ branding.hero_pill_2_title|default:"মেডিকেল ভর্তি" }}</div>
+            <div class="text-[10px] text-slate-400">{{ branding.hero_pill_2_sub|default:"মেগা প্র্যাকটিস কোর্স" }}</div>
           </div>
         </a>
 
-        <a href="{% url 'courses:list' %}?category=engineering" class="p-3.5 rounded-2xl bg-white/5 hover:bg-emerald-500/15 border border-white/10 hover:border-emerald-500/40 backdrop-blur-md transition-all group flex items-center gap-3 text-left">
+        <a href="{{ branding.hero_pill_3_url|default:'/courses/?category=engineering' }}" class="p-3.5 rounded-2xl bg-white/5 hover:bg-emerald-500/15 border border-white/10 hover:border-emerald-500/40 backdrop-blur-md transition-all group flex items-center gap-3 text-left">
           <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-lg font-bold group-hover:scale-110 transition-transform">
-            ⚡
+            {{ branding.hero_pill_3_icon|default:"⚡" }}
           </div>
           <div>
-            <div class="text-xs font-bold text-white group-hover:text-emerald-300 transition-colors">ইঞ্জিনিয়ারিং</div>
-            <div class="text-[10px] text-slate-400">BUET & CKET ব্যাচ</div>
+            <div class="text-xs font-bold text-white group-hover:text-emerald-300 transition-colors">{{ branding.hero_pill_3_title|default:"ইঞ্জিনিয়ারিং" }}</div>
+            <div class="text-[10px] text-slate-400">{{ branding.hero_pill_3_sub|default:"BUET & CKET ব্যাচ" }}</div>
           </div>
         </a>
 
-        <a href="{% url 'courses:list' %}?category=hsc" class="p-3.5 rounded-2xl bg-white/5 hover:bg-emerald-500/15 border border-white/10 hover:border-emerald-500/40 backdrop-blur-md transition-all group flex items-center gap-3 text-left">
+        <a href="{{ branding.hero_pill_4_url|default:'/courses/?category=hsc' }}" class="p-3.5 rounded-2xl bg-white/5 hover:bg-emerald-500/15 border border-white/10 hover:border-emerald-500/40 backdrop-blur-md transition-all group flex items-center gap-3 text-left">
           <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-lg font-bold group-hover:scale-110 transition-transform">
-            📚
+            {{ branding.hero_pill_4_icon|default:"📚" }}
           </div>
           <div>
-            <div class="text-xs font-bold text-white group-hover:text-emerald-300 transition-colors">HSC ও আলিম</div>
-            <div class="text-[10px] text-slate-400">একাডেমিক পূর্ণাঙ্গ কোর্স</div>
+            <div class="text-xs font-bold text-white group-hover:text-emerald-300 transition-colors">{{ branding.hero_pill_4_title|default:"HSC ও আলিম" }}</div>
+            <div class="text-[10px] text-slate-400">{{ branding.hero_pill_4_sub|default:"একাডেমিক পূর্ণাঙ্গ কোর্স" }}</div>
           </div>
         </a>
       </div>
+      {% endif %}
 
     </div>
   </section>
@@ -123,33 +125,34 @@
   <div class="space-y-16 py-12 pb-20">
 
     <!-- 3. "শেখার নতুন দুনিয়ায় স্বাগতম" (Feature Highlights) -->
+    {% if branding.show_features_section != False %}
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-10">
-        <h2 class="text-xs font-bold tracking-widest text-emerald-600 dark:text-emerald-400 uppercase mb-1">স্মার্ট এডুকেশন প্ল্যাটফর্ম</h2>
-        <h3 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">শেখার নতুন দুনিয়ায় স্বাগতম</h3>
+        <h2 class="text-xs font-bold tracking-widest text-emerald-600 dark:text-emerald-400 uppercase mb-1">{{ branding.features_section_badge|default:"স্মার্ট এডুকেশন প্ল্যাটফর্ম" }}</h2>
+        <h3 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">{{ branding.features_section_title|default:"শেখার নতুন দুনিয়ায় স্বাগতম" }}</h3>
       </div>
 
     <!-- 2 Main Cards: Live Batches & Recorded Courses -->
     <div class="grid sm:grid-cols-2 gap-6 mb-8">
       <div class="p-6 rounded-3xl bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950/30 dark:to-pink-950/20 border border-rose-200/80 dark:border-rose-900/40 flex items-center justify-between">
         <div class="space-y-1">
-          <span class="px-3 py-1 rounded-full text-xs font-bold bg-rose-500 text-white">🔴 লাইভ ব্যাচসমূহ</span>
-          <h4 class="text-lg font-bold text-slate-900 dark:text-white mt-2">ইন্টারেক্টিভ লাইভ ক্লাসে অংশ নিন</h4>
-          <p class="text-xs text-slate-600 dark:text-slate-400">সরাসরি মেন্টরদের সাথে প্রশ্ন করার সুযোগ</p>
+          <span class="px-3 py-1 rounded-full text-xs font-bold bg-rose-500 text-white">{{ branding.features_live_badge|default:"🔴 লাইভ ব্যাচসমূহ" }}</span>
+          <h4 class="text-lg font-bold text-slate-900 dark:text-white mt-2">{{ branding.features_live_title|default:"ইন্টারেক্টিভ লাইভ ক্লাসে অংশ নিন" }}</h4>
+          <p class="text-xs text-slate-600 dark:text-slate-400">{{ branding.features_live_desc|default:"সরাসরি মেন্টরদের সাথে প্রশ্ন করার সুযোগ" }}</p>
         </div>
-        <a href="{% url 'courses:list' %}" class="px-4 py-2 rounded-xl text-xs font-bold bg-rose-500 hover:bg-rose-600 text-white transition-colors">
-          যুক্ত হোন →
+        <a href="{{ branding.features_live_url|default:'/courses/' }}" class="px-4 py-2 rounded-xl text-xs font-bold bg-rose-500 hover:bg-rose-600 text-white transition-colors">
+          {{ branding.features_live_btn|default:"যুক্ত হোন →" }}
         </a>
       </div>
 
       <div class="p-6 rounded-3xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/20 border border-amber-200/80 dark:border-amber-900/40 flex items-center justify-between">
         <div class="space-y-1">
-          <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500 text-white">🟠 রেকর্ডেড কোর্সসমূহ</span>
-          <h4 class="text-lg font-bold text-slate-900 dark:text-white mt-2">নিজের সুবিধাজনক সময়ে শিখুন</h4>
-          <p class="text-xs text-slate-600 dark:text-slate-400">লাইফটাইম এক্সেস ও আনলিমিটেড রিভিশন</p>
+          <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500 text-white">{{ branding.features_rec_badge|default:"🟠 রেকর্ডেড কোর্সসমূহ" }}</span>
+          <h4 class="text-lg font-bold text-slate-900 dark:text-white mt-2">{{ branding.features_rec_title|default:"নিজের সুবিধাজনক সময়ে শিখুন" }}</h4>
+          <p class="text-xs text-slate-600 dark:text-slate-400">{{ branding.features_rec_desc|default:"লাইফটাইম এক্সেস ও আনলিমিটেড রিভিশন" }}</p>
         </div>
-        <a href="{% url 'courses:list' %}" class="px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white transition-colors">
-          ব্রাউজ করুন →
+        <a href="{{ branding.features_rec_url|default:'/courses/' }}" class="px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white transition-colors">
+          {{ branding.features_rec_btn|default:"ব্রাউজ করুন →" }}
         </a>
       </div>
     </div>
@@ -157,30 +160,31 @@
     <!-- 4 Sub Features -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
       <div class="p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-center space-y-1.5 shadow-sm hover:border-emerald-500 transition-colors">
-        <div class="w-10 h-10 mx-auto rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl font-bold">📱</div>
-        <h5 class="text-sm font-bold text-slate-900 dark:text-white">মোবাইল অ্যাপ</h5>
-        <p class="text-[11px] text-slate-500">যেকোনো ডিভাইসে পড়া</p>
+        <div class="w-10 h-10 mx-auto rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl font-bold">{{ branding.subfeat_1_icon|default:"📱" }}</div>
+        <h5 class="text-sm font-bold text-slate-900 dark:text-white">{{ branding.subfeat_1_title|default:"মোবাইল অ্যাপ" }}</h5>
+        <p class="text-[11px] text-slate-500">{{ branding.subfeat_1_desc|default:"যেকোনো ডিভাইসে পড়া" }}</p>
       </div>
 
       <div class="p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-center space-y-1.5 shadow-sm hover:border-emerald-500 transition-colors">
-        <div class="w-10 h-10 mx-auto rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl font-bold">📝</div>
-        <h5 class="text-sm font-bold text-slate-900 dark:text-white">ডেইলি মডেল টেস্ট</h5>
-        <p class="text-[11px] text-slate-500">মেধা যাচাই ও র‍্যাঙ্কিং</p>
+        <div class="w-10 h-10 mx-auto rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl font-bold">{{ branding.subfeat_2_icon|default:"📝" }}</div>
+        <h5 class="text-sm font-bold text-slate-900 dark:text-white">{{ branding.subfeat_2_title|default:"ডেইলি মডেল টেস্ট" }}</h5>
+        <p class="text-[11px] text-slate-500">{{ branding.subfeat_2_desc|default:"মেধা যাচাই ও র‍্যাঙ্কিং" }}</p>
       </div>
 
       <div class="p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-center space-y-1.5 shadow-sm hover:border-emerald-500 transition-colors">
-        <div class="w-10 h-10 mx-auto rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center text-xl font-bold">📖</div>
-        <h5 class="text-sm font-bold text-slate-900 dark:text-white">পিডিএফ লেকচার শিট</h5>
-        <p class="text-[11px] text-slate-500">প্রিন্টযোগ্য নোট ও শিট</p>
+        <div class="w-10 h-10 mx-auto rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center text-xl font-bold">{{ branding.subfeat_3_icon|default:"📖" }}</div>
+        <h5 class="text-sm font-bold text-slate-900 dark:text-white">{{ branding.subfeat_3_title|default:"পিডিএফ লেকচার শিট" }}</h5>
+        <p class="text-[11px] text-slate-500">{{ branding.subfeat_3_desc|default:"প্রিন্টযোগ্য নোট ও শিট" }}</p>
       </div>
 
       <div class="p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-center space-y-1.5 shadow-sm hover:border-emerald-500 transition-colors">
-        <div class="w-10 h-10 mx-auto rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xl font-bold">💬</div>
-        <h5 class="text-sm font-bold text-slate-900 dark:text-white">২৪/৭ ডাউট সলভিং</h5>
-        <p class="text-[11px] text-slate-500">বিশেষজ্ঞ মেন্টর সাপোর্ট</p>
+        <div class="w-10 h-10 mx-auto rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xl font-bold">{{ branding.subfeat_4_icon|default:"💬" }}</div>
+        <h5 class="text-sm font-bold text-slate-900 dark:text-white">{{ branding.subfeat_4_title|default:"২৪/৭ ডাউট সলভিং" }}</h5>
+        <p class="text-[11px] text-slate-500">{{ branding.subfeat_4_desc|default:"বিশেষজ্ঞ মেন্টর সাপোর্ট" }}</p>
       </div>
     </div>
   </section>
+  {% endif %}
 
   <!-- 4. "তোমার জন্য সেরা কোর্স বেছে নাও" (Course Cards Grid) -->
   <section id="courses" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
@@ -368,10 +372,11 @@
   </section>
 
   <!-- 6. "তার শেখার গল্প পথেই গড়ে উঠছে" (Photo Gallery / Student Moments) -->
+  {% if branding.show_gallery_section != False %}
   <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
     <div class="text-center mb-8">
-      <h2 class="text-xs font-bold tracking-widest text-emerald-600 dark:text-emerald-400 uppercase mb-1">ক্যাম্পাস ও কমিউনিটি</h2>
-      <h3 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">তার শেখার গল্প পথেই গড়ে উঠছে</h3>
+      <h2 class="text-xs font-bold tracking-widest text-emerald-600 dark:text-emerald-400 uppercase mb-1">{{ branding.gallery_section_badge|default:"ক্যাম্পাস ও কমিউনিটি" }}</h2>
+      <h3 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">{{ branding.gallery_section_title|default:"তার শেখার গল্প পথেই গড়ে উঠছে" }}</h3>
     </div>
 
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -399,8 +404,10 @@
       {% endfor %}
     </div>
   </section>
+  {% endif %}
 
   <!-- 7. "ডাউনলোড করুন আমাদের মোবাইল অ্যাপ" (App Promo Banner) -->
+  {% if branding.show_app_section != False %}
   <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
     <div class="rounded-3xl bg-gradient-to-br from-slate-900 via-slate-850 to-slate-950 text-white p-8 lg:p-12 border border-slate-800 shadow-2xl relative overflow-hidden">
       <!-- Glow -->
@@ -490,6 +497,7 @@
       </div>
     </div>
   </section>
+  {% endif %}
 
   <!-- 8. Bottom CTA Section -->
   <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

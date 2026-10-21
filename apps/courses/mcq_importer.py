@@ -18,24 +18,31 @@ def normalize_bengali_digits(text: str) -> str:
 def map_option_to_letter(opt_str: str) -> str:
     """
     Maps various Bengali and English option representations to standard 'A', 'B', 'C', 'D'.
-    Supports: ক, খ, গ, ঘ | K, L, M, N (Bijoy/OCR) | A, B, C, D | 1, 2, 3, 4 | ১, ২, ৩, ৪
+    Supports: ক, খ, গ, ঘ | K, L, M, N (Bijoy/OCR) | A, B, C, D | a, b, c, d | 1, 2, 3, 4 | ১, ২, ৩, ৪ | Ⓐ, Ⓑ, Ⓒ, Ⓓ | ①, ②, ③, ④
     """
     if not opt_str:
         return "A"
-    clean = opt_str.strip().strip("()[]{}.-:/ ").upper()
+    clean = opt_str.strip().strip("()[]{}.-:/ ")
     
     # Direct mappings
     bengali_map = {
         "ক": "A", "খ": "B", "গ": "C", "ঘ": "D",
         "K": "A", "L": "B", "M": "C", "N": "D",
         "A": "A", "B": "B", "C": "C", "D": "D",
+        "a": "A", "b": "B", "c": "C", "d": "D",
         "১": "A", "২": "B", "৩": "C", "৪": "D",
         "1": "A", "2": "B", "3": "C", "4": "D",
         "I": "A", "II": "B", "III": "C", "IV": "D",
+        "i": "A", "ii": "B", "iii": "C", "iv": "D",
+        "Ⓐ": "A", "Ⓑ": "B", "Ⓒ": "C", "Ⓓ": "D",
+        "ⓐ": "A", "ⓑ": "B", "ⓒ": "C", "ⓓ": "D",
+        "🅐": "A", "🅑": "B", "🅒": "C", "🅓": "D",
+        "①": "A", "②": "B", "③": "C", "④": "D",
+        "❶": "A", "❷": "B", "❸": "C", "❹": "D",
     }
     
     for key, val in bengali_map.items():
-        if clean == key or clean.startswith(key):
+        if clean == key or clean.upper() == key or clean.startswith(key):
             return val
             
     return "A"
@@ -106,9 +113,21 @@ def parse_mcq_text(raw_text: str, encoding_mode: str = "auto") -> list[dict]:
     if not raw_text or not raw_text.strip():
         return []
 
-    # Auto-convert Bijoy (SutonnyMJ) to Unicode (Avro standard) if detected or requested
-    if encoding_mode == "bijoy" or (encoding_mode == "auto" and is_bijoy_text(raw_text)):
-        raw_text = convert_bijoy_to_unicode(raw_text)
+    # If encoding_mode is 'english' or 'unicode', skip Bijoy conversion completely
+    if encoding_mode not in ("english", "unicode"):
+        # Auto-convert Bijoy (SutonnyMJ) to Unicode (Avro standard) if detected or requested
+        if encoding_mode == "bijoy" or (encoding_mode == "auto" and is_bijoy_text(raw_text)):
+            raw_text = convert_bijoy_to_unicode(raw_text)
+
+    # Normalize circled option letters & numbers (e.g. Ⓐ, Ⓑ, Ⓒ, Ⓓ or ①, ②, ③, ④) into standard spaced markers
+    for src, tgt in [
+        ("Ⓐ", " (A) "), ("Ⓑ", " (B) "), ("Ⓒ", " (C) "), ("Ⓓ", " (D) "),
+        ("ⓐ", " (A) "), ("ⓑ", " (B) "), ("ⓒ", " (C) "), ("ⓓ", " (D) "),
+        ("🅐", " (A) "), ("🅑", " (B) "), ("🅒", " (C) "), ("🅓", " (D) "),
+        ("①", " (1) "), ("②", " (2) "), ("③", " (3) "), ("④", " (4) "),
+        ("❶", " (1) "), ("❷", " (2) "), ("❸", " (3) "), ("❹", " (4) "),
+    ]:
+        raw_text = raw_text.replace(src, tgt)
 
     lines = [line.strip() for line in raw_text.splitlines() if line.strip()]
     if not lines:
@@ -175,7 +194,7 @@ def parse_mcq_text(raw_text: str, encoding_mode: str = "auto") -> list[dict]:
         # Clean trailing answers from option D or the last option
         if "D" in options and not q_data.get("has_explicit_ans"):
             last_val = options["D"]
-            trailing_ans_match = re.search(r"[\s\t]+(?:Ans(?:wer)?[:।\-]?\s*)?([কখগঘKLMNabcdABCD১-৪1-4A-Da-d])$", last_val, re.IGNORECASE)
+            trailing_ans_match = re.search(r"[\s\t]+(?:Ans(?:wer)?[:।\-]?\s*)?([কখগঘKLMNabcdABCD১-৪1-4A-Da-dⒶⒷⒸⒹⓐⓑⓒⓓ①-④❶-❹])\s*$", last_val, re.IGNORECASE)
             if trailing_ans_match:
                 correct_opt = map_option_to_letter(trailing_ans_match.group(1))
                 options["D"] = last_val[:trailing_ans_match.start()].strip()
@@ -189,10 +208,11 @@ def parse_mcq_text(raw_text: str, encoding_mode: str = "auto") -> list[dict]:
 
             # If still missing options but question has text, fill fallbacks so no question is dropped
             if not opt_a and not opt_b:
-                opt_a = "অপশন ক"
-                opt_b = "অপশন খ"
-                opt_c = "অপশন গ"
-                opt_d = "অপশন ঘ"
+                is_eng = not bool(re.search(r'[\u0980-\u09FF]', q_text))
+                opt_a = "Option A" if is_eng else "অপশন ক"
+                opt_b = "Option B" if is_eng else "অপশন খ"
+                opt_c = "Option C" if is_eng else "অপশন গ"
+                opt_d = "Option D" if is_eng else "অপশন ঘ"
 
             return {
                 "question_text": q_text,
@@ -277,7 +297,7 @@ def parse_mcq_text(raw_text: str, encoding_mode: str = "auto") -> list[dict]:
                 
                 # Check trailing answer at the end of the line
                 last_val = labels_and_vals[-1][1]
-                trailing_ans_match = re.search(r"[\s\t]+(?:Ans(?:wer)?[:।\-]?\s*)?([কখগঘKLMNabcdABCD১-৪1-4A-Da-d])$", last_val, re.IGNORECASE)
+                trailing_ans_match = re.search(r"[\s\t]+(?:Ans(?:wer)?[:।\-]?\s*)?([কখগঘKLMNabcdABCD১-৪1-4A-Da-dⒶⒷⒸⒹⓐⓑⓒⓓ①-④❶-❹])\s*$", last_val, re.IGNORECASE)
                 if trailing_ans_match:
                     last_letter = map_option_to_letter(labels_and_vals[-1][0])
                     current_q["correct_option"] = map_option_to_letter(trailing_ans_match.group(1))
@@ -293,7 +313,7 @@ def parse_mcq_text(raw_text: str, encoding_mode: str = "auto") -> list[dict]:
             opt_letter = map_option_to_letter(single_opt_match.group(1))
             opt_val = single_opt_match.group(2).strip()
 
-            trailing_ans_match = re.search(r"[\s\t]+(?:Ans(?:wer)?[:।\-]?\s*)?([কখগঘKLMNabcdABCD১-৪1-4A-Da-d])$", opt_val, re.IGNORECASE)
+            trailing_ans_match = re.search(r"[\s\t]+(?:Ans(?:wer)?[:।\-]?\s*)?([কখগঘKLMNabcdABCD১-৪1-4A-Da-dⒶⒷⒸⒹⓐⓑⓒⓓ①-④❶-❹])\s*$", opt_val, re.IGNORECASE)
             if trailing_ans_match and (opt_letter == "D" or len(current_q["options"]) == 3):
                 current_q["correct_option"] = map_option_to_letter(trailing_ans_match.group(1))
                 opt_val = opt_val[:trailing_ans_match.start()].strip()

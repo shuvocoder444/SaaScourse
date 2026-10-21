@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}মেধা তালিকা — {{ exam.title }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 py-8 px-4 sm:px-8 font-sans">
+  <div class="max-w-5xl mx-auto space-y-6">
+
+    <!-- Top Navigation / Breadcrumbs -->
+    <div class="flex items-center justify-between flex-wrap gap-2 text-xs font-mono text-slate-500">
+      <div class="flex items-center gap-2">
+        <a href="/" class="hover:text-brand-primary">হোম</a>
+        <span>/</span>
+        <a href="/exams/{{ exam.slug }}/" class="hover:text-brand-primary line-clamp-1 max-w-[200px] sm:max-w-none">{{ exam.title }}</a>
+        <span>/</span>
+        <span class="text-slate-900 dark:text-white font-bold">মেধা তালিকা</span>
+      </div>
+
+      <a href="/exams/{{ exam.slug }}/" class="px-3.5 py-1.5 rounded-xl bg-brand-primary hover:bg-brand-primary/90 text-white font-bold transition-all flex items-center gap-1.5 shadow-sm">
+        <span>পরীক্ষায় অংশ নিন ✍️</span>
+      </a>
+    </div>
+
+    <!-- Master Header Card -->
+    <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-xl p-6 sm:p-8 space-y-6">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-6">
+        <div>
+          <div class="flex items-center gap-2 mb-2">
+            <span class="px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-mono text-[11px] font-bold uppercase tracking-wider flex items-center gap-1">
+              <span>🏆</span>
+              <span>অফিসিয়াল মেধা তালিকা (Merit List)</span>
+            </span>
+            <span class="text-xs text-slate-400 font-mono">• লাইভ র‍্যাঙ্কিং</span>
+          </div>
+          <h1 class="text-xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ exam.title }}</h1>
+          <p class="text-xs sm:text-sm text-slate-500 mt-1">
+            মোট অংশগ্রহণকারী: <strong class="text-slate-900 dark:text-white">{{ total_candidates }}</strong> জন • পূর্ণমান: {{ exam.total_marks }} নম্বর • সময়: {{ exam.duration_minutes }} মিনিট
+          </p>
+        </div>
+
+        {% if my_rank %}
+          <div class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-4 shrink-0 shadow-sm">
+            <div class="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-600 dark:text-amber-400 font-black text-2xl flex items-center justify-center">
+              {{ my_rank.badge }}
+            </div>
+            <div>
+              <span class="text-[10px] font-mono uppercase text-amber-600 dark:text-amber-400 font-bold block">আপনার অবস্থান</span>
+              <div class="text-base font-black text-slate-900 dark:text-white">
+                {{ my_rank.rank_bn }}তম স্থান
+              </div>
+              <span class="text-[11px] font-mono text-slate-500">নম্বর: {{ my_rank.score }} / {{ my_rank.total_marks }}</span>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Quick Search & Filter Bar -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="relative flex-1 max-w-md">
+          <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+            🔍
+          </span>
+          <input 
+            type="text" 
+            id="meritSearchInput" 
+            placeholder="শিক্ষার্থীর নাম, কলেজ বা ব্যাচ দিয়ে খুঁজুন..." 
+            class="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all"
+            onkeyup="filterMeritList()"
+          >
+        </div>
+
+        <div class="flex items-center gap-2 text-xs font-mono text-slate-400">
+          <span>মোট: <strong id="visibleCount" class="text-slate-900 dark:text-white">{{ total_candidates }}</strong> জন</span>
+        </div>
+      </div>
+
+      <!-- Merit Table -->
+      {% if merit_list %}
+        <div class="overflow-x-auto rounded-2xl border border-slate-100 dark:border-slate-800">
+          <table class="w-full text-left text-xs" id="meritTable">
+            <thead class="bg-slate-50 dark:bg-slate-950/70 text-slate-500 uppercase font-mono text-[10px] border-b border-slate-100 dark:border-slate-800">
+              <tr>
+                <th class="py-3.5 px-4 text-center w-16">মেধা স্থান</th>
+                <th class="py-3.5 px-4">শিক্ষার্থীর নাম</th>
+                <th class="py-3.5 px-4 text-center">প্রাপ্ত নম্বর</th>
+                <th class="py-3.5 px-4 text-center">সঠিক / ভুল</th>
+                <th class="py-3.5 px-4 text-center">শতকরা হার</th>
+                <th class="py-3.5 px-4 text-center">ব্যয়িত সময়</th>
+                {% if exam.should_display_pass_mark %}
+                  <th class="py-3.5 px-4 text-center">ফলাফল</th>
+                {% endif %}
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
+              {% for item in merit_list %}
+                <tr class="merit-row {% if my_rank and item.student.id == my_rank.student.id %}bg-amber-500/10 font-bold border-l-4 border-l-amber-500{% else %}hover:bg-slate-50/60 dark:hover:bg-slate-800/40{% endif %} transition-colors">
+                  
+                  <!-- Rank Badge -->
+                  <td class="py-3.5 px-4 text-center">
+                    <span class="inline-flex items-center justify-center font-bold text-sm min-w-[2rem]">
+                      {{ item.badge }}
+                    </span>
+                  </td>
+
+                  <!-- Student Name -->
+                  <td class="py-3.5 px-4">
+                    <div class="flex items-center gap-2.5">
+                      <div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center font-bold text-xs text-slate-700 dark:text-slate-300 shrink-0">
+                        {{ item.student_name|first|upper }}
+                      </div>
+                      <div>
+                        <div class="font-bold text-slate-900 dark:text-white flex items-center gap-1.5 student-name-label">
+                          <span>{{ item.student_name }}</span>
+                          {% if my_rank and item.student.id == my_rank.student.id %}
+                            <span class="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 font-black">আপনি</span>
+                          {% endif %}
+                        </div>
+                        <div class="text-[11px] text-slate-500 flex items-center gap-1.5 flex-wrap mt-0.5">
+                          {% if item.institution %}
+                            <span class="student-inst-label text-brand-primary font-medium">🏫 {{ item.institution }}</span>
+                          {% endif %}
+                          {% if item.batch %}
+                            <span class="student-batch-label px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-mono text-[10px]">🎓 {{ item.batch }}</span>
+                          {% endif %}
+                        </div>
+                        <span class="text-[10px] text-slate-400 font-mono">{{ item.submitted_at|date:"d M Y, h:i A" }}</span>
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- Score -->
+                  <td class="py-3.5 px-4 text-center font-bold text-brand-primary text-sm">
+                    {{ item.score }} <span class="text-[10px] text-slate-400 font-normal">/ {{ item.total_marks }}</span>
+                  </td>
+
+                  <!-- Correct / Wrong Breakdown -->
+                  <td class="py-3.5 px-4 text-center font-mono">
+                    <span class="text-emerald-500 font-bold">{{ item.correct_count }}</span>
+                    <span class="text-slate-400"> / </span>
+                    <span class="text-rose-500 font-bold">{{ item.wrong_count }}</span>
+                  </td>
+
+                  <!-- Percentage & Bar -->
+                  <td class="py-3.5 px-4 text-center">
+                    <div class="inline-flex flex-col items-center gap-1">
+                      <span class="font-bold text-slate-700 dark:text-slate-300 font-mono">{{ item.percentage }}%</span>
+                      <div class="w-16 h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                        <div class="h-full bg-brand-primary rounded-full" style="width: {{ item.percentage }}%"></div>
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- Time Taken -->
+                  <td class="py-3.5 px-4 text-center font-mono text-[11px] text-slate-500">
+                    {{ item.time_formatted }}
+                  </td>
+
+                  <!-- Pass/Fail Status -->
+                  {% if exam.should_display_pass_mark %}
+                    <td class="py-3.5 px-4 text-center">
+                      {% if item.is_passed %}
+                        <span class="px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-black">
+                          উত্তীর্ণ
+                        </span>
+                      {% else %}
+                        <span class="px-2.5 py-1 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-[10px] font-black">
+                          অনুত্তীর্ণ
+                        </span>
+                      {% endif %}
+                    </td>
+                  {% endif %}
+
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-center py-12 space-y-3">
+          <div class="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center text-3xl mx-auto">
+            🏆
+          </div>
+          <h3 class="text-base font-bold text-slate-900 dark:text-white">এখনও পর্যন্ত কোনো মেধা তালিকা নেই</h3>
+          <p class="text-xs text-slate-500 max-w-sm mx-auto">
+            এই পরীক্ষায় এখনও কোনো পরীক্ষার্থী অংশগ্রহণ করেনি। আপনিই হতে পারেন প্রথম অংশগ্রহণকারী!
+          </p>
+          <div class="pt-2">
+            <a href="/exams/{{ exam.slug }}/" class="px-5 py-2.5 rounded-2xl bg-brand-primary text-white font-bold text-xs hover:bg-brand-primary/90 transition-all inline-flex items-center gap-2 shadow-sm">
+              <span>প্রথম পরীক্ষা দিন ✍️</span>
+            </a>
+          </div>
+        </div>
+      {% endif %}
+
+    </div>
+
+  </div>
+</div>
+
+<script>
+function filterMeritList() {
+  const input = document.getElementById('meritSearchInput');
+  const filter = input.value.toLowerCase().trim();
+  const rows = document.querySelectorAll('.merit-row');
+  let visibleCount = 0;
+
+  rows.forEach(row => {
+    const nameEl = row.querySelector('.student-name-label');
+    const instEl = row.querySelector('.student-inst-label');
+    const batchEl = row.querySelector('.student-batch-label');
+    const name = nameEl ? nameEl.textContent.toLowerCase() : '';
+    const inst = instEl ? instEl.textContent.toLowerCase() : '';
+    const batch = batchEl ? batchEl.textContent.toLowerCase() : '';
+
+    if (name.includes(filter) || inst.includes(filter) || batch.includes(filter)) {
+      row.style.display = '';
+      visibleCount++;
+    } else {
+      row.style.display = 'none';
+    }
+  });
+
+  const countEl = document.getElementById('visibleCount');
+  if (countEl) countEl.textContent = visibleCount;
+}
+</script>
+{% endblock %}
+

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}অনলাইন MCQ এক্সাম ম্যানেজার — {{ tenant.name }}{% endblock %}
+{% block title %}অনলাইন MCQ এক্সাম ও মডেল টেস্ট ম্যানেজার — {{ tenant.name }}{% endblock %}
 
 {% block header %}
   {% include "includes/dashboard_header.html" %}
@@ -10,9 +10,13 @@
 <div 
   x-data="{ 
     sidebarOpen: false,
+    activeTab: 'groups',
     createModalOpen: false, 
     editModalOpen: false,
-    activeExam: { id: null, title: '', course_id: '', description: '', duration_minutes: 30, pass_mark: 40, negative_mark_per_question: 0.25, is_published: true }
+    createGroupModalOpen: false,
+    editGroupModalOpen: false,
+    activeExam: { id: null, title: '', slug: '', course_id: '', description: '', duration_minutes: 30, pass_mark: 40, negative_mark_per_question: 0.25, is_published: true, thumbnail_url: '', show_pass_mark: true, show_negative_mark: true },
+    activeGroup: { id: null, title: '', slug: '', description: '', is_free: true, price: 0, discount_price: null, thumbnail_url: '', exam_ids: [], is_published: true }
   }" 
   @toggle-sidebar.window="sidebarOpen = !sidebarOpen"
   @close-sidebar.window="sidebarOpen = false"
@@ -38,22 +42,30 @@
         <div class="flex items-center gap-2 text-xs font-mono text-slate-500 dark:text-slate-400 mb-2">
           <a href="{% url 'courses:manage_dashboard' %}" class="hover:text-brand-primary">← স্টুডিও ড্যাশবোর্ড</a>
           <span>/</span>
-          <span class="text-slate-900 dark:text-white font-bold">MCQ ও অনলাইন পরীক্ষা</span>
+          <span class="text-slate-900 dark:text-white font-bold">MCQ ও মডেল টেস্ট গ্রুপ</span>
         </div>
         <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white flex items-center gap-3">
           <span>📝</span>
-          <span>অনলাইন MCQ এক্সাম ইঞ্জিন</span>
+          <span>অনলাইন MCQ ও মডেল টেস্ট ইঞ্জিন</span>
         </h1>
-        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">মডেল টেস্ট ও কুইজ তৈরি করুন, প্রশ্নব্যাংক সাজান এবং শিক্ষার্থীদের ফলাফল ও নেগেটিভ মার্কিং নিয়ন্ত্রণ করুন।</p>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">বিষয়ভিত্তিক MCQ পরীক্ষা এবং একাধিক পরীক্ষার সমন্বয়ে পেইড/ফ্রি মডেল টেস্ট গ্রুপ সিরিজ তৈরি ও পরিচালনা করুন।</p>
       </div>
 
-      <div class="flex items-center gap-3">
+      <div class="flex flex-wrap items-center gap-2.5">
+        <button 
+          type="button" 
+          @click="createGroupModalOpen = true" 
+          class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-bold hover:opacity-95 shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-1.5"
+        >
+          <span>🗂️ ➕ নতুন এক্সাম গ্রুপ / বান্ডেল</span>
+        </button>
+
         <button 
           type="button" 
           @click="createModalOpen = true" 
-          class="px-5 py-2.5 rounded-xl bg-brand-primary text-white text-xs font-bold hover:opacity-90 shadow-lg shadow-brand-primary/25 transition-all flex items-center gap-2"
+          class="px-4 py-2.5 rounded-xl bg-brand-primary text-white text-xs font-bold hover:opacity-90 shadow-lg shadow-brand-primary/25 transition-all flex items-center gap-1.5"
         >
-          <span>➕ নতুন MCQ পরীক্ষা তৈরি করুন</span>
+          <span>📝 ➕ নতুন একক পরীক্ষা</span>
         </button>
       </div>
     </div>
@@ -73,130 +85,339 @@
     <!-- Metrics Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
       <div class="p-5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-sm">
-        <span class="text-xs font-mono text-slate-500 dark:text-slate-400 block mb-1">মোট পরীক্ষা</span>
+        <span class="text-xs font-mono text-slate-500 dark:text-slate-400 block mb-1">মডেল টেস্ট গ্রুপ</span>
+        <div class="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">{{ exam_groups.count }}টি</div>
+        <span class="text-[10px] text-slate-500 font-mono">বিষয়ভিত্তিক কম্বাইন্ড সিরিজ</span>
+      </div>
+      <div class="p-5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-sm">
+        <span class="text-xs font-mono text-slate-500 dark:text-slate-400 block mb-1">একক পরীক্ষা ও কুইজ</span>
         <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ exams.count }}টি</div>
-        <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">লাইভ এক্সাম সিস্টেম</span>
+        <span class="text-[10px] text-brand-primary font-mono">লাইভ পরীক্ষা সিস্টেম</span>
       </div>
       <div class="p-5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-sm">
-        <span class="text-xs font-mono text-slate-500 dark:text-slate-400 block mb-1">মোট প্রশ্ন সংখ্যা</span>
-        <div class="text-2xl sm:text-3xl font-black text-brand-primary">
-          {{ total_questions }}টি
-        </div>
-        <span class="text-[10px] text-indigo-600 dark:text-cyan-400 font-mono">প্রশ্নব্যাংক ভাণ্ডার</span>
-      </div>
-      <div class="p-5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-sm">
-        <span class="text-xs font-mono text-slate-500 dark:text-slate-400 block mb-1">নেগেটিভ মার্কিং সাপোর্ট</span>
-        <div class="text-2xl sm:text-3xl font-black text-amber-500">০.২৫ - ০.৫০</div>
-        <span class="text-[10px] text-slate-500 font-mono">ভর্তি পরীক্ষা স্ট্যান্ডার্ড</span>
+        <span class="text-xs font-mono text-slate-500 dark:text-slate-400 block mb-1">মোট প্রশ্ন ভাণ্ডার</span>
+        <div class="text-2xl sm:text-3xl font-black text-indigo-600 dark:text-cyan-400">{{ total_questions }}টি</div>
+        <span class="text-[10px] text-slate-500 font-mono">নেগেটিভ মার্কিং সাপোর্ট</span>
       </div>
     </div>
 
-    <!-- Exam Cards Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {% for exam in exams %}
-        <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-sm p-6 space-y-4 hover:shadow-md transition-all">
-          
-          <div class="flex items-start justify-between gap-3">
+    <!-- Navigation Tabs -->
+    <div class="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+      <button 
+        type="button" 
+        @click="activeTab = 'groups'" 
+        :class="activeTab === 'groups' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20' : 'bg-white dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'"
+        class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2"
+      >
+        <span>🗂️ MCQ এক্সাম গ্রুপ / মডেল টেস্ট সিরিজ</span>
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-mono bg-black/20 text-white">{{ exam_groups.count }}</span>
+      </button>
+
+      <button 
+        type="button" 
+        @click="activeTab = 'exams'" 
+        :class="activeTab === 'exams' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/20' : 'bg-white dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'"
+        class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2"
+      >
+        <span>📝 একক বিষয়ভিত্তিক পরীক্ষা তালিকা</span>
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-mono bg-black/20 text-white">{{ exams.count }}</span>
+      </button>
+    </div>
+
+    <!-- TAB 1: EXAM GROUPS LIST -->
+    <div x-show="activeTab === 'groups'" class="space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for group in exam_groups %}
+          <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-lg transition-all">
+            
             <div>
-              <div class="flex items-center gap-2 mb-1.5">
-                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold {% if exam.is_published %}bg-emerald-500/10 text-emerald-500 border border-emerald-500/20{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500{% endif %}">
-                  {{ exam.is_published|yesno:"লাইভ / সক্রিয়,ড্রাফট" }}
-                </span>
-                {% if exam.course %}
-                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 truncate max-w-[150px]">
-                    {{ exam.course.title }}
+              <!-- Group Thumbnail Banner -->
+              <div class="relative h-44 w-full bg-slate-100 dark:bg-slate-800 overflow-hidden border-b border-slate-100 dark:border-slate-800">
+                {% if group.get_thumbnail_url %}
+                  <img src="{{ group.get_thumbnail_url }}" alt="{{ group.title }}" class="w-full h-full object-cover">
+                {% else %}
+                  <div class="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-slate-900 text-center p-4">
+                    <span class="text-4xl mb-1">🗂️</span>
+                    <span class="text-xs font-bold text-slate-600 dark:text-slate-300">{{ group.title }}</span>
+                  </div>
+                {% endif %}
+
+                <!-- Badges over Thumbnail -->
+                <div class="absolute top-3 left-3 flex items-center gap-2">
+                  <span class="px-2.5 py-1 rounded-xl text-[10px] font-mono font-bold backdrop-blur-md shadow-sm {% if group.is_published %}bg-emerald-500/90 text-white{% else %}bg-slate-800/90 text-slate-300{% endif %}">
+                    {{ group.is_published|yesno:"লাইভ,ড্রাফট" }}
                   </span>
+                </div>
+
+                <div class="absolute top-3 right-3">
+                  {% if group.is_free %}
+                    <span class="px-3 py-1 rounded-xl text-xs font-bold bg-emerald-500 text-white shadow-md">
+                      বিনামূল্যে (Free)
+                    </span>
+                  {% else %}
+                    <span class="px-3 py-1 rounded-xl text-xs font-black bg-amber-500 text-slate-950 shadow-md">
+                      ৳ {{ group.effective_price }}
+                      {% if group.discount_price and group.price > group.discount_price %}
+                        <span class="line-through text-[10px] text-slate-700 ml-1">৳{{ group.price }}</span>
+                      {% endif %}
+                    </span>
+                  {% endif %}
+                </div>
+              </div>
+
+              <!-- Content Body -->
+              <div class="p-5 space-y-3">
+                <h3 class="text-base font-black text-slate-900 dark:text-white line-clamp-2">
+                  {{ group.title }}
+                </h3>
+
+                {% if group.description %}
+                  <p class="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">{{ group.description }}</p>
+                {% endif %}
+
+                <!-- Included Subject Exams Pill Tags -->
+                <div>
+                  <span class="text-[10px] font-mono text-slate-400 block mb-1.5">অন্তর্ভুক্ত পরীক্ষাসমূহ ({{ group.exams.count }}টি):</span>
+                  <div class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                    {% for e in group.exams.all %}
+                      <span class="px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-semibold">
+                        📘 {{ e.title }}
+                      </span>
+                    {% empty %}
+                      <span class="text-[11px] text-slate-400 italic">কোনো পরীক্ষা যুক্ত করা হয়নি।</span>
+                    {% endfor %}
+                  </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/70 text-xs font-mono grid grid-cols-3 gap-2 text-center border border-slate-100 dark:border-slate-800">
+                  <div>
+                    <span class="text-[10px] text-slate-400 block">মোট প্রশ্ন</span>
+                    <span class="font-bold text-slate-900 dark:text-white">{{ group.total_questions_count }}টি</span>
+                  </div>
+                  <div>
+                    <span class="text-[10px] text-slate-400 block">মোট সময়</span>
+                    <span class="font-bold text-slate-900 dark:text-white">{{ group.total_duration_minutes }}মি.</span>
+                  </div>
+                  <div>
+                    <span class="text-[10px] text-slate-400 block">এনরোল্ড</span>
+                    <span class="font-bold text-emerald-500">{{ group.enrollments.count }}জন</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bottom Actions -->
+            <div class="p-4 pt-0">
+              <div class="flex items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <a 
+                  href="/exams/groups/{{ group.slug }}/" 
+                  target="_blank" 
+                  class="flex-1 py-2 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-center text-slate-800 dark:text-slate-200 transition-all flex items-center justify-center gap-1.5"
+                  title="ল্যান্ডিং পেজ প্রিভিউ"
+                >
+                  <span>👁️ ল্যান্ডিং পেজ</span>
+                  <span>↗</span>
+                </a>
+
+                <button 
+                  type="button" 
+                  @click="navigator.clipboard.writeText('{{ request.scheme }}://{{ request.get_host }}/exams/groups/{{ group.slug }}/'); alert('✅ গ্রুপের লিংক কপি হয়েছে:\n{{ request.scheme }}://{{ request.get_host }}/exams/groups/{{ group.slug }}/');"
+                  class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300"
+                  title="লিংক কপি করুন"
+                >
+                  🔗
+                </button>
+
+                <a 
+                  href="https://api.whatsapp.com/send?text={{ '📝 *'|urlencode }}{{ group.title|urlencode }}{{ '*%0Aফি: '|urlencode }}{% if group.is_free %}{{ 'সম্পূর্ণ ফ্রি'|urlencode }}{% else %}{{ '৳'|urlencode }}{{ group.effective_price }}{% endif %}{{ '%0Aমোট পরীক্ষা: '|urlencode }}{{ group.exams.count }}{{ 'টি (%0A'|urlencode }}{% for e in group.exams.all %}{{ '• '|urlencode }}{{ e.title|urlencode }}{{ '%0A'|urlencode }}{% endfor %}{{ ')%0A%0Aমডেল টেস্টে অংশ নিতে ক্লিক করুন:%0A'|urlencode }}{{ request.scheme }}://{{ request.get_host }}/exams/groups/{{ group.slug }}/" 
+                  target="_blank" 
+                  class="p-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold"
+                  title="হোয়াটসঅ্যাপে শেয়ার করুন"
+                >
+                  📲
+                </a>
+
+                <button 
+                  type="button" 
+                  @click="activeGroup = { id: {{ group.id }}, title: '{{ group.title|escapejs }}', slug: '{{ group.slug|escapejs }}', description: '{{ group.description|escapejs }}', is_free: {{ group.is_free|yesno:'true,false' }}, price: {{ group.price }}, discount_price: {{ group.discount_price|default:'null' }}, thumbnail_url: '{{ group.thumbnail_url|escapejs }}', exam_ids: [{% for e in group.exams.all %}{{ e.id }}{% if not forloop.last %},{% endif %}{% endfor %}], is_published: {{ group.is_published|yesno:'true,false' }} }; editGroupModalOpen = true"
+                  class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs text-slate-700 dark:text-slate-200"
+                  title="এডিট সেটিংস"
+                >
+                  ✏️
+                </button>
+
+                <form method="POST" class="inline" onsubmit="return confirm('আপনি কি নিশ্চিত এই এক্সাম গ্রুপটি মুছে ফেলতে চান?');">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="delete_exam_group">
+                  <input type="hidden" name="group_id" value="{{ group.id }}">
+                  <button type="submit" class="p-2 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs" title="ডিলিট গ্রুপ">
+                    🗑️
+                  </button>
+                </form>
+              </div>
+            </div>
+
+          </div>
+        {% empty %}
+          <div class="col-span-full rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 p-12 text-center text-slate-400 space-y-3">
+            <span class="text-4xl block">🗂️</span>
+            <h3 class="text-base font-bold text-slate-700 dark:text-slate-200">এখনো কোনো MCQ এক্সাম গ্রুপ তৈরি করা হয়নি</h3>
+            <p class="text-xs max-w-md mx-auto">একাধিক বিষয় যেমন: বাংলা, ইংরেজি, ও ICT নিয়ে সমন্বিত মডেল টেস্ট প্যাকেজ বা পেইড এক্সাম বান্ডেল তৈরি করুন।</p>
+            <button 
+              type="button" 
+              @click="createGroupModalOpen = true"
+              class="px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:opacity-90 transition-all shadow-md shadow-emerald-600/20"
+            >
+              ➕ প্রথম এক্সাম গ্রুপ তৈরি করুন
+            </button>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- TAB 2: SINGLE EXAMS LIST -->
+    <div x-show="activeTab === 'exams'" class="space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {% for exam in exams %}
+          <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-sm p-6 space-y-4 hover:shadow-md transition-all">
+            
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <div class="flex items-center gap-2 mb-1.5">
+                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold {% if exam.is_published %}bg-emerald-500/10 text-emerald-500 border border-emerald-500/20{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500{% endif %}">
+                    {{ exam.is_published|yesno:"লাইভ / সক্রিয়,ড্রাফট" }}
+                  </span>
+                  {% if exam.course %}
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 truncate max-w-[150px]">
+                      {{ exam.course.title }}
+                    </span>
+                  {% endif %}
+                  {% if exam.groups.all %}
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-500/10 text-teal-500 border border-teal-500/20">
+                      🗂️ {{ exam.groups.count }}টি গ্রুপে যুক্ত
+                    </span>
+                  {% endif %}
+                </div>
+                <h3 class="text-base font-black text-slate-900 dark:text-white">{{ exam.title }}</h3>
+              </div>
+
+              <div class="text-right">
+                <span class="text-xs font-mono font-bold text-brand-primary block">⏱️ {{ exam.duration_minutes }} মিনিট</span>
+                {% if exam.should_display_negative_mark %}
+                  <span class="text-[10px] font-mono text-slate-400">মাইনাস: {{ exam.negative_mark_per_question }}</span>
+                {% else %}
+                  <span class="text-[10px] font-mono text-emerald-500 font-semibold">নেগেটিভ নেই</span>
                 {% endif %}
               </div>
-              <h3 class="text-base font-black text-slate-900 dark:text-white">{{ exam.title }}</h3>
             </div>
 
-            <div class="text-right">
-              <span class="text-xs font-mono font-bold text-brand-primary block">⏱️ {{ exam.duration_minutes }} মিনিট</span>
-              <span class="text-[10px] font-mono text-slate-400">মাইনাস: {{ exam.negative_mark_per_question }}</span>
-            </div>
-          </div>
+            {% if exam.description %}
+              <p class="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">{{ exam.description }}</p>
+            {% endif %}
 
-          {% if exam.description %}
-            <p class="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">{{ exam.description }}</p>
-          {% endif %}
-
-          <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/70 text-xs font-mono grid grid-cols-3 gap-2 text-center border border-slate-100 dark:border-slate-800/80">
-            <div>
-              <span class="text-[10px] text-slate-400 block">প্রশ্ন সংখ্যা</span>
-              <span class="font-bold text-slate-900 dark:text-white">{{ exam.questions.count }}টি</span>
+            <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/70 text-xs font-mono grid grid-cols-3 gap-2 text-center border border-slate-100 dark:border-slate-800/80">
+              <div>
+                <span class="text-[10px] text-slate-400 block">প্রশ্ন সংখ্যা</span>
+                <span class="font-bold text-slate-900 dark:text-white">{{ exam.questions.count }}টি</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-400 block">পাস মার্ক</span>
+                <span class="font-bold text-slate-900 dark:text-white">
+                  {% if exam.should_display_pass_mark %}{{ exam.pass_mark }}%{% else %}প্রযোজ্য নয়{% endif %}
+                </span>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-400 block">অংশগ্রহণকারী</span>
+                <span class="font-bold text-slate-900 dark:text-white">{{ exam.attempts.count }}জন</span>
+              </div>
             </div>
-            <div>
-              <span class="text-[10px] text-slate-400 block">পাস মার্ক</span>
-              <span class="font-bold text-slate-900 dark:text-white">{{ exam.pass_mark }}%</span>
-            </div>
-            <div>
-              <span class="text-[10px] text-slate-400 block">অংশগ্রহণকারী</span>
-              <span class="font-bold text-slate-900 dark:text-white">{{ exam.attempts.count }}জন</span>
-            </div>
-          </div>
 
-          <!-- Bottom Actions -->
-          <div class="flex items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-            <a 
-              href="{% url 'courses:exam_builder' exam.id %}"
-              class="flex-1 py-2 rounded-xl bg-brand-primary text-white text-xs font-bold text-center hover:opacity-90 shadow-md shadow-brand-primary/20 transition-all flex items-center justify-center gap-1.5"
-            >
-              <span>❓ প্রশ্ন যুক্ত ও ম্যানেজ করুন</span>
-              <span class="bg-white/20 px-1.5 py-0.5 rounded text-[10px] font-mono">({{ exam.questions.count }})</span>
-            </a>
-
-            <div class="flex items-center gap-1.5">
+            <!-- Bottom Actions -->
+            <div class="flex items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
               <a 
-                href="{% url 'courses:exam_print_paper' exam.id %}" 
-                target="_blank" 
-                class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300"
-                title="প্রিন্ট / PDF প্রশ্নপত্র"
+                href="{% url 'courses:exam_builder' exam.id %}"
+                class="flex-1 py-2 rounded-xl bg-brand-primary text-white text-xs font-bold text-center hover:opacity-90 shadow-md shadow-brand-primary/20 transition-all flex items-center justify-center gap-1.5"
               >
-                🖨️
+                <span>❓ প্রশ্ন যুক্ত ও ম্যানেজ করুন</span>
+                <span class="bg-white/20 px-1.5 py-0.5 rounded text-[10px] font-mono">({{ exam.questions.count }})</span>
               </a>
-              <a 
-                href="{% url 'courses:exam_take' exam.slug %}" 
-                target="_blank" 
-                class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300"
-                title="পরীক্ষা প্রিভিউ দেখুন"
-              >
-                👁️
-              </a>
-              <button 
-                type="button" 
-                @click="activeExam = { id: {{ exam.id }}, title: '{{ exam.title|escapejs }}', course_id: '{{ exam.course_id|default:'' }}', description: '{{ exam.description|escapejs }}', duration_minutes: {{ exam.duration_minutes }}, pass_mark: {{ exam.pass_mark }}, negative_mark_per_question: {{ exam.negative_mark_per_question }}, is_published: {{ exam.is_published|yesno:'true,false' }} }; editModalOpen = true"
-                class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs text-slate-700 dark:text-slate-200"
-                title="এডিট সেটিংস"
-              >
-                ✏️
-              </button>
-              <form method="POST" class="inline" onsubmit="return confirm('আপনি কি নিশ্চিত এই পরীক্ষা এবং এর সব প্রশ্ন ও ফলাফল মুছে ফেলতে চান?');">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="delete_exam">
-                <input type="hidden" name="exam_id" value="{{ exam.id }}">
-                <button type="submit" class="p-2 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs" title="ডিলিট পরীক্ষা">
-                  🗑️
+
+              <div class="flex items-center gap-1.5">
+                <a 
+                  href="{% url 'courses:admin_exam_merit_list' exam.id %}" 
+                  class="p-2 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-semibold"
+                  title="মেধা তালিকা ও ফলাফল (Merit List / PDF)"
+                >
+                  🏆
+                </a>
+                <a 
+                  href="{% url 'courses:exam_print_paper' exam.id %}" 
+                  target="_blank" 
+                  class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300"
+                  title="প্রিন্ট / PDF প্রশ্নপত্র"
+                >
+                  🖨️
+                </a>
+                <a 
+                  href="/exams/{{ exam.slug }}/" 
+                  target="_blank" 
+                  class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300"
+                  title="পরীক্ষা প্রিভিউ দেখুন"
+                >
+                  👁️
+                </a>
+                <button 
+                  type="button" 
+                  @click="navigator.clipboard.writeText('{{ request.scheme }}://{{ request.get_host }}/exams/{{ exam.slug }}/'); alert('✅ পরীক্ষার লিংক ক্লিপবোর্ডে কপি হয়েছে:\n{{ request.scheme }}://{{ request.get_host }}/exams/{{ exam.slug }}/');"
+                  class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300"
+                  title="লিংক কপি করুন"
+                >
+                  🔗
                 </button>
-              </form>
+                <a 
+                  href="https://api.whatsapp.com/send?text={{ '📝 *'|urlencode }}{{ exam.title|urlencode }}{{ '*%0A⏱️ সময়: '|urlencode }}{{ exam.duration_minutes }}{{ ' মিনিট | মোট প্রশ্ন: '|urlencode }}{{ exam.questions.count }}{{ 'টি%0A%0Aঅনলাইন পরীক্ষায় অংশ নিতে ক্লিক করুন:%0A'|urlencode }}{{ request.scheme }}://{{ request.get_host }}/exams/{{ exam.slug }}/"
+                  target="_blank" 
+                  class="p-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold"
+                  title="হোয়াটসঅ্যাপে শেয়ার করুন"
+                >
+                  📲
+                </a>
+                <button 
+                  type="button" 
+                  @click="activeExam = { id: {{ exam.id }}, title: '{{ exam.title|escapejs }}', slug: '{{ exam.slug|escapejs }}', course_id: '{{ exam.course_id|default:'' }}', description: '{{ exam.description|escapejs }}', duration_minutes: {{ exam.duration_minutes }}, pass_mark: {{ exam.pass_mark }}, negative_mark_per_question: {{ exam.negative_mark_per_question }}, thumbnail_url: '{{ exam.thumbnail_url|escapejs }}', is_published: {{ exam.is_published|yesno:'true,false' }}, show_pass_mark: {{ exam.show_pass_mark|yesno:'true,false' }}, show_negative_mark: {{ exam.show_negative_mark|yesno:'true,false' }} }; editModalOpen = true"
+                  class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs text-slate-700 dark:text-slate-200"
+                  title="এডিট সেটিংস"
+                >
+                  ✏️
+                </button>
+                <form method="POST" class="inline" onsubmit="return confirm('আপনি কি নিশ্চিত এই পরীক্ষা এবং এর সব প্রশ্ন ও ফলাফল মুছে ফেলতে চান?');">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="delete_exam">
+                  <input type="hidden" name="exam_id" value="{{ exam.id }}">
+                  <button type="submit" class="p-2 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs" title="ডিলিট পরীক্ষা">
+                    🗑️
+                  </button>
+                </form>
+              </div>
             </div>
-          </div>
 
-        </div>
-      {% empty %}
-        <div class="col-span-full rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 p-12 text-center text-slate-400 space-y-3">
-          <span class="text-4xl block">📝</span>
-          <h3 class="text-base font-bold text-slate-700 dark:text-slate-200">এখনো কোনো MCQ পরীক্ষা তৈরি করা হয়নি</h3>
-          <p class="text-xs max-w-sm mx-auto">শিক্ষার্থীদের নিয়মিত মডেল টেস্ট ও উইকলি পরীক্ষার জন্য নতুন MCQ এক্সাম তৈরি করুন।</p>
-          <button 
-            type="button" 
-            @click="createModalOpen = true"
-            class="px-5 py-2.5 rounded-xl bg-brand-primary text-white text-xs font-bold hover:opacity-90 transition-all shadow-md shadow-brand-primary/20"
-          >
-            ➕ প্রথম MCQ পরীক্ষা তৈরি করুন
-          </button>
-        </div>
-      {% endfor %}
+          </div>
+        {% empty %}
+          <div class="col-span-full rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 p-12 text-center text-slate-400 space-y-3">
+            <span class="text-4xl block">📝</span>
+            <h3 class="text-base font-bold text-slate-700 dark:text-slate-200">এখনো কোনো একক MCQ পরীক্ষা তৈরি করা হয়নি</h3>
+            <p class="text-xs max-w-sm mx-auto">শিক্ষার্থীদের নিয়মিত মডেল টেস্ট ও উইকলি পরীক্ষার জন্য নতুন MCQ এক্সাম তৈরি করুন।</p>
+            <button 
+              type="button" 
+              @click="createModalOpen = true"
+              class="px-5 py-2.5 rounded-xl bg-brand-primary text-white text-xs font-bold hover:opacity-90 transition-all shadow-md shadow-brand-primary/20"
+            >
+              ➕ প্রথম MCQ পরীক্ষা তৈরি করুন
+            </button>
+          </div>
+        {% endfor %}
+      </div>
     </div>
 
   </main>
@@ -208,13 +429,19 @@
         <h3 class="text-base font-black text-slate-900 dark:text-white">➕ নতুন MCQ পরীক্ষা তৈরি করুন</h3>
         <button @click="createModalOpen = false" class="text-slate-400 hover:text-slate-900 dark:hover:text-white">✕</button>
       </div>
-      <form method="POST" class="space-y-4 text-xs">
+      <form method="POST" enctype="multipart/form-data" class="space-y-4 text-xs">
         {% csrf_token %}
         <input type="hidden" name="action" value="create_exam">
 
         <div>
           <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">পরীক্ষার শিরোনাম *</label>
           <input type="text" name="title" required placeholder="যেমন: পদার্থবিজ্ঞান ১ম পত্র - ভেক্টর উইকলি মডেল টেস্ট" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">কাস্টম লিংক স্লাগ (ঐচ্ছিক)</label>
+          <input type="text" name="slug" placeholder="যেমন: physics-1st-paper (ফাঁকা রাখলে টাইটেল অনুযায়ী তৈরি হবে)" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+          <p class="text-[10px] text-slate-400 mt-1">লিংক ইংরেজি বা ছোট রাখতে চাইলে এখানে লিখতে পারেন (যেমন: /exams/physics-1/)</p>
         </div>
 
         <div>
@@ -225,6 +452,17 @@
               <option value="{{ c.id }}">{{ c.title }}</option>
             {% endfor %}
           </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">থাম্বনেইল ইমেজ (ফাইল আপলোড)</label>
+            <input type="file" name="thumbnail" accept="image/*" class="w-full px-2 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[11px]">
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">ইমেজ URL (ঐচ্ছিক)</label>
+            <input type="url" name="thumbnail_url" placeholder="https://..." class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+          </div>
         </div>
 
         <div class="grid grid-cols-3 gap-3">
@@ -240,6 +478,17 @@
             <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">মাইনাস মার্কিং</label>
             <input type="number" step="0.05" name="negative_mark_per_question" value="0.25" required class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
           </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-950/50 p-3 rounded-2xl border border-slate-200 dark:border-slate-800">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" name="show_pass_mark" checked class="rounded text-brand-primary">
+            <span class="text-[11px] font-semibold text-slate-700 dark:text-slate-300">🎯 পাস মার্ক (%) দেখান</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" name="show_negative_mark" checked class="rounded text-brand-primary">
+            <span class="text-[11px] font-semibold text-slate-700 dark:text-slate-300">⚖️ নেগেটিভ মার্ক দেখান</span>
+          </label>
         </div>
 
         <div>
@@ -267,7 +516,7 @@
         <h3 class="text-base font-black text-slate-900 dark:text-white">✏️ পরীক্ষার সেটিংস এডিট করুন</h3>
         <button @click="editModalOpen = false" class="text-slate-400 hover:text-slate-900 dark:hover:text-white">✕</button>
       </div>
-      <form method="POST" class="space-y-4 text-xs">
+      <form method="POST" enctype="multipart/form-data" class="space-y-4 text-xs">
         {% csrf_token %}
         <input type="hidden" name="action" value="update_exam">
         <input type="hidden" name="exam_id" :value="activeExam.id">
@@ -278,6 +527,12 @@
         </div>
 
         <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">লিংক স্লাগ (URL Slug)</label>
+          <input type="text" name="slug" x-model="activeExam.slug" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+          <p class="text-[10px] text-slate-400 mt-1">লিংক পরিবর্তন করতে চাইলে এখানে দিন (যেমন: physics-1st-paper বা বাংলায়)</p>
+        </div>
+
+        <div>
           <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">কোর্স নির্বাচন</label>
           <select name="course_id" x-model="activeExam.course_id" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
             <option value="">-- সাধারণ / একাডেমি ওপেন এক্সাম --</option>
@@ -285,6 +540,17 @@
               <option value="{{ c.id }}">{{ c.title }}</option>
             {% endfor %}
           </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">নতুন থাম্বনেইল আপলোড</label>
+            <input type="file" name="thumbnail" accept="image/*" class="w-full px-2 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[11px]">
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">ইমেজ URL</label>
+            <input type="url" name="thumbnail_url" x-model="activeExam.thumbnail_url" placeholder="https://..." class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+          </div>
         </div>
 
         <div class="grid grid-cols-3 gap-3">
@@ -302,6 +568,17 @@
           </div>
         </div>
 
+        <div class="grid grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-950/50 p-3 rounded-2xl border border-slate-200 dark:border-slate-800">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" name="show_pass_mark" x-model="activeExam.show_pass_mark" class="rounded text-brand-primary">
+            <span class="text-[11px] font-semibold text-slate-700 dark:text-slate-300">🎯 পাস মার্ক (%) দেখান</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" name="show_negative_mark" x-model="activeExam.show_negative_mark" class="rounded text-brand-primary">
+            <span class="text-[11px] font-semibold text-slate-700 dark:text-slate-300">⚖️ নেগেটিভ মার্ক দেখান</span>
+          </label>
+        </div>
+
         <div>
           <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">সিলেবাস ও নির্দেশিকা</label>
           <textarea name="description" rows="3" x-model="activeExam.description" class="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white"></textarea>
@@ -315,6 +592,202 @@
         <div class="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
           <button type="button" @click="editModalOpen = false" class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 font-bold">বাতিল</button>
           <button type="submit" class="px-5 py-2 rounded-xl bg-brand-primary text-white font-bold hover:opacity-90">আপডেট করুন</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 3: CREATE EXAM GROUP -->
+  <div x-show="createGroupModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div @click.away="createGroupModalOpen = false" class="w-full max-w-xl bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+        <h3 class="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+          <span>🗂️</span>
+          <span>নতুন এক্সাম গ্রুপ / মডেল টেস্ট সিরিজ তৈরি</span>
+        </h3>
+        <button @click="createGroupModalOpen = false" class="text-slate-400 hover:text-slate-900 dark:hover:text-white">✕</button>
+      </div>
+
+      <form method="POST" enctype="multipart/form-data" class="space-y-4 text-xs">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create_exam_group">
+
+        <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">গ্রুপ / সিরিজের নাম *</label>
+          <input type="text" name="title" required placeholder="যেমন: এইচএসসি ২০২৬ কম্বাইন্ড মডেল টেস্ট" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-semibold">
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">কাস্টম লিংক স্লাগ (ঐচ্ছিক)</label>
+          <input type="text" name="slug" placeholder="যেমন: hsc-model-test-2026 (ফাঁকা রাখলে টাইটেল অনুযায়ী হবে)" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+          <p class="text-[10px] text-slate-400 mt-1">লিংক ফরম্যাট হবে: /exams/groups/আপনার-স্লাগ/</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">থাম্বনেইল ব্যানার আপলোড *</label>
+            <input type="file" name="thumbnail" accept="image/*" class="w-full px-2 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[11px]">
+            <p class="text-[10px] text-slate-400 mt-1">WhatsApp ও ফেসবুকে শেয়ার করলে এই ছবি শো করবে</p>
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">অথবা ইমেজ URL</label>
+            <input type="url" name="thumbnail_url" placeholder="https://..." class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+          </div>
+        </div>
+
+        <!-- Pricing Section -->
+        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-slate-900 dark:text-white">মূল্য নির্ধারণ (Pricing)</span>
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="group_is_free" name="is_free" checked class="rounded text-emerald-600">
+              <label for="group_is_free" class="font-bold text-emerald-600 dark:text-emerald-400">সম্পূর্ণ ফ্রি (বিনামূল্যে)</label>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="font-semibold text-slate-600 dark:text-slate-400 block mb-1">রেগুলার ফি (৳)</label>
+              <input type="number" step="0.5" name="price" value="0" placeholder="0" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
+            </div>
+            <div>
+              <label class="font-semibold text-slate-600 dark:text-slate-400 block mb-1">ডিসকাউন্ট অফার ফি (৳)</label>
+              <input type="number" step="0.5" name="discount_price" placeholder="যেমন: 300" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
+            </div>
+          </div>
+          <p class="text-[10px] text-slate-400">ফ্রি আনচেক করলে শিক্ষার্থীদের ফি পরিশোধ করে গ্রুপে এনরোল করতে হবে।</p>
+        </div>
+
+        <!-- Multi-select Exams -->
+        <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">গ্রুপের অন্তর্ভুক্ত পরীক্ষাগুলো নির্বাচন করুন *</label>
+          <div class="max-h-48 overflow-y-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-3 space-y-2">
+            {% for exam in exams %}
+              <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-white dark:hover:bg-slate-800 transition-colors cursor-pointer text-xs">
+                <input type="checkbox" name="exam_ids" value="{{ exam.id }}" class="rounded text-emerald-600 w-4 h-4">
+                <div class="flex-1">
+                  <span class="font-bold text-slate-900 dark:text-white">{{ exam.title }}</span>
+                  <span class="text-[10px] font-mono text-slate-400 ml-2">({{ exam.questions.count }}টি প্রশ্ন • {{ exam.duration_minutes }}মি.)</span>
+                </div>
+              </label>
+            {% empty %}
+              <p class="text-slate-400 text-xs italic">কোনো পরীক্ষা পাওয়া যায়নি। আগে একক পরীক্ষা তৈরি করুন।</p>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">সিলেবাস ও বিবরণী</label>
+          <textarea name="description" rows="3" placeholder="মডেল টেস্ট সিরিজের সিলেবাস, মানবন্টন ও বিশেষ নির্দেশিকা..." class="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white"></textarea>
+        </div>
+
+        <div class="flex items-center gap-2 pt-1">
+          <input type="checkbox" id="group_is_published" name="is_published" checked class="rounded text-emerald-600">
+          <label for="group_is_published" class="font-semibold text-slate-700 dark:text-slate-300">সরাসরি লাইভ প্রকাশ করুন</label>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+          <button type="button" @click="createGroupModalOpen = false" class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 font-bold">বাতিল</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold hover:opacity-90">তৈরি করুন →</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 4: EDIT EXAM GROUP -->
+  <div x-show="editGroupModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div @click.away="editGroupModalOpen = false" class="w-full max-w-xl bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+        <h3 class="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+          <span>✏️</span>
+          <span>এক্সাম গ্রুপ সেটিংস এডিট করুন</span>
+        </h3>
+        <button @click="editGroupModalOpen = false" class="text-slate-400 hover:text-slate-900 dark:hover:text-white">✕</button>
+      </div>
+
+      <form method="POST" enctype="multipart/form-data" class="space-y-4 text-xs">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_exam_group">
+        <input type="hidden" name="group_id" :value="activeGroup.id">
+
+        <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">গ্রুপ / সিরিজের নাম *</label>
+          <input type="text" name="title" required x-model="activeGroup.title" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-semibold">
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">লিংক স্লাগ (URL Slug)</label>
+          <input type="text" name="slug" x-model="activeGroup.slug" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">নতুন থাম্বনেইল আপলোড</label>
+            <input type="file" name="thumbnail" accept="image/*" class="w-full px-2 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[11px]">
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">ইমেজ URL</label>
+            <input type="url" name="thumbnail_url" x-model="activeGroup.thumbnail_url" placeholder="https://..." class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+          </div>
+        </div>
+
+        <!-- Pricing Section -->
+        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-slate-900 dark:text-white">মূল্য নির্ধারণ (Pricing)</span>
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="edit_group_is_free" name="is_free" x-model="activeGroup.is_free" class="rounded text-emerald-600">
+              <label for="edit_group_is_free" class="font-bold text-emerald-600 dark:text-emerald-400">সম্পূর্ণ ফ্রি (বিনামূল্যে)</label>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="font-semibold text-slate-600 dark:text-slate-400 block mb-1">রেগুলার ফি (৳)</label>
+              <input type="number" step="0.5" name="price" x-model="activeGroup.price" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
+            </div>
+            <div>
+              <label class="font-semibold text-slate-600 dark:text-slate-400 block mb-1">ডিসকাউন্ট অফার ফি (৳)</label>
+              <input type="number" step="0.5" name="discount_price" x-model="activeGroup.discount_price" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
+            </div>
+          </div>
+        </div>
+
+        <!-- Multi-select Exams -->
+        <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">অন্তর্ভুক্ত পরীক্ষাসমূহ নির্বাচন করুন *</label>
+          <div class="max-h-48 overflow-y-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-3 space-y-2">
+            {% for exam in exams %}
+              <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-white dark:hover:bg-slate-800 transition-colors cursor-pointer text-xs">
+                <input 
+                  type="checkbox" 
+                  name="exam_ids" 
+                  value="{{ exam.id }}" 
+                  :checked="activeGroup.exam_ids.includes({{ exam.id }})"
+                  class="rounded text-emerald-600 w-4 h-4"
+                >
+                <div class="flex-1">
+                  <span class="font-bold text-slate-900 dark:text-white">{{ exam.title }}</span>
+                  <span class="text-[10px] font-mono text-slate-400 ml-2">({{ exam.questions.count }}টি প্রশ্ন • {{ exam.duration_minutes }}মি.)</span>
+                </div>
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">সিলেবাস ও বিবরণী</label>
+          <textarea name="description" rows="3" x-model="activeGroup.description" class="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white"></textarea>
+        </div>
+
+        <div class="flex items-center gap-2 pt-1">
+          <input type="checkbox" id="edit_group_is_published" name="is_published" x-model="activeGroup.is_published" class="rounded text-emerald-600">
+          <label for="edit_group_is_published" class="font-semibold text-slate-700 dark:text-slate-300">সরাসরি লাইভ প্রকাশ করুন</label>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+          <button type="button" @click="editGroupModalOpen = false" class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 font-bold">বাতিল</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold hover:opacity-90">আপডেট করুন</button>
         </div>
       </form>
     </div>

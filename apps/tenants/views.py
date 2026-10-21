@@ -365,11 +365,71 @@ def tenant_branding_settings_view(request):
             "logo_url",
             "banner_url",
             "favicon_url",
+            # Hero 4 Category Pills
+            "hero_pill_1_icon",
+            "hero_pill_1_title",
+            "hero_pill_1_sub",
+            "hero_pill_1_url",
+            "hero_pill_2_icon",
+            "hero_pill_2_title",
+            "hero_pill_2_sub",
+            "hero_pill_2_url",
+            "hero_pill_3_icon",
+            "hero_pill_3_title",
+            "hero_pill_3_sub",
+            "hero_pill_3_url",
+            "hero_pill_4_icon",
+            "hero_pill_4_title",
+            "hero_pill_4_sub",
+            "hero_pill_4_url",
+            # Feature Highlights ("শেখার নতুন দুনিয়ায় স্বাগতম")
+            "features_section_badge",
+            "features_section_title",
+            "features_live_badge",
+            "features_live_title",
+            "features_live_desc",
+            "features_live_btn",
+            "features_live_url",
+            "features_rec_badge",
+            "features_rec_title",
+            "features_rec_desc",
+            "features_rec_btn",
+            "features_rec_url",
+            "subfeat_1_icon",
+            "subfeat_1_title",
+            "subfeat_1_desc",
+            "subfeat_2_icon",
+            "subfeat_2_title",
+            "subfeat_2_desc",
+            "subfeat_3_icon",
+            "subfeat_3_title",
+            "subfeat_3_desc",
+            "subfeat_4_icon",
+            "subfeat_4_title",
+            "subfeat_4_desc",
+            # Gallery / Student Moments ("তার শেখার গল্প পথেই গড়ে উঠছে")
+            "gallery_section_badge",
+            "gallery_section_title",
         ]
 
         for field in branding_text_fields:
             if field in request.POST:
                 branding[field] = request.POST.get(field, "").strip()
+
+        # Homepage Sections Visibility Toggles
+        if "homepage_sections_sent" in request.POST:
+            branding["show_hero_category_pills"] = (
+                request.POST.get("show_hero_category_pills") == "on"
+            )
+            branding["show_features_section"] = (
+                request.POST.get("show_features_section") == "on"
+            )
+            branding["show_gallery_section"] = (
+                request.POST.get("show_gallery_section") == "on"
+            )
+            branding["show_app_section"] = (
+                request.POST.get("show_app_section") == "on"
+            )
 
         # WhatsApp widget toggle
         if "enable_whatsapp_widget" in request.POST:
@@ -429,6 +489,28 @@ def tenant_branding_settings_view(request):
                     is_active=True,
                 )
                 messages.success(request, f"মেনু আইটেম '{menu_title}' যুক্ত হয়েছে!")
+
+        elif menu_action == "edit_menu":
+            menu_id = request.POST.get("menu_id")
+            menu_title = request.POST.get("menu_title", "").strip()
+            menu_url = request.POST.get("menu_url", "").strip()
+            menu_order = int(request.POST.get("menu_order", 0) or 0)
+            open_in_new_tab = request.POST.get("menu_new_tab") in ["on", "true", "True", True]
+            if menu_id and menu_title and menu_url:
+                from apps.tenants.models import TenantMenuItem
+
+                updated = TenantMenuItem.objects.filter(tenant=tenant, id=menu_id).update(
+                    title=menu_title,
+                    url=menu_url,
+                    order=menu_order,
+                    open_in_new_tab=open_in_new_tab,
+                )
+                if updated:
+                    messages.success(request, f"মেনু আইটেম '{menu_title}' সফলভাবে আপডেট হয়েছে!")
+                else:
+                    messages.error(request, "মেনু আইটেমটি পাওয়া যায়নি।")
+            else:
+                messages.error(request, "মেনুর নাম ও URL উভয়ই আবশ্যক।")
 
         elif menu_action == "delete_menu":
             menu_id = request.POST.get("menu_id")

@@ -2,7 +2,20 @@
 
 {% block title %}{{ exam.title }} — লাইভ পরীক্ষা{% endblock %}
 
+{% block canonical_url %}{{ clean_canonical_url|default:request.build_absolute_uri }}{% endblock %}
+{% block og_url %}{{ clean_canonical_url|default:request.build_absolute_uri }}{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block og_title %}📝 {{ exam.title }} — অনলাইন পরীক্ষা | {{ current_tenant.name|default:'বিদ্যাঙ্গন' }}{% endblock %}
+{% block og_description %}অনলাইন MCQ পরীক্ষা: {{ exam.title }}। মোট প্রশ্ন: {{ questions.count }}টি • সময়: {{ exam.duration_minutes }} মিনিট • পূর্ণমান: {{ exam.total_marks }}। এখনই অংশ নিন।{% endblock %}
+{% block og_image %}{{ og_image_url }}{% endblock %}
+{% block og_image_secure %}{{ og_image_url }}{% endblock %}
+{% block og_image_type %}{{ og_image_type|default:'image/jpeg' }}{% endblock %}
+{% block twitter_title %}📝 {{ exam.title }} — অনলাইন পরীক্ষা{% endblock %}
+{% block twitter_description %}অনলাইন MCQ পরীক্ষা: {{ exam.title }}। সময়: {{ exam.duration_minutes }} মিনিট। এখনই অংশ নিন।{% endblock %}
+{% block twitter_image %}{{ og_image_url }}{% endblock %}
+
 {% block content %}
+
 <div 
   x-data="{
     timeLeft: {{ exam.duration_minutes }} * 60,
@@ -72,15 +85,78 @@
         <span class="font-bold text-slate-900 dark:text-white">📌 নির্দেশিকা:</span>
         <p>{{ exam.description }}</p>
         <div class="text-[10px] font-mono text-slate-400 pt-1">
-          মোট প্রশ্ন: {{ questions.count }}টি • পাস মার্ক: {{ exam.pass_mark }}% • ভুল উত্তরে কাটা যাবে: -{{ exam.negative_mark_per_question }} নম্বর।
+          মোট প্রশ্ন: {{ questions.count }}টি{% if exam.should_display_pass_mark %} • পাস মার্ক: {{ exam.pass_mark }}%{% endif %}{% if exam.should_display_negative_mark %} • ভুল উত্তরে কাটা যাবে: -{{ exam.negative_mark_per_question }} নম্বর{% endif %}।
         </div>
       </div>
     {% endif %}
 
+    <!-- Exam Share Bar -->
+    <div class="flex flex-wrap items-center justify-between gap-3 p-3 px-4 rounded-2xl bg-white/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 text-xs">
+      <div class="flex items-center gap-2 text-slate-600 dark:text-slate-400 font-medium">
+        <span>📢</span>
+        <span>বন্ধুদের সাথে শেয়ার করুন:</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button 
+          type="button" 
+          @click="navigator.clipboard.writeText(window.location.href); alert('✅ পরীক্ষার লিংক কপি হয়েছে!');"
+          class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-slate-700 dark:text-slate-300 transition-all flex items-center gap-1.5"
+        >
+          <span>🔗 লিংক কপি</span>
+        </button>
+        <a 
+          href="https://api.whatsapp.com/send?text={{ '📝 *'|urlencode }}{{ exam.title|urlencode }}{{ '*%0A⏱️ সময়: '|urlencode }}{{ exam.duration_minutes }}{{ ' মিনিট | মোট প্রশ্ন: '|urlencode }}{{ questions.count }}{{ 'টি%0A%0Aঅনলাইন পরীক্ষায় অংশ নিতে ক্লিক করুন:%0A'|urlencode }}{{ request.build_absolute_uri }}" 
+          target="_blank" 
+          class="px-3 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold transition-all flex items-center gap-1.5"
+        >
+          <span>📲 WhatsApp</span>
+        </a>
+      </div>
+    </div>
+
     <!-- Exam Submit Form -->
-    <form id="exam-submit-form" method="POST" action="{% url 'courses:exam_submit' exam.slug %}" class="space-y-6">
+    <form id="exam-submit-form" method="POST" action="/exams/{{ exam.slug }}/submit/" class="space-y-6">
       {% csrf_token %}
       <input type="hidden" name="time_taken_seconds" :value="timeTaken">
+
+      <!-- Student Academic Info Card (For Merit List Display) -->
+      <div class="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl">🎓</span>
+          <div>
+            <h3 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white">পরীক্ষার্থীর একাডেমিক তথ্য (মেধা তালিকায় প্রদর্শনের জন্য)</h3>
+            <p class="text-[11px] text-slate-500">আপনার কলেজ/প্রতিষ্ঠানের নাম এবং সেশন বা ব্যাচ উল্লেখ করুন (ঐচ্ছিক)</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              কলেজ / প্রতিষ্ঠানের নাম
+            </label>
+            <input 
+              type="text" 
+              name="institution_name" 
+              value="{{ previous_attempt.institution_name|default:'' }}" 
+              placeholder="যেমন: ঢাকা কলেজ / নটর ডেম কলেজ" 
+              class="w-full px-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary"
+            >
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              সেশন / ব্যাচ / শ্রেণি
+            </label>
+            <input 
+              type="text" 
+              name="batch_or_session" 
+              value="{{ previous_attempt.batch_or_session|default:'' }}" 
+              placeholder="যেমন: HSC 2026 / ২০১৯-২০২০ / ২০২০-২০২১" 
+              class="w-full px-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary"
+            >
+          </div>
+        </div>
+      </div>
 
       <!-- Questions List -->
       {% for q in questions %}
@@ -117,7 +193,7 @@
                 @change="updateAnswered()" 
                 class="w-4 h-4 text-emerald-600 focus:ring-emerald-500"
               >
-              <span class="text-xs font-semibold">ক) {{ q.option_a }}</span>
+              <span class="text-xs font-semibold">{{ q.opt_a_label }}) {{ q.option_a }}</span>
             </label>
 
             <!-- Option B -->
@@ -129,7 +205,7 @@
                 @change="updateAnswered()" 
                 class="w-4 h-4 text-emerald-600 focus:ring-emerald-500"
               >
-              <span class="text-xs font-semibold">খ) {{ q.option_b }}</span>
+              <span class="text-xs font-semibold">{{ q.opt_b_label }}) {{ q.option_b }}</span>
             </label>
 
             <!-- Option C -->
@@ -141,7 +217,7 @@
                 @change="updateAnswered()" 
                 class="w-4 h-4 text-emerald-600 focus:ring-emerald-500"
               >
-              <span class="text-xs font-semibold">গ) {{ q.option_c }}</span>
+              <span class="text-xs font-semibold">{{ q.opt_c_label }}) {{ q.option_c }}</span>
             </label>
 
             <!-- Option D -->
@@ -153,7 +229,7 @@
                 @change="updateAnswered()" 
                 class="w-4 h-4 text-emerald-600 focus:ring-emerald-500"
               >
-              <span class="text-xs font-semibold">ঘ) {{ q.option_d }}</span>
+              <span class="text-xs font-semibold">{{ q.opt_d_label }}) {{ q.option_d }}</span>
             </label>
 
           </div>

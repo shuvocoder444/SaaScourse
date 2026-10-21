@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}এনরোলমেন্ট ও পেমেন্ট — {{ group.title }} | {{ current_tenant.name|default:'বিদ্যাঙ্গন' }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 dark:bg-slate-950 py-12 px-4 sm:px-6">
+  <div class="max-w-2xl mx-auto space-y-6">
+
+    <!-- Top Breadcrumb -->
+    <div class="flex items-center gap-2 text-xs font-mono text-slate-500 dark:text-slate-400">
+      <a href="/exams/groups/{{ group.slug }}/" class="hover:text-brand-primary">← {{ group.title }}</a>
+      <span>/</span>
+      <span class="text-slate-900 dark:text-white font-bold">পেমেন্ট ও এনরোলমেন্ট</span>
+    </div>
+
+    <!-- Alert Messages -->
+    {% if messages %}
+      <div class="space-y-2">
+        {% for message in messages %}
+          <div class="p-4 rounded-2xl border text-xs font-bold flex items-center gap-2 shadow-sm {% if message.tags == 'error' %}bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400{% else %}bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400{% endif %}">
+            <span>{% if message.tags == 'error' %}⚠️{% else %}✓{% endif %}</span>
+            <span>{{ message }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- Checkout Card -->
+    <div class="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden p-6 sm:p-8 space-y-6">
+      
+      <!-- Order Summary Header -->
+      <div class="flex items-start gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
+        <div class="w-20 h-20 rounded-2xl bg-slate-100 dark:bg-slate-800 overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700">
+          {% if group.get_thumbnail_url %}
+            <img src="{{ group.get_thumbnail_url }}" alt="{{ group.title }}" class="w-full h-full object-cover">
+          {% else %}
+            <div class="w-full h-full flex items-center justify-center text-2xl bg-emerald-500/10 text-emerald-600">
+              🗂️
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="space-y-1 flex-1">
+          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            মডেল টেস্ট প্যাকেজ
+          </span>
+          <h1 class="text-lg font-black text-slate-900 dark:text-white leading-snug">
+            {{ group.title }}
+          </h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400 font-mono">
+            অন্তর্ভুক্ত বিষয়: {{ group.exams.count }}টি • মোট প্রশ্ন: {{ group.total_questions_count }}টি
+          </p>
+        </div>
+      </div>
+
+      <!-- Price Breakdown -->
+      <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 space-y-2 text-xs">
+        <div class="flex justify-between text-slate-500 dark:text-slate-400">
+          <span>রেগুলার ফি:</span>
+          <span class="line-through">৳ {{ group.price }}</span>
+        </div>
+        {% if group.discount_price and group.price > group.discount_price %}
+          <div class="flex justify-between text-emerald-600 dark:text-emerald-400 font-semibold">
+            <span>স্পেশাল ডিসকাউন্ট:</span>
+            <span>- ৳ {{ group.price|floatformat:2|add:"-"|add:group.discount_price|floatformat:2 }}</span>
+          </div>
+        {% endif %}
+        <div class="pt-2 border-t border-slate-200 dark:border-slate-700 flex justify-between font-black text-sm text-slate-900 dark:text-white">
+          <span>সর্বমোট প্রদেয় ফি:</span>
+          <span class="text-emerald-600 dark:text-emerald-400 text-base">৳ {{ group.effective_price }}</span>
+        </div>
+      </div>
+
+      <!-- Checkout Form -->
+      <form method="POST" action="{% url 'courses:exam_group_enroll' group.slug %}" class="space-y-5 text-xs">
+        {% csrf_token %}
+
+        <div class="space-y-2">
+          <label class="font-bold text-slate-900 dark:text-white block">পেমেন্ট মেথড নির্বাচন করুন:</label>
+          <div class="grid grid-cols-3 gap-3">
+            <label class="flex flex-col items-center justify-center p-3 rounded-2xl border-2 border-emerald-500 bg-emerald-500/5 cursor-pointer text-center space-y-1">
+              <input type="radio" name="payment_method" value="bKash Online Gateway" checked class="sr-only">
+              <span class="text-xl">📱</span>
+              <span class="font-bold text-slate-900 dark:text-white">বিকাশ (bKash)</span>
+            </label>
+
+            <label class="flex flex-col items-center justify-center p-3 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-emerald-500/50 cursor-pointer text-center space-y-1">
+              <input type="radio" name="payment_method" value="Nagad Mobile Banking" class="sr-only">
+              <span class="text-xl">📲</span>
+              <span class="font-bold text-slate-900 dark:text-white">নগদ (Nagad)</span>
+            </label>
+
+            <label class="flex flex-col items-center justify-center p-3 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-emerald-500/50 cursor-pointer text-center space-y-1">
+              <input type="radio" name="payment_method" value="Credit/Debit Card" class="sr-only">
+              <span class="text-xl">💳</span>
+              <span class="font-bold text-slate-900 dark:text-white">কার্ড / নেটব্যাংকিং</span>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+            ট্রানজ্যাকশন আইডি (Transaction ID / TrxID)
+          </label>
+          <input 
+            type="text" 
+            name="transaction_id" 
+            placeholder="যেমন: TRX9812A7B4 (ফাঁকা রাখলে ইনস্ট্যান্ট ডেমো আইডি তৈরি হবে)" 
+            class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-mono"
+          >
+          <p class="text-[10px] text-slate-400 mt-1">
+            পেমেন্ট সম্পন্ন করার পর প্রাপ্ত ট্রানজ্যাকশন আইডিটি এখানে দিন।
+          </p>
+        </div>
+
+        <button 
+          type="submit" 
+          class="w-full py-3.5 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-black text-center shadow-xl shadow-emerald-600/25 transition-all flex items-center justify-center gap-2"
+        >
+          <span>পেমেন্ট নিশ্চিত করে এনরোল সম্পন্ন করুন</span>
+          <span>→</span>
+        </button>
+
+      </form>
+
+      <div class="text-center text-[11px] text-slate-400">
+        🔒 ১০০% নিরাপদ ও এনক্রিপ্টেড পেমেন্ট ব্যবস্থা।
+      </div>
+
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+

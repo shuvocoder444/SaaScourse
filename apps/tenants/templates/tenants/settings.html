@@ -10,7 +10,13 @@
 <div 
   x-data="{ 
     sidebarOpen: false, 
-    activeTab: new URLSearchParams(window.location.search).get('tab') || '{{ active_tab|default:'domain' }}' 
+    activeTab: new URLSearchParams(window.location.search).get('tab') || '{{ active_tab|default:'domain' }}',
+    editModalOpen: false,
+    editItem: { id: '', title: '', url: '', order: 0, newTab: false },
+    openEditModal(item) {
+      this.editItem = item;
+      this.editModalOpen = true;
+    }
   }" 
   @toggle-sidebar.window="sidebarOpen = !sidebarOpen"
   @close-sidebar.window="sidebarOpen = false"
@@ -51,6 +57,7 @@
       <form method="POST" enctype="multipart/form-data" class="space-y-8">
         {% csrf_token %}
         <input type="hidden" name="active_tab" value="template">
+        <input type="hidden" name="homepage_sections_sent" value="1">
 
         <!-- 1. Template Layout Selector -->
         <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-6 sm:p-8 shadow-sm space-y-6">
@@ -167,9 +174,252 @@
             </div>
           </div>
 
-          <!-- App Promo Section Settings -->
+          <!-- 1. Hero 4 Category Pills Bar Settings -->
           <div class="pt-6 border-t border-slate-200 dark:border-slate-800 space-y-4">
-            <span class="text-xs font-mono uppercase text-emerald-600 dark:text-emerald-400 font-bold block">মোবাইল অ্যাপ প্রোমো সেকশন</span>
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-xs font-mono uppercase text-emerald-600 dark:text-emerald-400 font-bold block">১. হিরো কুইক ক্যাটাগরি পিলস বার (Hero Category Pills)</span>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400">হিরো সেকশনের নিচে প্রদর্শিত ৪টি কুইক লিংক/ক্যাটাগরি বাটন কাস্টমাইজ করুন।</p>
+              </div>
+              <label class="flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" name="show_hero_category_pills" {% if branding.show_hero_category_pills != False %}checked{% endif %} class="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4">
+                <span class="text-xs font-bold text-slate-800 dark:text-slate-200">সেকশন প্রদর্শন করুন</span>
+              </label>
+            </div>
+
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <!-- Pill 1 -->
+              <div class="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 space-y-2">
+                <span class="text-[10px] font-bold uppercase text-slate-400">পিল ১</span>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">আইকন / ইমোজি</label>
+                  <input type="text" name="hero_pill_1_icon" value="{{ branding.hero_pill_1_icon|default:'🏛️' }}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">টাইটেল</label>
+                  <input type="text" name="hero_pill_1_title" value="{{ branding.hero_pill_1_title|default:'DU (খ/গ ইউনিট)' }}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">সাবটাইটেল</label>
+                  <input type="text" name="hero_pill_1_sub" value="{{ branding.hero_pill_1_sub|default:'লাইভ ও এক্সাম ব্যাচ' }}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">URL / লিংক</label>
+                  <input type="text" name="hero_pill_1_url" value="{{ branding.hero_pill_1_url|default:'/courses/?category=du' }}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white">
+                </div>
+              </div>
+
+              <!-- Pill 2 -->
+              <div class="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 space-y-2">
+                <span class="text-[10px] font-bold uppercase text-slate-400">পিল ২</span>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">আইকন / ইমোজি</label>
+                  <input type="text" name="hero_pill_2_icon" value="{{ branding.hero_pill_2_icon|default:'🩺' }}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">টাইটেল</label>
+                  <input type="text" name="hero_pill_2_title" value="{{ branding.hero_pill_2_title|default:'মেডিকেল ভর্তি' }}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">সাবটাইটেল</label>
+                  <input type="text" name="hero_pill_2_sub" value="{{ branding.hero_pill_2_sub|default:'মেগা প্র্যাকটিস কোর্স' }}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">URL / লিংক</label>
+                  <input type="text" name="hero_pill_2_url" value="{{ branding.hero_pill_2_url|default:'/courses/?category=medical' }}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white">
+                </div>
+              </div>
+
+              <!-- Pill 3 -->
+              <div class="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 space-y-2">
+                <span class="text-[10px] font-bold uppercase text-slate-400">পিল ৩</span>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">আইকন / ইমোজি</label>
+                  <input type="text" name="hero_pill_3_icon" value="{{ branding.hero_pill_3_icon|default:'⚡' }}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">টাইটেল</label>
+                  <input type="text" name="hero_pill_3_title" value="{{ branding.hero_pill_3_title|default:'ইঞ্জিনিয়ারিং' }}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">সাবটাইটেল</label>
+                  <input type="text" name="hero_pill_3_sub" value="{{ branding.hero_pill_3_sub|default:'BUET & CKET ব্যাচ' }}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">URL / লিংক</label>
+                  <input type="text" name="hero_pill_3_url" value="{{ branding.hero_pill_3_url|default:'/courses/?category=engineering' }}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white">
+                </div>
+              </div>
+
+              <!-- Pill 4 -->
+              <div class="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 space-y-2">
+                <span class="text-[10px] font-bold uppercase text-slate-400">পিল ৪</span>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">আইকন / ইমোজি</label>
+                  <input type="text" name="hero_pill_4_icon" value="{{ branding.hero_pill_4_icon|default:'📚' }}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">টাইটেল</label>
+                  <input type="text" name="hero_pill_4_title" value="{{ branding.hero_pill_4_title|default:'HSC ও আলিম' }}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">সাবটাইটেল</label>
+                  <input type="text" name="hero_pill_4_sub" value="{{ branding.hero_pill_4_sub|default:'একাডেমিক পূর্ণাঙ্গ কোর্স' }}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">URL / লিংক</label>
+                  <input type="text" name="hero_pill_4_url" value="{{ branding.hero_pill_4_url|default:'/courses/?category=hsc' }}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Feature Highlights Section Settings ("শেখার নতুন দুনিয়ায় স্বাগতম") -->
+          <div class="pt-6 border-t border-slate-200 dark:border-slate-800 space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-xs font-mono uppercase text-emerald-600 dark:text-emerald-400 font-bold block">২. স্মার্ট এডুকেশন ফিচার কার্ড ("শেখার নতুন দুনিয়ায় স্বাগতম")</span>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400">লাইভ ব্যাচ, রেকর্ডেড কোর্স কার্ড ও ৪টি সাব-ফিচার বক্স কাস্টমাইজ করুন।</p>
+              </div>
+              <label class="flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" name="show_features_section" {% if branding.show_features_section != False %}checked{% endif %} class="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4">
+                <span class="text-xs font-bold text-slate-800 dark:text-slate-200">সেকশন প্রদর্শন করুন</span>
+              </label>
+            </div>
+
+            <div class="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">সেকশন ট্যাগ / সাবটাইটেল</label>
+                <input type="text" name="features_section_badge" value="{{ branding.features_section_badge|default:'স্মার্ট এডুকেশন প্ল্যাটফর্ম' }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs text-slate-900 dark:text-white">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">সেকশন প্রধান শিরোনাম</label>
+                <input type="text" name="features_section_title" value="{{ branding.features_section_title|default:'শেখার নতুন দুনিয়ায় স্বাগতম' }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs text-slate-900 dark:text-white">
+              </div>
+            </div>
+
+            <!-- 2 Main Cards: Live Batches & Recorded Courses -->
+            <div class="grid sm:grid-cols-2 gap-4 pt-2">
+              <!-- Live Batch Card -->
+              <div class="p-4 rounded-2xl border border-rose-200/80 dark:border-rose-900/40 bg-rose-50/40 dark:bg-rose-950/20 space-y-2">
+                <span class="text-xs font-bold text-rose-600 dark:text-rose-400">🔴 লাইভ ব্যাচ কার্ড</span>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">ব্যাজ</label>
+                  <input type="text" name="features_live_badge" value="{{ branding.features_live_badge|default:'🔴 লাইভ ব্যাচসমূহ' }}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">শিরোনাম</label>
+                  <input type="text" name="features_live_title" value="{{ branding.features_live_title|default:'ইন্টারেক্টিভ লাইভ ক্লাসে অংশ নিন' }}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">বর্ণনা</label>
+                  <input type="text" name="features_live_desc" value="{{ branding.features_live_desc|default:'সরাসরি মেন্টরদের সাথে প্রশ্ন করার সুযোগ' }}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">বাটন লেখা</label>
+                    <input type="text" name="features_live_btn" value="{{ branding.features_live_btn|default:'যুক্ত হোন →' }}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs">
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">বাটন লিংক</label>
+                    <input type="text" name="features_live_url" value="{{ branding.features_live_url|default:'/courses/' }}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Recorded Courses Card -->
+              <div class="p-4 rounded-2xl border border-amber-200/80 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-950/20 space-y-2">
+                <span class="text-xs font-bold text-amber-600 dark:text-amber-400">🟠 রেকর্ডেড কোর্স কার্ড</span>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">ব্যাজ</label>
+                  <input type="text" name="features_rec_badge" value="{{ branding.features_rec_badge|default:'🟠 রেকর্ডেড কোর্সসমূহ' }}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">শিরোনাম</label>
+                  <input type="text" name="features_rec_title" value="{{ branding.features_rec_title|default:'নিজের সুবিধাজনক সময়ে শিখুন' }}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">বর্ণনা</label>
+                  <input type="text" name="features_rec_desc" value="{{ branding.features_rec_desc|default:'লাইফটাইম এক্সেস ও আনলিমিটেড রিভিশন' }}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">বাটন লেখা</label>
+                    <input type="text" name="features_rec_btn" value="{{ branding.features_rec_btn|default:'ব্রাউজ করুন →' }}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs">
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300">বাটন লিংক</label>
+                    <input type="text" name="features_rec_url" value="{{ branding.features_rec_url|default:'/courses/' }}" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4 Sub Features -->
+            <div class="pt-2">
+              <span class="text-[11px] font-bold text-slate-600 dark:text-slate-300 block mb-2">৪টি সাব-ফিচার আইটেম</span>
+              <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-1.5">
+                  <input type="text" name="subfeat_1_icon" value="{{ branding.subfeat_1_icon|default:'📱' }}" placeholder="ইমোজি" class="w-full px-2 py-1 rounded border border-slate-300 dark:border-slate-700 text-xs">
+                  <input type="text" name="subfeat_1_title" value="{{ branding.subfeat_1_title|default:'মোবাইল অ্যাপ' }}" placeholder="টাইটেল" class="w-full px-2 py-1 rounded border border-slate-300 dark:border-slate-700 text-xs">
+                  <input type="text" name="subfeat_1_desc" value="{{ branding.subfeat_1_desc|default:'যেকোনো ডিভাইসে পড়া' }}" placeholder="বিবরণ" class="w-full px-2 py-1 rounded border border-slate-300 dark:border-slate-700 text-xs">
+                </div>
+                <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-1.5">
+                  <input type="text" name="subfeat_2_icon" value="{{ branding.subfeat_2_icon|default:'📝' }}" placeholder="ইমোজি" class="w-full px-2 py-1 rounded border border-slate-300 dark:border-slate-700 text-xs">
+                  <input type="text" name="subfeat_2_title" value="{{ branding.subfeat_2_title|default:'ডেইলি মডেল টেস্ট' }}" placeholder="টাইটেল" class="w-full px-2 py-1 rounded border border-slate-300 dark:border-slate-700 text-xs">
+                  <input type="text" name="subfeat_2_desc" value="{{ branding.subfeat_2_desc|default:'মেধা যাচাই ও র‍্যাঙ্কিং' }}" placeholder="বিবরণ" class="w-full px-2 py-1 rounded border border-slate-300 dark:border-slate-700 text-xs">
+                </div>
+                <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-1.5">
+                  <input type="text" name="subfeat_3_icon" value="{{ branding.subfeat_3_icon|default:'📖' }}" placeholder="ইমোজি" class="w-full px-2 py-1 rounded border border-slate-300 dark:border-slate-700 text-xs">
+                  <input type="text" name="subfeat_3_title" value="{{ branding.subfeat_3_title|default:'পিডিএফ লেকচার শিট' }}" placeholder="টাইটেল" class="w-full px-2 py-1 rounded border border-slate-300 dark:border-slate-700 text-xs">
+                  <input type="text" name="subfeat_3_desc" value="{{ branding.subfeat_3_desc|default:'প্রিন্টযোগ্য নোট ও শিট' }}" placeholder="বিবরণ" class="w-full px-2 py-1 rounded border border-slate-300 dark:border-slate-700 text-xs">
+                </div>
+                <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-1.5">
+                  <input type="text" name="subfeat_4_icon" value="{{ branding.subfeat_4_icon|default:'💬' }}" placeholder="ইমোজি" class="w-full px-2 py-1 rounded border border-slate-300 dark:border-slate-700 text-xs">
+                  <input type="text" name="subfeat_4_title" value="{{ branding.subfeat_4_title|default:'২৪/৭ ডাউট সলভিং' }}" placeholder="টাইটেল" class="w-full px-2 py-1 rounded border border-slate-300 dark:border-slate-700 text-xs">
+                  <input type="text" name="subfeat_4_desc" value="{{ branding.subfeat_4_desc|default:'বিশেষজ্ঞ মেন্টর সাপোর্ট' }}" placeholder="বিবরণ" class="w-full px-2 py-1 rounded border border-slate-300 dark:border-slate-700 text-xs">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Photo Gallery / Campus Moments ("তার শেখার গল্প পথেই গড়ে উঠছে") -->
+          <div class="pt-6 border-t border-slate-200 dark:border-slate-800 space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-xs font-mono uppercase text-emerald-600 dark:text-emerald-400 font-bold block">৩. ফটো গ্যালারি ও ক্যাম্পাস মোমেন্টস ("তার শেখার গল্প পথেই গড়ে উঠছে")</span>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400">স্টুডেন্ট মোমেন্টস, সেমিনার ও একাডেমি ফটো গ্যালারি সেকশন কাস্টমাইজ করুন।</p>
+              </div>
+              <label class="flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" name="show_gallery_section" {% if branding.show_gallery_section != False %}checked{% endif %} class="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4">
+                <span class="text-xs font-bold text-slate-800 dark:text-slate-200">সেকশন প্রদর্শন করুন</span>
+              </label>
+            </div>
+
+            <div class="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">গ্যালারি ট্যাগ / ব্যাজ</label>
+                <input type="text" name="gallery_section_badge" value="{{ branding.gallery_section_badge|default:'ক্যাম্পাস ও কমিউনিটি' }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs text-slate-900 dark:text-white">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">গ্যালারি প্রধান শিরোনাম</label>
+                <input type="text" name="gallery_section_title" value="{{ branding.gallery_section_title|default:'তার শেখার গল্প পথেই গড়ে উঠছে' }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs text-slate-900 dark:text-white">
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. App Promo Section Settings ("ডাউনলোড করুন আমাদের মোবাইল অ্যাপ") -->
+          <div class="pt-6 border-t border-slate-200 dark:border-slate-800 space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-xs font-mono uppercase text-emerald-600 dark:text-emerald-400 font-bold block">৪. মোবাইল অ্যাপ প্রোমো সেকশন ("ডাউনলোড করুন আমাদের মোবাইল অ্যাপ")</span>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400">অ্যাপ ডাউনলোড প্রমোশন ব্যানার, রেটিং, এবং স্টোর লিংক কনফিগার করুন।</p>
+              </div>
+              <label class="flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" name="show_app_section" {% if branding.show_app_section != False %}checked{% endif %} class="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4">
+                <span class="text-xs font-bold text-slate-800 dark:text-slate-200">সেকশন প্রদর্শন করুন</span>
+              </label>
+            </div>
             
             <div class="grid sm:grid-cols-2 gap-4">
               <div>
@@ -177,22 +427,22 @@
                 <input type="text" name="app_promo_title" value="{{ branding.app_promo_title|default:'ডাউনলোড করুন আমাদের মোবাইল অ্যাপ, শেখা শুরু করুন আজ থেকেই' }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
               </div>
               <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">অ্যাপ প্রোমো সাবটাইটেল</label>
+                <input type="text" name="app_promo_subtitle" value="{{ branding.app_promo_subtitle|default:'লাইভ ক্লাস, প্র্যাকটিস এক্সাম, পিডিএফ লেকচার শিট ও পরীক্ষার ফলাফল সব পাবেন হাতের মুঠোয়।' }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              </div>
+            </div>
+
+            <div class="grid sm:grid-cols-2 gap-4">
+              <div>
                 <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">সক্রিয় শিক্ষার্থী ও রেটিং</label>
                 <div class="grid grid-cols-2 gap-2">
                   <input type="text" name="app_downloads" value="{{ branding.app_downloads|default:'৫০,০০০+' }}" placeholder="৫০,০০০+" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs text-slate-900 dark:text-white">
                   <input type="text" name="app_rating" value="{{ branding.app_rating|default:'4.8★' }}" placeholder="4.8★" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs text-slate-900 dark:text-white">
                 </div>
               </div>
-            </div>
-
-            <div class="grid sm:grid-cols-2 gap-4">
               <div>
                 <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">গুগল প্লে স্টোর লিংক</label>
                 <input type="url" name="play_store_url" value="{{ branding.play_store_url|default:'https://play.google.com' }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">অ্যাপল অ্যাপ স্টোর লিংক</label>
-                <input type="url" name="app_store_url" value="{{ branding.app_store_url|default:'https://apple.com/app-store/' }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
               </div>
             </div>
           </div>
@@ -306,7 +556,14 @@
                   <td class="p-3">
                     <span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-bold">সক্রিয়</span>
                   </td>
-                  <td class="p-3 text-right">
+                  <td class="p-3 text-right space-x-1">
+                    <button 
+                      type="button" 
+                      @click="openEditModal({ id: '{{ item.id }}', title: '{{ item.title|escapejs }}', url: '{{ item.url|escapejs }}', order: '{{ item.order }}', newTab: {% if item.open_in_new_tab %}true{% else %}false{% endif %} })"
+                      class="px-2.5 py-1 rounded-lg text-[11px] font-bold text-indigo-600 dark:text-cyan-400 hover:bg-indigo-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                    >
+                      এডিট ✏️
+                    </button>
                     <form method="POST" onsubmit="return confirm('আপনি কি এই মেনুটি মুছে ফেলতে চান?');" class="inline">
                       {% csrf_token %}
                       <input type="hidden" name="active_tab" value="navigation">
@@ -325,6 +582,65 @@
               {% endfor %}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- Edit Menu Item Modal -->
+      <div 
+        x-show="editModalOpen" 
+        x-cloak 
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      >
+        <div 
+          @click.away="editModalOpen = false"
+          class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-5 animate-fade-in-up"
+        >
+          <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <span>✏️ মেনু লিংক সম্পাদনা করুন</span>
+            </h3>
+            <button type="button" @click="editModalOpen = false" class="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-sm cursor-pointer">✕</button>
+          </div>
+
+          <form method="POST" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="active_tab" value="navigation">
+            <input type="hidden" name="menu_action" value="edit_menu">
+            <input type="hidden" name="menu_id" :value="editItem.id">
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">মেনুর নাম *</label>
+              <input type="text" name="menu_title" :value="editItem.title" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">লিংক / URL *</label>
+              <input type="text" name="menu_url" :value="editItem.url" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">ক্রম (Order)</label>
+                <input type="number" name="menu_order" :value="editItem.order" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              </div>
+
+              <div class="flex items-center pt-5">
+                <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700 dark:text-slate-300">
+                  <input type="checkbox" name="menu_new_tab" :checked="editItem.newTab" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500">
+                  <span>নতুন ট্যাবে খুলবে</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button type="button" @click="editModalOpen = false" class="px-4 py-2 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-all cursor-pointer">
+                বাতিল
+              </button>
+              <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer">
+                সংরক্ষণ করুন
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

@@ -66,13 +66,13 @@
           type="button" 
           @click="toggle('analytics')" 
           class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-sm font-extrabold transition-all duration-200 text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-900 border border-transparent hover:border-slate-200 dark:hover:border-slate-800"
-          :class="openGroups['analytics'] ? 'bg-slate-100/90 dark:bg-slate-900/90 border-slate-200/80 dark:border-slate-800/80 text-brand-primary' : ''"
+          :class="openGroups['analytics'] ? 'bg-slate-100/90 dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 text-brand-primary dark:text-emerald-400 shadow-sm' : ''"
         >
           <span class="flex items-center gap-2.5">
             <span class="text-base">📊</span>
             <span class="tracking-tight">ড্যাশবোর্ড ও রিপোর্ট</span>
           </span>
-          <span class="text-xs font-bold text-slate-400 transition-transform duration-200" x-text="openGroups['analytics'] ? '▲' : '▼'"></span>
+          <span class="text-xs font-bold text-slate-400 dark:text-slate-400 transition-transform duration-200" x-text="openGroups['analytics'] ? '▲' : '▼'"></span>
         </button>
 
         <!-- Submenu Links -->
@@ -80,7 +80,7 @@
           <!-- 1.1 Overview -->
           <a 
             href="/dashboard/?tab=overview" 
-            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 {% if request.GET.tab == 'overview' or not request.GET.tab and '/exams/' not in request.path and '/books/' not in request.path and '/resources/' not in request.path and '/blog/' not in request.path and '/tenants/settings/' not in request.path %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-bold{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
+            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if request.GET.tab == 'overview' or not request.GET.tab and '/exams/' not in request.path and '/books/' not in request.path and '/resources/' not in request.path and '/blog/' not in request.path and '/tenants/settings/' not in request.path %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
             <span class="text-sm">📈</span>
             <span>ওভারভিউ ড্যাশবোর্ড</span>
@@ -89,7 +89,7 @@
           <!-- 1.2 Income, Expense & Ledger -->
           <a 
             href="/dashboard/?tab=finance" 
-            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 {% if request.GET.tab == 'finance' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-bold{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
+            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if request.GET.tab == 'finance' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
             <span class="text-sm">💰</span>
             <span>আয়-ব্যয় ও লেজার</span>
@@ -99,13 +99,13 @@
           <!-- 1.3 Students & Enrollments -->
           <a 
             href="/dashboard/?tab=students" 
-            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 {% if request.GET.tab == 'students' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-bold{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
+            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if request.GET.tab == 'students' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
             <span class="text-sm">👨‍🎓</span>
             <span>শিক্ষার্থী ও এনরোল</span>
-            {% if total_enrollments %}
-              <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-mono font-bold {% if request.GET.tab == 'students' %}bg-white/25 text-white{% else %}bg-emerald-500/15 text-emerald-600 dark:text-emerald-400{% endif %}">
-                {{ total_enrollments }}
+            {% if total_registered_students or total_enrollments %}
+              <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-mono font-bold {% if request.GET.tab == 'students' %}bg-white/25 text-white{% else %}bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 dark:bg-emerald-500/20{% endif %}">
+                {{ total_registered_students|default:total_enrollments }}
               </span>
             {% endif %}
           </a>
@@ -121,13 +121,13 @@
           type="button" 
           @click="toggle('courses')" 
           class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-sm font-extrabold transition-all duration-200 text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-900 border border-transparent hover:border-slate-200 dark:hover:border-slate-800"
-          :class="openGroups['courses'] ? 'bg-slate-100/90 dark:bg-slate-900/90 border-slate-200/80 dark:border-slate-800/80 text-brand-primary' : ''"
+          :class="openGroups['courses'] ? 'bg-slate-100/90 dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 text-brand-primary dark:text-emerald-400 shadow-sm' : ''"
         >
           <span class="flex items-center gap-2.5">
             <span class="text-base">🎓</span>
             <span class="tracking-tight">কোর্স ও লাইভ ক্লাস</span>
           </span>
-          <span class="text-xs font-bold text-slate-400 transition-transform duration-200" x-text="openGroups['courses'] ? '▲' : '▼'"></span>
+          <span class="text-xs font-bold text-slate-400 dark:text-slate-400 transition-transform duration-200" x-text="openGroups['courses'] ? '▲' : '▼'"></span>
         </button>
 
         <!-- Submenu Links -->
@@ -135,12 +135,12 @@
           <!-- 2.1 All Courses -->
           <a 
             href="/dashboard/?tab=courses" 
-            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 {% if request.GET.tab == 'courses' or '/courses/manage/courses/' in request.path or '/curriculum/' in request.path %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-bold{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
+            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if request.GET.tab == 'courses' or '/courses/manage/courses/' in request.path or '/curriculum/' in request.path %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
             <span class="text-sm">📋</span>
             <span>কোর্স তালিকা ও কারিকুলাম</span>
             {% if courses %}
-              <span class="ml-auto px-1.5 py-0.5 rounded text-[10px] font-mono font-bold {% if request.GET.tab == 'courses' %}bg-white/25 text-white{% else %}bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300{% endif %}">
+              <span class="ml-auto px-1.5 py-0.5 rounded text-[10px] font-mono font-bold {% if request.GET.tab == 'courses' %}bg-white/25 text-white{% else %}bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700{% endif %}">
                 {{ courses.count }}
               </span>
             {% endif %}
@@ -149,7 +149,7 @@
           <!-- 2.2 Live Classes Studio -->
           <a 
             href="/dashboard/?tab=live" 
-            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 {% if request.GET.tab == 'live' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-bold{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
+            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if request.GET.tab == 'live' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
             <span class="text-sm">🔴</span>
             <span>লাইভ ক্লাস শিডিউল</span>
@@ -159,7 +159,7 @@
           <!-- 2.3 MCQ & Online Exams -->
           <a 
             href="{% url 'courses:manage_exams' %}" 
-            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 {% if '/courses/manage/exams/' in request.path or '/courses/manage/exam/' in request.path or '/exams/' in request.path %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-bold{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
+            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if '/courses/manage/exams/' in request.path or '/courses/manage/exam/' in request.path or '/exams/' in request.path %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
             <span class="text-sm">📝</span>
             <span>MCQ ও অনলাইন পরীক্ষা</span>
@@ -176,13 +176,13 @@
           type="button" 
           @click="toggle('content')" 
           class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-sm font-extrabold transition-all duration-200 text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-900 border border-transparent hover:border-slate-200 dark:border-slate-800"
-          :class="openGroups['content'] ? 'bg-slate-100/90 dark:bg-slate-900/90 border-slate-200/80 dark:border-slate-800/80 text-brand-primary' : ''"
+          :class="openGroups['content'] ? 'bg-slate-100/90 dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 text-brand-primary dark:text-emerald-400 shadow-sm' : ''"
         >
           <span class="flex items-center gap-2.5">
             <span class="text-base">📚</span>
             <span class="tracking-tight">কনটেন্ট ও রিসোর্স</span>
           </span>
-          <span class="text-xs font-bold text-slate-400 transition-transform duration-200" x-text="openGroups['content'] ? '▲' : '▼'"></span>
+          <span class="text-xs font-bold text-slate-400 dark:text-slate-400 transition-transform duration-200" x-text="openGroups['content'] ? '▲' : '▼'"></span>
         </button>
 
         <!-- Submenu Links -->
@@ -190,7 +190,7 @@
           <!-- 3.1 Books -->
           <a 
             href="{% url 'courses:manage_books' %}" 
-            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 {% if '/courses/manage/books/' in request.path or '/books/' in request.path %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-bold{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
+            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if '/courses/manage/books/' in request.path or '/books/' in request.path %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
             <span class="text-sm">📖</span>
             <span>বই ও প্রকাশনা</span>
@@ -199,7 +199,7 @@
           <!-- 3.2 Free Resources -->
           <a 
             href="{% url 'courses:manage_resources' %}" 
-            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 {% if '/courses/manage/resources/' in request.path or '/resources/' in request.path %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-bold{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
+            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if '/courses/manage/resources/' in request.path or '/resources/' in request.path %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
             <span class="text-sm">🎁</span>
             <span>ফ্রি শিট ও নোট</span>
@@ -208,7 +208,7 @@
           <!-- 3.3 Blog Posts -->
           <a 
             href="{% url 'courses:manage_blog' %}" 
-            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 {% if '/courses/manage/blog/' in request.path or '/blog/' in request.path %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-bold{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
+            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if '/courses/manage/blog/' in request.path or '/blog/' in request.path %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
             <span class="text-sm">📰</span>
             <span>ব্লগ ও আর্টিকেল</span>
@@ -225,13 +225,13 @@
           type="button" 
           @click="toggle('design')" 
           class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-sm font-extrabold transition-all duration-200 text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-900 border border-transparent hover:border-slate-200 dark:border-slate-800"
-          :class="openGroups['design'] ? 'bg-slate-100/90 dark:bg-slate-900/90 border-slate-200/80 dark:border-slate-800/80 text-brand-primary' : ''"
+          :class="openGroups['design'] ? 'bg-slate-100/90 dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 text-brand-primary dark:text-emerald-400 shadow-sm' : ''"
         >
           <span class="flex items-center gap-2.5">
             <span class="text-base">🎨</span>
             <span class="tracking-tight">ডিজাইন ও স্টোরফ্রন্ট</span>
           </span>
-          <span class="text-xs font-bold text-slate-400 transition-transform duration-200" x-text="openGroups['design'] ? '▲' : '▼'"></span>
+          <span class="text-xs font-bold text-slate-400 dark:text-slate-400 transition-transform duration-200" x-text="openGroups['design'] ? '▲' : '▼'"></span>
         </button>
 
         <!-- Submenu Links -->
@@ -239,7 +239,7 @@
           <!-- 4.1 Landing Templates -->
           <a 
             href="/tenants/settings/?tab=template" 
-            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 {% if request.GET.tab == 'template' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-bold{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
+            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if request.GET.tab == 'template' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
             <span class="text-sm">🖼️</span>
             <span>ল্যান্ডিং পেজ থিম</span>
@@ -249,7 +249,7 @@
           <!-- 4.2 Header & Footer -->
           <a 
             href="/tenants/settings/?tab=header_footer" 
-            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 {% if request.GET.tab == 'header_footer' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-bold{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
+            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if request.GET.tab == 'header_footer' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
             <span class="text-sm">📐</span>
             <span>হেডার ও ফুটার ডিজাইন</span>
@@ -258,7 +258,7 @@
           <!-- 4.3 Navigation Menu Builder -->
           <a 
             href="/tenants/settings/?tab=navigation" 
-            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 {% if request.GET.tab == 'navigation' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-bold{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
+            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if request.GET.tab == 'navigation' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
             <span class="text-sm">🧭</span>
             <span>কাস্টম মেনু বিল্ডার</span>
@@ -267,7 +267,7 @@
           <!-- 4.4 Storefront Branding -->
           <a 
             href="/tenants/settings/?tab=branding" 
-            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 {% if request.GET.tab == 'branding' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-bold{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
+            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if request.GET.tab == 'branding' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
             <span class="text-sm">🏷️</span>
             <span>লোগো ও ব্র্যান্ড কালার</span>
@@ -284,13 +284,13 @@
           type="button" 
           @click="toggle('settings')" 
           class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-sm font-extrabold transition-all duration-200 text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-900 border border-transparent hover:border-slate-200 dark:border-slate-800"
-          :class="openGroups['settings'] ? 'bg-slate-100/90 dark:bg-slate-900/90 border-slate-200/80 dark:border-slate-800/80 text-brand-primary' : ''"
+          :class="openGroups['settings'] ? 'bg-slate-100/90 dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 text-brand-primary dark:text-emerald-400 shadow-sm' : ''"
         >
           <span class="flex items-center gap-2.5">
             <span class="text-base">⚙️</span>
             <span class="tracking-tight">সেটিংস ও বিলিং</span>
           </span>
-          <span class="text-xs font-bold text-slate-400 transition-transform duration-200" x-text="openGroups['settings'] ? '▲' : '▼'"></span>
+          <span class="text-xs font-bold text-slate-400 dark:text-slate-400 transition-transform duration-200" x-text="openGroups['settings'] ? '▲' : '▼'"></span>
         </button>
 
         <!-- Submenu Links -->
@@ -298,7 +298,7 @@
           <!-- 5.1 Domain Settings -->
           <a 
             href="/tenants/settings/?tab=domain" 
-            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 {% if request.GET.tab == 'domain' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-bold{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
+            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if request.GET.tab == 'domain' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
             <span class="text-sm">🌐</span>
             <span>কাস্টম ডোমেন ও SSL</span>
@@ -307,7 +307,7 @@
           <!-- 5.2 SMS Gateway Settings -->
           <a 
             href="/tenants/settings/?tab=sms" 
-            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 {% if request.GET.tab == 'sms' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-bold{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
+            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if request.GET.tab == 'sms' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
             <span class="text-sm">📱</span>
             <span>SMS গেটওয়ে সেটিংস</span>
@@ -316,7 +316,7 @@
           <!-- 5.3 Plan & Subscription -->
           <a 
             href="/tenants/settings/?tab=subscription" 
-            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 {% if request.GET.tab == 'subscription' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-bold{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
+            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if request.GET.tab == 'subscription' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
             <span class="text-sm">💎</span>
             <span>প্ল্যান ও সাবস্ক্রিপশন</span>
@@ -325,7 +325,7 @@
           <!-- 5.4 Academy Data Backup & Restore -->
           <a 
             href="/tenants/settings/?tab=backup" 
-            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 {% if request.GET.tab == 'backup' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-bold{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
+            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if request.GET.tab == 'backup' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
             <span class="text-sm">💾</span>
             <span>ডাটা ব্যাকআপ ও রিস্টোর</span>
@@ -339,16 +339,16 @@
   </div>
 
   <!-- Bottom Actions: View Live Academy / Logout -->
-  <div class="p-4 border-t border-slate-200/80 dark:border-slate-800/80 space-y-2 bg-slate-50/70 dark:bg-slate-950/60">
+  <div class="p-4 border-t border-slate-200/80 dark:border-slate-800 space-y-2 bg-slate-50/70 dark:bg-slate-950/80">
     <a 
       href="/" 
       target="_blank" 
-      class="flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 hover:shadow-md transition-all"
+      class="flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-100 hover:bg-white dark:hover:bg-slate-800 hover:shadow-md transition-all"
     >
       <span class="flex items-center gap-2">
         <span>🌐</span> লাইভ স্টোরফ্রন্ট
       </span>
-      <span class="text-emerald-500 font-bold">↗</span>
+      <span class="text-emerald-500 dark:text-emerald-400 font-bold">↗</span>
     </a>
     <a 
       href="{% url 'users:logout' %}" 

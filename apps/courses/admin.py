@@ -10,6 +10,8 @@ from apps.courses.models import (
     Enrollment,
     Exam,
     ExamAttempt,
+    ExamGroup,
+    ExamGroupEnrollment,
     ExamQuestion,
     FeedComment,
     FeedPost,
@@ -244,6 +246,27 @@ class ExamAdmin(admin.ModelAdmin):
     search_fields = ("title", "slug")
     prepopulated_fields = {"slug": ("title",)}
     inlines = [ExamQuestionInline]
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).model.all_objects.all()
+
+
+@admin.register(ExamGroup)
+class ExamGroupAdmin(admin.ModelAdmin):
+    list_display = ("title", "is_free", "price", "discount_price", "is_published", "tenant", "created_at")
+    list_filter = ("is_free", "is_published", "tenant")
+    search_fields = ("title", "slug")
+    filter_horizontal = ("exams",)
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).model.all_objects.all()
+
+
+@admin.register(ExamGroupEnrollment)
+class ExamGroupEnrollmentAdmin(admin.ModelAdmin):
+    list_display = ("user", "group", "is_paid", "paid_amount", "payment_method", "tenant", "enrolled_at")
+    list_filter = ("is_paid", "payment_method", "tenant")
+    search_fields = ("user__email", "group__title", "transaction_id")
 
     def get_queryset(self, request):
         return super().get_queryset(request).model.all_objects.all()

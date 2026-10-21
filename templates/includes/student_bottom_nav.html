@@ -4,7 +4,7 @@
     activeTab: new URLSearchParams(window.location.search).get('tab') || '{{ active_tab|default:'overview' }}'
   }"
   @switch-tab.window="activeTab = $event.detail"
-  class="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-2xl border-t border-slate-200/90 dark:border-slate-800/90 shadow-[0_-4px_25px_rgba(0,0,0,0.08)] lg:hidden select-none transition-all duration-200"
+  class="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-slate-950/98 backdrop-blur-2xl border-t border-slate-200/90 dark:border-slate-800 shadow-[0_-4px_25px_rgba(0,0,0,0.08)] lg:hidden select-none transition-all duration-200"
   style="padding-bottom: max(env(safe-area-inset-bottom, 0px), 6px);"
   aria-label="Student Dashboard Mobile Dock"
 >
@@ -19,17 +19,17 @@
         history.pushState(null, '', '?tab=overview');
         $dispatch('close-sidebar');
       "
-      class="flex flex-col items-center justify-center py-1 transition-transform active:scale-95 group text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
-      :class="activeTab === 'overview' ? 'text-brand-primary font-bold' : ''"
+      class="flex flex-col items-center justify-center py-1 transition-transform active:scale-95 group text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white cursor-pointer"
+      :class="activeTab === 'overview' ? 'text-brand-primary dark:text-emerald-400 font-black' : ''"
     >
       <div class="relative">
         <span class="text-lg leading-none">📊</span>
         <span 
           x-show="activeTab === 'overview'" 
-          class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-brand-primary"
+          class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-brand-primary dark:bg-emerald-400"
         ></span>
       </div>
-      <span class="text-[10px] tracking-tight mt-1 font-semibold">ড্যাশবোর্ড</span>
+      <span class="text-[10px] tracking-tight mt-1 font-bold">ড্যাশবোর্ড</span>
     </a>
 
     <!-- 2. My Courses Tab -->
@@ -41,17 +41,17 @@
         history.pushState(null, '', '?tab=my_courses');
         $dispatch('close-sidebar');
       "
-      class="flex flex-col items-center justify-center py-1 transition-transform active:scale-95 group text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
-      :class="activeTab === 'my_courses' ? 'text-brand-primary font-bold' : ''"
+      class="flex flex-col items-center justify-center py-1 transition-transform active:scale-95 group text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white cursor-pointer"
+      :class="activeTab === 'my_courses' ? 'text-brand-primary dark:text-emerald-400 font-black' : ''"
     >
       <div class="relative">
         <span class="text-lg leading-none">🎓</span>
         <span 
           x-show="activeTab === 'my_courses'" 
-          class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-brand-primary"
+          class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-brand-primary dark:bg-emerald-400"
         ></span>
       </div>
-      <span class="text-[10px] tracking-tight mt-1 font-semibold">আমার কোর্স</span>
+      <span class="text-[10px] tracking-tight mt-1 font-bold">আমার কোর্স</span>
     </a>
 
     <!-- 3. Class Routine Tab -->
@@ -63,17 +63,17 @@
         history.pushState(null, '', '?tab=routine');
         $dispatch('close-sidebar');
       "
-      class="flex flex-col items-center justify-center py-1 transition-transform active:scale-95 group text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
-      :class="activeTab === 'routine' ? 'text-brand-primary font-bold' : ''"
+      class="flex flex-col items-center justify-center py-1 transition-transform active:scale-95 group text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white cursor-pointer"
+      :class="activeTab === 'routine' ? 'text-brand-primary dark:text-emerald-400 font-black' : ''"
     >
       <div class="relative">
         <span class="text-lg leading-none">📅</span>
         <span 
           x-show="activeTab === 'routine'" 
-          class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-brand-primary"
+          class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-brand-primary dark:bg-emerald-400"
         ></span>
       </div>
-      <span class="text-[10px] tracking-tight mt-1 font-semibold">রুটিন</span>
+      <span class="text-[10px] tracking-tight mt-1 font-bold">রুটিন</span>
     </a>
 
     <!-- 4. Results & Exams Tab -->
@@ -85,26 +85,26 @@
         history.pushState(null, '', '?tab=results');
         $dispatch('close-sidebar');
       "
-      class="flex flex-col items-center justify-center py-1 transition-transform active:scale-95 group text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
-      :class="activeTab === 'results' ? 'text-brand-primary font-bold' : ''"
+      class="flex flex-col items-center justify-center py-1 transition-transform active:scale-95 group text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white cursor-pointer"
+      :class="activeTab === 'results' ? 'text-brand-primary dark:text-emerald-400 font-black' : ''"
     >
       <div class="relative">
         <span class="text-lg leading-none">📊</span>
         <span 
           x-show="activeTab === 'results'" 
-          class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-brand-primary"
+          class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-brand-primary dark:bg-emerald-400"
         ></span>
       </div>
-      <span class="text-[10px] tracking-tight mt-1 font-semibold">ফলাফল</span>
+      <span class="text-[10px] tracking-tight mt-1 font-bold">ফলাফল</span>
     </a>
 
     <!-- 5. All Menus / Sidebar Trigger -->
     <button 
       type="button" 
       @click="$dispatch('toggle-sidebar')"
-      class="flex flex-col items-center justify-center py-1 transition-transform active:scale-95 group text-slate-700 dark:text-slate-200 hover:text-brand-primary cursor-pointer"
+      class="flex flex-col items-center justify-center py-1 transition-transform active:scale-95 group text-slate-800 dark:text-slate-100 hover:text-brand-primary dark:hover:text-emerald-400 cursor-pointer"
     >
-      <div class="relative w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shadow-sm group-hover:bg-brand-primary group-hover:text-white transition-colors">
+      <div class="relative w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shadow-sm group-hover:bg-brand-primary group-hover:text-white transition-colors">
         <svg class="w-4 h-4 fill-none stroke-current" viewBox="0 0 24 24" stroke-width="2.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>
         </svg>

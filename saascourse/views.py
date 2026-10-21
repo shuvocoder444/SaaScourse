@@ -97,18 +97,18 @@ def manifest_json_view(request):
     )
 
     manifest_data = {
-        "id": f"academy-{tenant.slug if tenant else 'default'}",
-        "name": f"{name} - {tagline}",
+        "id": "/",
+        "name": f"{name}",
         "short_name": short_name,
         "description": tenant.meta_description
         if (tenant and tenant.meta_description)
-        else f"{name} এর অফিসিয়াল মোবাইল অ্যাপ। ঘরে বসেই লাইভ ক্লাস, মডেল টেস্ট ও স্টাডি মেটেরিয়ালস উপভোগ করুন।",
-        "start_url": "/?utm_source=pwa",
+        else f"{name} এর অফিসিয়াল মোবাইল অ্যাপ।",
+        "start_url": "/",
         "scope": "/",
         "display": "standalone",
-        "display_override": ["standalone", "window-controls-overlay"],
+        "display_override": ["standalone", "fullscreen"],
         "orientation": "portrait-primary",
-        "background_color": "#ffffff",
+        "background_color": primary_color,
         "theme_color": primary_color,
         "categories": ["education", "courses", "learning"],
         "icons": [

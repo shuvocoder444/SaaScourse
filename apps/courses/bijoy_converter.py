@@ -76,25 +76,53 @@ SUTONNY_TO_UNICODE = {
 }
 
 
+COMMON_ENGLISH_WORDS = {
+    "the", "and", "is", "of", "to", "in", "that", "it", "with", "without", "for",
+    "as", "was", "on", "are", "by", "this", "from", "at", "be", "or",
+    "word", "words", "sentence", "phrase", "means", "meaning",
+    "which", "what", "where", "when", "who", "whom", "whose", "how",
+    "correct", "incorrect", "option", "question", "following", "statement",
+    "synonym", "antonym", "verb", "noun", "adjective", "adverb", "preposition",
+    "pronoun", "singular", "plural", "tense", "past", "present", "future",
+    "fill", "blank", "underlined", "story", "called", "known",
+    "true", "false", "choose", "select", "identify", "find", "have", "had", "has",
+    "not", "but", "can", "could", "would", "should", "never", "all", "his", "her",
+    "they", "them", "their", "you", "your", "we", "our", "us", "he", "she", "him",
+    "an", "if", "will", "my", "than", "first", "any", "new", "part", "take", "get",
+    "about", "many", "then", "into", "some", "time", "very", "every", "same"
+}
+
+
 def is_bijoy_text(text: str) -> bool:
     """
     Detects if the given text is in Bijoy (SutonnyMJ / ANSI) encoding.
+    Ensures English text and Unicode Bengali text are NEVER misclassified as Bijoy.
     """
     if not text:
         return False
         
     bengali_unicode_count = len(re.findall(r'[\u0980-\u09FF]', text))
     # If already predominantly Unicode Bengali, return False
-    if bengali_unicode_count > 20:
+    if bengali_unicode_count > 15:
         return False
 
-    # Signature Bijoy characters and sub-strings
+    # Check for English language words
+    # If standard English words are found, this is English text, NOT Bijoy!
+    ascii_words = [w.lower() for w in re.findall(r'\b[a-zA-Z]{2,}\b', text)]
+    if ascii_words:
+        english_hits = sum(1 for w in ascii_words if w in COMMON_ENGLISH_WORDS)
+        # If 2 or more common English words exist, or > 12% of words are known English words
+        if english_hits >= 2 or (len(ascii_words) >= 5 and (english_hits / len(ascii_words)) > 0.12):
+            return False
+
+    # Signature Bijoy characters and sub-strings (excluding ambiguous English words/digraphs like "wi", "we", "av", "Av")
     signatures = [
-        "‡", "†", "Ô", "Õ", "Av", "Kwe", "eY©", "el©v", "avb", "gvwS",
-        "wK", "w`", "wb", "wi", "wm", "wP", "wR", "wQ", "wU", "wV", "wW", "wZ",
-        "we", "wf", "wg", "wh", "wj", "wk", "wl", "wm", "wn",
+        "‡", "†", "Kwe", "eY©", "el©v", "avb", "gvwS",
+        "w`", "wP", "wR", "wQ", "wU", "wV", "wW", "wZ",
+        "wf", "wh", "wk", "wl",
         "¯‹", "¯Í", "®‹", "K¨", "e¨", "g¨", "cÖ", "m‡½", "D‡jøL", "ïiæ", "Zy‡j",
-        "kÖ", "cÖKvk", "K‡jøvj", "we`ªvnx", "cÖvK…Z", "ms¯‹…Z", "gyw³hy×"
+        "kÖ", "cÖKvk", "K‡jøvj", "we`ªvnx", "cÖvK…Z", "ms¯‹…Z", "gyw³hy×",
+        "ª", "«", "Ö", "¨", "¡", "¥", "ÿ", "²", "•", "½", "¾", "À", "Á", "Â", "Ã", "Ä", "Å", "Æ"
     ]
     matches = sum(1 for sig in signatures if sig in text)
     return matches >= 2

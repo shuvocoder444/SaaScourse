@@ -7,15 +7,21 @@
   <div class="max-w-4xl mx-auto space-y-6">
 
     <!-- Top Breadcrumbs -->
-    <div class="flex items-center justify-between">
+    <div class="flex items-center justify-between flex-wrap gap-2">
       <div class="flex items-center gap-2 text-xs font-mono text-slate-500">
         <a href="{% url 'dashboard' %}?tab=results" class="hover:text-brand-primary">← আমার ড্যাশবোর্ড</a>
         <span>/</span>
         <span class="text-slate-900 dark:text-white font-bold">পরীক্ষার ফলাফল</span>
       </div>
-      <a href="{% url 'courses:exam_take' exam.slug %}" class="px-3.5 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold transition-all">
-        পুনরায় পরীক্ষা দিন 🔄
-      </a>
+      <div class="flex items-center gap-2">
+        <a href="{% url 'courses:exam_merit_list' exam.slug %}" class="px-3.5 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-bold transition-all flex items-center gap-1.5">
+          <span>🏆</span>
+          <span>মেধা তালিকা</span>
+        </a>
+        <a href="/exams/{{ exam.slug }}/" class="px-3.5 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold transition-all">
+          পুনরায় পরীক্ষা দিন 🔄
+        </a>
+      </div>
     </div>
 
     <!-- Alert Messages -->
@@ -43,13 +49,19 @@
         </div>
 
         <div>
-          {% if attempt.is_passed %}
-            <div class="px-5 py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-black text-base text-center shadow-lg shadow-emerald-500/10">
-              🎉 PASSED / উত্তীর্ণ
-            </div>
+          {% if exam.should_display_pass_mark %}
+            {% if attempt.is_passed %}
+              <div class="px-5 py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-black text-base text-center shadow-lg shadow-emerald-500/10">
+                🎉 PASSED / উত্তীর্ণ
+              </div>
+            {% else %}
+              <div class="px-5 py-2.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 font-black text-base text-center shadow-lg shadow-rose-500/10">
+                ⚠️ FAILED / অনুত্তীর্ণ
+              </div>
+            {% endif %}
           {% else %}
-            <div class="px-5 py-2.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 font-black text-base text-center shadow-lg shadow-rose-500/10">
-              ⚠️ FAILED / অনুত্তীর্ণ
+            <div class="px-5 py-2.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 font-black text-base text-center shadow-lg shadow-indigo-500/10">
+              ✅ COMPLETED / সমাপ্ত
             </div>
           {% endif %}
         </div>
@@ -79,7 +91,11 @@
           <div class="text-2xl sm:text-3xl font-black text-rose-500">
             {{ attempt.wrong_count }}
           </div>
-          <span class="text-[10px] font-mono text-slate-400">মাইনাস: -{{ exam.negative_mark_per_question }}</span>
+          {% if exam.should_display_negative_mark %}
+            <span class="text-[10px] font-mono text-slate-400">মাইনাস: -{{ exam.negative_mark_per_question }}</span>
+          {% else %}
+            <span class="text-[10px] font-mono text-emerald-500">নেগেটিভ মার্ক নেই</span>
+          {% endif %}
         </div>
 
         <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-100 dark:border-slate-800/80">
@@ -87,12 +103,109 @@
           <div class="text-2xl sm:text-3xl font-black text-amber-500">
             {{ attempt.percentage }}%
           </div>
-          <span class="text-[10px] font-mono text-slate-400">পাস মার্ক: {{ exam.pass_mark }}%</span>
+          {% if exam.should_display_pass_mark %}
+            <span class="text-[10px] font-mono text-slate-400">পাস মার্ক: {{ exam.pass_mark }}%</span>
+          {% else %}
+            <span class="text-[10px] font-mono text-slate-400">স্কোর সম্পন্ন</span>
+          {% endif %}
         </div>
 
       </div>
 
+      <!-- Student Merit Position Highlight Banner -->
+      {% if my_rank %}
+        <div class="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-transparent border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div class="flex items-center gap-3.5">
+            <div class="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-black text-2xl flex items-center justify-center shrink-0 shadow-inner">
+              {{ my_rank.badge }}
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] font-mono uppercase tracking-wider text-amber-600 dark:text-amber-400 font-bold">আপনার মেধা স্থান (Rank)</span>
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold">ব্যয়িত সময়: {{ my_rank.time_formatted }}</span>
+              </div>
+              <h3 class="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-0.5">
+                {{ my_rank.rank_bn }}তম স্থান <span class="text-xs text-slate-500 font-normal">({{ total_candidates }} জন পরীক্ষার্থীর মধ্যে)</span>
+              </h3>
+            </div>
+          </div>
+          <a href="{% url 'courses:exam_merit_list' exam.slug %}" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 shrink-0">
+            <span>🏆 সম্পূর্ণ মেধা তালিকা দেখুন</span>
+            <span>→</span>
+          </a>
+        </div>
+      {% endif %}
+
     </div>
+
+    <!-- Live Leaderboard Preview Card -->
+    {% if merit_list %}
+      <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-xl p-5 sm:p-6 space-y-4">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">🏆</span>
+            <div>
+              <h2 class="text-base sm:text-lg font-black text-slate-900 dark:text-white">মেধা তালিকা শীর্ষস্থান (Leaderboard)</h2>
+              <p class="text-xs text-slate-500">শীর্ষ পরীক্ষার্থীদের র‍্যাঙ্কিং ও ফলাফল</p>
+            </div>
+          </div>
+          <a href="{% url 'courses:exam_merit_list' exam.slug %}" class="text-xs font-bold text-brand-primary hover:underline flex items-center gap-1">
+            <span>সব দেখুন ({{ total_candidates }})</span>
+            <span>→</span>
+          </a>
+        </div>
+
+        <div class="overflow-x-auto rounded-2xl border border-slate-100 dark:border-slate-800">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 dark:bg-slate-950/60 text-slate-500 uppercase font-mono text-[10px] border-b border-slate-100 dark:border-slate-800">
+              <tr>
+                <th class="py-3 px-3.5 text-center w-16">স্থান</th>
+                <th class="py-3 px-3.5">পরীক্ষার্থী</th>
+                <th class="py-3 px-3.5 text-center">প্রাপ্ত নম্বর</th>
+                <th class="py-3 px-3.5 text-center">সঠিক / ভুল</th>
+                <th class="py-3 px-3.5 text-center">সময়</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
+              {% for item in merit_list|slice:":10" %}
+                <tr class="{% if my_rank and item.student.id == my_rank.student.id %}bg-amber-500/10 font-bold{% else %}hover:bg-slate-50/50 dark:hover:bg-slate-800/30{% endif %} transition-colors">
+                  <td class="py-3 px-3.5 text-center">
+                    <span class="font-bold text-sm inline-flex items-center justify-center min-w-[1.75rem]">
+                      {{ item.badge }}
+                    </span>
+                  </td>
+                  <td class="py-3 px-3.5">
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <span class="font-bold text-slate-900 dark:text-white">{{ item.student_name }}</span>
+                        {% if my_rank and item.student.id == my_rank.student.id %}
+                          <span class="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 font-black">আপনি</span>
+                        {% endif %}
+                      </div>
+                      {% if item.institution or item.batch %}
+                        <div class="text-[10px] text-slate-500 flex items-center gap-1.5 flex-wrap mt-0.5">
+                          {% if item.institution %}<span>🏫 {{ item.institution }}</span>{% endif %}
+                          {% if item.batch %}<span class="px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-mono text-[9px]">{{ item.batch }}</span>{% endif %}
+                        </div>
+                      {% endif %}
+                    </div>
+                  </td>
+                  <td class="py-3 px-3.5 text-center font-bold text-brand-primary">
+                    {{ item.score }} <span class="text-[10px] text-slate-400 font-normal">/ {{ item.total_marks }}</span>
+                  </td>
+                  <td class="py-3 px-3.5 text-center">
+                    <span class="text-emerald-500 font-bold">{{ item.correct_count }}</span> / <span class="text-rose-500 font-bold">{{ item.wrong_count }}</span>
+                  </td>
+                  <td class="py-3 px-3.5 text-center font-mono text-[11px] text-slate-500">
+                    {{ item.time_formatted }}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endif %}
 
     <!-- Solution Sheet & Question Breakdown -->
     <div class="space-y-4">
@@ -130,7 +243,7 @@
                   </span>
                 {% elif item.is_wrong %}
                   <span class="px-2.5 py-1 rounded-xl bg-rose-500/10 text-rose-500 text-xs font-bold border border-rose-500/20">
-                    ✗ ভুল (-{{ exam.negative_mark_per_question }})
+                    ✗ ভুল {% if exam.should_display_negative_mark %}(-{{ exam.negative_mark_per_question }}){% else %}(০){% endif %}
                   </span>
                 {% else %}
                   <span class="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 text-xs font-bold">
@@ -146,7 +259,7 @@
               <!-- Option A -->
               <div class="p-3 rounded-2xl border flex items-center gap-2.5 {% if item.question.correct_option == 'A' %}bg-emerald-500/15 border-emerald-500/40 text-emerald-800 dark:text-emerald-200 font-bold{% elif item.user_choice == 'A' and item.is_wrong %}bg-rose-500/15 border-rose-500/40 text-rose-700 dark:text-rose-300 font-bold{% else %}bg-slate-50 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400{% endif %}">
                 <span class="w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] {% if item.question.correct_option == 'A' %}bg-emerald-500 text-white{% elif item.user_choice == 'A' and item.is_wrong %}bg-rose-500 text-white{% else %}bg-slate-200 dark:bg-slate-800 text-slate-500{% endif %}">A</span>
-                <span>ক) {{ item.question.option_a }}</span>
+                <span>{{ item.question.opt_a_label }}) {{ item.question.option_a }}</span>
                 {% if item.question.correct_option == 'A' %}<span class="ml-auto text-emerald-500 font-bold">✓ সঠিক উত্তর</span>{% endif %}
                 {% if item.user_choice == 'A' and item.is_wrong %}<span class="ml-auto text-rose-500 font-bold">আপনার উত্তর</span>{% endif %}
               </div>
@@ -154,7 +267,7 @@
               <!-- Option B -->
               <div class="p-3 rounded-2xl border flex items-center gap-2.5 {% if item.question.correct_option == 'B' %}bg-emerald-500/15 border-emerald-500/40 text-emerald-800 dark:text-emerald-200 font-bold{% elif item.user_choice == 'B' and item.is_wrong %}bg-rose-500/15 border-rose-500/40 text-rose-700 dark:text-rose-300 font-bold{% else %}bg-slate-50 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400{% endif %}">
                 <span class="w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] {% if item.question.correct_option == 'B' %}bg-emerald-500 text-white{% elif item.user_choice == 'B' and item.is_wrong %}bg-rose-500 text-white{% else %}bg-slate-200 dark:bg-slate-800 text-slate-500{% endif %}">B</span>
-                <span>খ) {{ item.question.option_b }}</span>
+                <span>{{ item.question.opt_b_label }}) {{ item.question.option_b }}</span>
                 {% if item.question.correct_option == 'B' %}<span class="ml-auto text-emerald-500 font-bold">✓ সঠিক উত্তর</span>{% endif %}
                 {% if item.user_choice == 'B' and item.is_wrong %}<span class="ml-auto text-rose-500 font-bold">আপনার উত্তর</span>{% endif %}
               </div>
@@ -162,7 +275,7 @@
               <!-- Option C -->
               <div class="p-3 rounded-2xl border flex items-center gap-2.5 {% if item.question.correct_option == 'C' %}bg-emerald-500/15 border-emerald-500/40 text-emerald-800 dark:text-emerald-200 font-bold{% elif item.user_choice == 'C' and item.is_wrong %}bg-rose-500/15 border-rose-500/40 text-rose-700 dark:text-rose-300 font-bold{% else %}bg-slate-50 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400{% endif %}">
                 <span class="w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] {% if item.question.correct_option == 'C' %}bg-emerald-500 text-white{% elif item.user_choice == 'C' and item.is_wrong %}bg-rose-500 text-white{% else %}bg-slate-200 dark:bg-slate-800 text-slate-500{% endif %}">C</span>
-                <span>গ) {{ item.question.option_c }}</span>
+                <span>{{ item.question.opt_c_label }}) {{ item.question.option_c }}</span>
                 {% if item.question.correct_option == 'C' %}<span class="ml-auto text-emerald-500 font-bold">✓ সঠিক উত্তর</span>{% endif %}
                 {% if item.user_choice == 'C' and item.is_wrong %}<span class="ml-auto text-rose-500 font-bold">আপনার উত্তর</span>{% endif %}
               </div>
@@ -170,7 +283,7 @@
               <!-- Option D -->
               <div class="p-3 rounded-2xl border flex items-center gap-2.5 {% if item.question.correct_option == 'D' %}bg-emerald-500/15 border-emerald-500/40 text-emerald-800 dark:text-emerald-200 font-bold{% elif item.user_choice == 'D' and item.is_wrong %}bg-rose-500/15 border-rose-500/40 text-rose-700 dark:text-rose-300 font-bold{% else %}bg-slate-50 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400{% endif %}">
                 <span class="w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] {% if item.question.correct_option == 'D' %}bg-emerald-500 text-white{% elif item.user_choice == 'D' and item.is_wrong %}bg-rose-500 text-white{% else %}bg-slate-200 dark:bg-slate-800 text-slate-500{% endif %}">D</span>
-                <span>ঘ) {{ item.question.option_d }}</span>
+                <span>{{ item.question.opt_d_label }}) {{ item.question.option_d }}</span>
                 {% if item.question.correct_option == 'D' %}<span class="ml-auto text-emerald-500 font-bold">✓ সঠিক উত্তর</span>{% endif %}
                 {% if item.user_choice == 'D' and item.is_wrong %}<span class="ml-auto text-rose-500 font-bold">আপনার উত্তর</span>{% endif %}
               </div>

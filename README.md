@@ -9,7 +9,7 @@ Built with **Django**, **HTMX**, **Tailwind CSS**, and **Alpine.js**.
 
 ## 📖 Complete Documentation & Guide
 Please read the comprehensive guide in [`saascourse/PROJECT_GUIDE.md`](./saascourse/PROJECT_GUIDE.md) for full architecture details, template breakdown, models, and usage instructions in Bengali and English.
-
+ 
 ---
 
 ## ⚡ Quick Start

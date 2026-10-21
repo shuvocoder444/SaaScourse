@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}{{ exam.title }} — অনলাইন MCQ পরীক্ষা{% endblock %}
+
+{% block canonical_url %}{{ clean_canonical_url|default:request.build_absolute_uri }}{% endblock %}
+{% block og_url %}{{ clean_canonical_url|default:request.build_absolute_uri }}{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block og_title %}📝 {{ exam.title }} — অনলাইন পরীক্ষা | {{ current_tenant.name|default:'বিদ্যাঙ্গন' }}{% endblock %}
+{% block og_description %}অনলাইন MCQ পরীক্ষা: {{ exam.title }}। মোট প্রশ্ন: {{ questions_count }}টি • সময়: {{ exam.duration_minutes }} মিনিট • পূর্ণমান: {{ exam.total_marks }}। পরীক্ষায় অংশ নিতে এখনই ক্লিক করুন।{% endblock %}
+{% block og_image %}{{ og_image_url }}{% endblock %}
+{% block og_image_secure %}{{ og_image_url }}{% endblock %}
+{% block og_image_type %}{{ og_image_type|default:'image/jpeg' }}{% endblock %}
+{% block twitter_title %}📝 {{ exam.title }} — অনলাইন পরীক্ষা{% endblock %}
+{% block twitter_description %}অনলাইন MCQ পরীক্ষা: {{ exam.title }}। সময়: {{ exam.duration_minutes }} মিনিট। এখনই অংশ নিন।{% endblock %}
+{% block twitter_image %}{{ og_image_url }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 dark:bg-slate-950 py-12 px-4 sm:px-6">
+  <div class="max-w-2xl mx-auto space-y-6">
+
+    <!-- Academy & Course Badge -->
+    <div class="text-center space-y-2">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-primary/10 text-brand-primary text-xs font-semibold">
+        <span>🏛️</span>
+        <span>{{ exam.tenant.name }}</span>
+        {% if exam.course %}
+          <span>•</span>
+          <span>{{ exam.course.title }}</span>
+        {% endif %}
+      </div>
+      <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white leading-tight">
+        {{ exam.title }}
+      </h1>
+      <p class="text-sm text-slate-500 dark:text-slate-400">
+        অনলাইন লাইভ MCQ মডেল টেস্ট ও মূল্যায়ন
+      </p>
+    </div>
+
+    <!-- Exam Info Card -->
+    <div class="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-xl space-y-6">
+
+      <!-- Exam Thumbnail Banner if available -->
+      {% if og_image_url %}
+        <div class="relative h-48 sm:h-60 w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm bg-slate-900">
+          <img src="{{ og_image_url }}" alt="{{ exam.title }}" class="w-full h-full object-cover">
+        </div>
+      {% endif %}
+
+      <div class="grid grid-cols-2 {% if exam.should_display_pass_mark and exam.should_display_negative_mark %}sm:grid-cols-4{% elif exam.should_display_pass_mark or exam.should_display_negative_mark %}sm:grid-cols-3{% else %}sm:grid-cols-2{% endif %} gap-4 text-center">
+        <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+          <span class="text-2xl block mb-1">⏱️</span>
+          <span class="text-[10px] uppercase font-mono tracking-wider text-slate-400 block">সময়</span>
+          <span class="text-base font-black text-slate-900 dark:text-white">{{ exam.duration_minutes }} মিনিট</span>
+        </div>
+        <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+          <span class="text-2xl block mb-1">❓</span>
+          <span class="text-[10px] uppercase font-mono tracking-wider text-slate-400 block">প্রশ্ন</span>
+          <span class="text-base font-black text-slate-900 dark:text-white">{{ questions_count }}টি</span>
+        </div>
+        {% if exam.should_display_pass_mark %}
+        <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+          <span class="text-2xl block mb-1">🎯</span>
+          <span class="text-[10px] uppercase font-mono tracking-wider text-slate-400 block">পাস মার্ক</span>
+          <span class="text-base font-black text-slate-900 dark:text-white">{{ exam.pass_mark }}%</span>
+        </div>
+        {% endif %}
+        {% if exam.should_display_negative_mark %}
+        <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+          <span class="text-2xl block mb-1">⚖️</span>
+          <span class="text-[10px] uppercase font-mono tracking-wider text-slate-400 block">ভুল উত্তরে</span>
+          <span class="text-base font-black text-rose-500">-{{ exam.negative_mark_per_question }}</span>
+        </div>
+        {% endif %}
+      </div>
+
+      {% if exam.description %}
+        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80 space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
+          <span class="font-bold text-slate-900 dark:text-white block">📌 সিলেবাস ও নির্দেশিকা:</span>
+          <p class="whitespace-pre-line">{{ exam.description }}</p>
+        </div>
+      {% endif %}
+
+      {% if paid_group %}
+        <!-- Paid Model Test Series Notice -->
+        <div class="p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 border border-amber-500/25 space-y-3">
+          <div class="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-bold text-sm">
+            <span class="text-lg">🔒</span>
+            <span>পেইড মডেল টেস্ট সিরিজ: {{ paid_group.title }}</span>
+          </div>
+          <p class="text-xs text-slate-600 dark:text-slate-300">
+            এই পরীক্ষাটি একটি এক্সাম সিরিজের অংশ। সম্পূর্ণ সিরিজের সকল পরীক্ষায় অংশ নিতে সিরিজটিতে এনরোল করুন।
+            ফি: <strong>৳{{ paid_group.effective_price }}</strong>
+          </p>
+          <a 
+            href="/exams/groups/{{ paid_group.slug }}/"
+            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md transition-all"
+          >
+            <span>সিরিজের বিস্তারিত ও এনরোল করুন</span>
+            <span>→</span>
+          </a>
+        </div>
+      {% endif %}
+
+      <!-- Action Buttons -->
+      <div class="space-y-3 pt-2">
+        {% if paid_group %}
+          <a 
+            href="/exams/groups/{{ paid_group.slug }}/"
+            class="w-full py-3.5 px-6 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white text-sm font-black text-center shadow-xl shadow-amber-600/25 transition-all flex items-center justify-center gap-2"
+          >
+            <span>🌟 সিরিজে যুক্ত হয়ে পরীক্ষায় অংশ নিন</span>
+            <span>→</span>
+          </a>
+        {% else %}
+          <a 
+            href="/login/?next=/exams/{{ exam.slug }}/"
+            class="w-full py-3.5 px-6 rounded-2xl bg-brand-primary text-white text-sm font-black text-center hover:opacity-95 shadow-xl shadow-brand-primary/25 transition-all flex items-center justify-center gap-2"
+          >
+            <span>🚀 পরীক্ষায় অংশ নিতে প্রবেশ করুন (Login)</span>
+            <span>→</span>
+          </a>
+        {% endif %}
+
+        <div class="flex items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+          <span>একাউন্টে নতুন?</span>
+          <a href="/signup/?next=/exams/{{ exam.slug }}/" class="text-brand-primary font-bold hover:underline">
+            ফ্রি রেজিস্ট্রেশন করুন
+          </a>
+        </div>
+      </div>
+
+      <!-- Social Share Bar -->
+      <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 text-xs">
+        <span class="text-slate-500">বন্ধুদের সাথে শেয়ার করুন:</span>
+        <div class="flex items-center gap-2">
+          <button 
+            type="button" 
+            onclick="navigator.clipboard.writeText(window.location.href); alert('✅ পরীক্ষার লিংক কপি হয়েছে!');"
+            class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-slate-700 dark:text-slate-300 transition-all flex items-center gap-1.5"
+          >
+            <span>🔗 লিংক কপি</span>
+          </button>
+          <a 
+            href="https://api.whatsapp.com/send?text={{ '📝 *'|urlencode }}{{ exam.title|urlencode }}{{ '*%0A⏱️ সময়: '|urlencode }}{{ exam.duration_minutes }}{{ ' মিনিট | মোট প্রশ্ন: '|urlencode }}{{ questions_count }}{{ 'টি%0A%0Aঅনলাইন পরীক্ষায় অংশ নিতে ক্লিক করুন:%0A'|urlencode }}{{ clean_canonical_url|default:request.build_absolute_uri }}" 
+            target="_blank" 
+            class="px-3 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold transition-all flex items-center gap-1.5"
+          >
+            <span>📲 WhatsApp</span>
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+

@@ -15,14 +15,23 @@ urlpatterns = [
     path("manage/exams/<int:exam_id>/export/csv/", views.exam_export_csv_view, name="exam_export_csv"),
     path("manage/exams/<int:exam_id>/export/json/", views.exam_export_json_view, name="exam_export_json"),
     path("manage/exams/<int:exam_id>/print/", views.exam_print_paper_view, name="exam_print_paper"),
+    path("manage/exams/<int:exam_id>/merit-list/", views.admin_exam_merit_list_view, name="admin_exam_merit_list"),
+    path("manage/exams/<int:exam_id>/merit-list/print/", views.admin_exam_merit_list_print_view, name="admin_exam_merit_list_print"),
+    path("manage/exams/<int:exam_id>/merit-list/csv/", views.admin_exam_merit_list_csv_view, name="admin_exam_merit_list_csv"),
     path("manage/books/", views.manage_books_view, name="manage_books"),
     path("manage/resources/", views.manage_resources_view, name="manage_resources"),
     path("manage/blog/", views.manage_blog_view, name="manage_blog"),
     
+    # MCQ Exam Group / Model Test Series
+    path("exams/groups/<str:group_slug>/", views.exam_group_detail_view, name="exam_group_detail"),
+    path("exams/groups/<str:group_slug>/enroll/", views.exam_group_enroll_view, name="exam_group_enroll"),
+
     # MCQ Exam Student Test Engine
-    path("exams/<str:exam_slug>/take/", views.exam_take_view, name="exam_take"),
+    path("exams/<str:exam_slug>/", views.exam_take_view, name="exam_take"),
+    path("exams/<str:exam_slug>/take/", views.exam_take_view, name="exam_take_alias"),
     path("exams/<str:exam_slug>/submit/", views.exam_submit_view, name="exam_submit"),
     path("exams/<str:exam_slug>/result/<int:attempt_id>/", views.exam_result_view, name="exam_result"),
+    path("exams/<str:exam_slug>/merit-list/", views.exam_merit_list_view, name="exam_merit_list"),
 
     # Public Course Syllabus, Checkout and Player
     path("<str:slug>/checkout/", views.course_checkout_view, name="checkout"),

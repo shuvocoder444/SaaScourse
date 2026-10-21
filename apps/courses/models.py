@@ -943,6 +943,16 @@ class Exam(TenantAwareModel):
         help_text="প্রতি ভুল উত্তরের জন্য কাটা নম্বর (যেমন: 0.25)",
     )
     total_marks = models.DecimalField(max_digits=6, decimal_places=2, default=100.00)
+    thumbnail = models.ImageField(
+        upload_to="exams/thumbnails/", null=True, blank=True, help_text="পরীক্ষার থাম্বনেইল ছবি"
+    )
+    thumbnail_url = models.URLField(blank=True, default="", help_text="ঐচ্ছিক ইমেজ URL")
+    show_pass_mark = models.BooleanField(
+        default=True, help_text="MCQ পরীক্ষায় পাস মার্ক প্রদর্শন করবেন কিনা"
+    )
+    show_negative_mark = models.BooleanField(
+        default=True, help_text="MCQ পরীক্ষায় নেগেটিভ মার্কিং প্রদর্শন করবেন কিনা"
+    )
     is_published = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -960,6 +970,12 @@ class Exam(TenantAwareModel):
         return f"[{self.tenant.slug}] Exam: {self.title} ({self.duration_minutes}m)"
 
     @property
+    def get_thumbnail_url(self):
+        if self.thumbnail:
+            return self.thumbnail.url
+        return self.thumbnail_url or ""
+
+    @property
     def questions_count(self):
         return self.questions.count()
 
@@ -967,6 +983,119 @@ class Exam(TenantAwareModel):
     def calculated_total_marks(self):
         total = self.questions.aggregate(total=models.Sum("marks"))["total"]
         return total or self.total_marks
+
+    def get_absolute_url(self):
+        return f"/exams/{self.slug}/"
+
+    @property
+    def should_display_pass_mark(self):
+        try:
+            return bool(self.show_pass_mark and float(self.pass_mark or 0) > 0)
+        except (ValueError, TypeError):
+            return False
+
+    @property
+    def should_display_negative_mark(self):
+        try:
+            return bool(self.show_negative_mark and float(self.negative_mark_per_question or 0) > 0)
+        except (ValueError, TypeError):
+            return False
+
+
+class ExamGroup(TenantAwareModel):
+    """
+    MCQ Exam Group / Model Test Series Bundle:
+    Bundles multiple subject exams (e.g. বাংলা, ইংরেজি, আইসিটি) together
+    with its own pricing (Free/Paid), thumbnail, and syllabus.
+    """
+    title = models.CharField(
+        max_length=255, help_text="এক্সাম গ্রুপের শিরোনাম (যেমন: এইচএসসি ২০২৬ কম্বাইন্ড মডেল টেস্ট)"
+    )
+    slug = models.SlugField(max_length=255)
+    thumbnail = models.ImageField(
+        upload_to="exams/groups/thumbnails/", null=True, blank=True, help_text="গ্রুপের থাম্বনেইল ছবি"
+    )
+    thumbnail_url = models.URLField(blank=True, default="", help_text="ঐচ্ছিক ব্যানার ইমেজ URL")
+    description = models.TextField(blank=True, help_text="গ্রুপের বিবরণ ও সিলেবাস")
+    is_free = models.BooleanField(default=True, help_text="বিনামূল্যে সবার জন্য উন্মুক্ত কিনা")
+    price = models.DecimalField(max_digits=8, decimal_places=2, default=0.00, help_text="রেগুলার ফি (৳)")
+    discount_price = models.DecimalField(
+        max_digits=8, decimal_places=2, null=True, blank=True, help_text="ডিসকাউন্ট অফার ফি (৳)"
+    )
+    exams = models.ManyToManyField(
+        "Exam", related_name="groups", blank=True, help_text="গ্রুপের অন্তর্ভুক্ত পরীক্ষাসমূহ"
+    )
+    is_published = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant", "slug"],
+                name="unique_exam_group_slug_per_tenant",
+            )
+        ]
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"[{self.tenant.slug}] Group: {self.title} ({self.exams.count()} exams)"
+
+    @property
+    def get_thumbnail_url(self):
+        if self.thumbnail:
+            return self.thumbnail.url
+        return self.thumbnail_url or ""
+
+    @property
+    def effective_price(self):
+        if self.is_free:
+            return 0.00
+        if self.discount_price is not None and self.discount_price >= 0:
+            return self.discount_price
+        return self.price
+
+    @property
+    def total_questions_count(self):
+        return sum(e.questions.count() for e in self.exams.all())
+
+    @property
+    def total_duration_minutes(self):
+        return sum(e.duration_minutes for e in self.exams.all())
+
+    def get_absolute_url(self):
+        return f"/exams/groups/{self.slug}/"
+
+
+class ExamGroupEnrollment(TenantAwareModel):
+    """Student registration and access record for an ExamGroup."""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="exam_group_enrollments",
+    )
+    group = models.ForeignKey(
+        ExamGroup,
+        on_delete=models.CASCADE,
+        related_name="enrollments",
+    )
+    is_paid = models.BooleanField(default=True)
+    paid_amount = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
+    payment_method = models.CharField(max_length=50, default="Free")
+    transaction_id = models.CharField(max_length=100, blank=True, default="")
+    enrolled_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant", "user", "group"],
+                name="unique_user_exam_group_enrollment",
+            )
+        ]
+        ordering = ["-enrolled_at"]
+
+    def __str__(self):
+        return f"{self.user.email} -> Group: {self.group.title} ({'Paid' if self.is_paid else 'Pending'})"
 
 
 class ExamQuestion(TenantAwareModel):
@@ -1001,6 +1130,32 @@ class ExamQuestion(TenantAwareModel):
     def __str__(self):
         return f"{self.exam.title} - Q{self.order}: {self.question_text[:30]}"
 
+    @property
+    def is_english(self):
+        """Returns True if the question text does not contain Bengali Unicode characters and has English letters."""
+        import re
+        bengali_chars = len(re.findall(r'[\u0980-\u09FF]', self.question_text or ""))
+        if bengali_chars > 0:
+            return False
+        english_chars = len(re.findall(r'[a-zA-Z]', self.question_text or ""))
+        return english_chars > 0
+
+    @property
+    def opt_a_label(self):
+        return "A" if self.is_english else "ক"
+
+    @property
+    def opt_b_label(self):
+        return "B" if self.is_english else "খ"
+
+    @property
+    def opt_c_label(self):
+        return "C" if self.is_english else "গ"
+
+    @property
+    def opt_d_label(self):
+        return "D" if self.is_english else "ঘ"
+
 
 class ExamAttempt(TenantAwareModel):
     """Student's exam submission, score calculation and answer record."""
@@ -1019,6 +1174,18 @@ class ExamAttempt(TenantAwareModel):
     is_passed = models.BooleanField(default=False)
     answers_json = models.JSONField(
         default=dict, help_text="Keyed by question_id: selected_option"
+    )
+    institution_name = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        verbose_name="কলেজ বা প্রতিষ্ঠানের নাম",
+    )
+    batch_or_session = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+        verbose_name="ব্যাচ বা সেশন বা শ্রেণি",
     )
     time_taken_seconds = models.PositiveIntegerField(default=0)
     submitted_at = models.DateTimeField(auto_now_add=True)

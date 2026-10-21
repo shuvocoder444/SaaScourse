@@ -13,7 +13,7 @@ from saascourse.views import (
     root_home_view,
     service_worker_view,
 )
-
+  
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", root_home_view, name="home"),
@@ -36,6 +36,18 @@ urlpatterns = [
     ),
     path("blog/", courses_views.blog_list, name="blog"),
     path("blog/<str:slug>/", courses_views.blog_detail, name="blog_detail"),
+
+    # Direct Public Routes for Exam Groups / Bundles right after domain
+    path("exams/groups/<str:group_slug>/", courses_views.exam_group_detail_view, name="exam_group_detail"),
+    path("exams/groups/<str:group_slug>/enroll/", courses_views.exam_group_enroll_view, name="exam_group_enroll"),
+
+    # Direct Public Routes for Exams right after domain: domain.com/exams/<exam_slug>/
+    path("exams/<str:exam_slug>/", courses_views.exam_take_view, name="exam_take"),
+    path("exams/<str:exam_slug>/take/", courses_views.exam_take_view, name="exam_take_alias"),
+    path("exams/<str:exam_slug>/submit/", courses_views.exam_submit_view, name="exam_submit"),
+    path("exams/<str:exam_slug>/result/<int:attempt_id>/", courses_views.exam_result_view, name="exam_result"),
+    path("exams/<str:exam_slug>/merit-list/", courses_views.exam_merit_list_view, name="exam_merit_list"),
+
     path("tenants/", include("apps.tenants.urls", namespace="tenants")),
     path("courses/", include("apps.courses.urls", namespace="courses")),
     path("", include("apps.users.urls", namespace="users")),

@@ -128,8 +128,12 @@
         <div class="flex flex-wrap items-center gap-3 text-xs font-mono text-slate-500 mt-2">
           <span class="px-2.5 py-1 rounded-lg bg-slate-200/60 dark:bg-slate-800 text-slate-700 dark:text-slate-300">⏱️ সময়: {{ exam.duration_minutes }} মিনিট</span>
           <span class="px-2.5 py-1 rounded-lg bg-slate-200/60 dark:bg-slate-800 text-slate-700 dark:text-slate-300">🎯 পূর্ণমান: {{ exam.calculated_total_marks|floatformat:0 }}</span>
-          <span class="px-2.5 py-1 rounded-lg bg-slate-200/60 dark:bg-slate-800 text-slate-700 dark:text-slate-300">পাস মার্ক: {{ exam.pass_mark|floatformat:0 }}%</span>
-          <span class="px-2.5 py-1 rounded-lg bg-slate-200/60 dark:bg-slate-800 text-slate-700 dark:text-slate-300">মাইনাস মার্ক: {{ exam.negative_mark_per_question }}</span>
+          <span class="px-2.5 py-1 rounded-lg bg-slate-200/60 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+            পাস মার্ক: {% if exam.should_display_pass_mark %}{{ exam.pass_mark|floatformat:0 }}%{% else %}প্রযোজ্য নয়{% endif %}
+          </span>
+          <span class="px-2.5 py-1 rounded-lg bg-slate-200/60 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+            মাইনাস মার্ক: {% if exam.should_display_negative_mark %}{{ exam.negative_mark_per_question }}{% else %}নেই{% endif %}
+          </span>
         </div>
       </div>
 
@@ -137,9 +141,32 @@
       <div class="flex flex-wrap items-center gap-2.5">
         
         <!-- Live Test Preview -->
-        <a href="{% url 'courses:exam_take' exam.slug %}" target="_blank" class="px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold transition-all flex items-center gap-1.5" title="শিক্ষার্থীদের টেস্ট ভিউ">
+        <a href="/exams/{{ exam.slug }}/" target="_blank" class="px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold transition-all flex items-center gap-1.5" title="শিক্ষার্থীদের টেস্ট ভিউ">
           <span>পরীক্ষা দিন</span>
           <span>↗</span>
+        </a>
+
+        <!-- Merit List & Leaderboard -->
+        <a href="{% url 'courses:admin_exam_merit_list' exam.id %}" class="px-3.5 py-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-bold transition-all flex items-center gap-1.5" title="মেধা তালিকা ও ফলাফল">
+          <span>🏆 মেধা তালিকা</span>
+        </a>
+
+        <button 
+          type="button" 
+          @click="navigator.clipboard.writeText('{{ request.scheme }}://{{ request.get_host }}/exams/{{ exam.slug }}/'); alert('✅ পরীক্ষার লিংক ক্লিপবোর্ডে কপি হয়েছে:\n{{ request.scheme }}://{{ request.get_host }}/exams/{{ exam.slug }}/');"
+          class="px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold transition-all flex items-center gap-1.5"
+          title="পরীক্ষার লিংক কপি করুন"
+        >
+          <span>🔗 লিংক কপি</span>
+        </button>
+
+        <a 
+          href="https://api.whatsapp.com/send?text={{ '📝 *'|urlencode }}{{ exam.title|urlencode }}{{ '*%0A⏱️ সময়: '|urlencode }}{{ exam.duration_minutes }}{{ ' মিনিট | মোট প্রশ্ন: '|urlencode }}{{ exam.questions.count }}{{ 'টি%0A%0Aঅনলাইন পরীক্ষায় অংশ নিতে ক্লিক করুন:%0A'|urlencode }}{{ request.scheme }}://{{ request.get_host }}/exams/{{ exam.slug }}/" 
+          target="_blank" 
+          class="px-3 py-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold transition-all flex items-center gap-1.5"
+          title="হোয়াটসঅ্যাপে শেয়ার করুন"
+        >
+          <span>📲 WhatsApp</span>
         </a>
 
         <!-- 📥 BULK IMPORT BUTTON -->
@@ -171,6 +198,14 @@
               <a href="{% url 'courses:exam_print_paper' exam.id %}" target="_blank" class="flex items-center gap-2.5 px-4 py-2.5 text-slate-700 dark:text-slate-200 hover:bg-brand-primary hover:text-white transition-colors">
                 <span class="text-sm">🖨️</span>
                 <span>প্রিন্ট / PDF প্রশ্নপত্র</span>
+              </a>
+              <a href="{% url 'courses:admin_exam_merit_list_print' exam.id %}" target="_blank" class="flex items-center gap-2.5 px-4 py-2.5 text-slate-700 dark:text-slate-200 hover:bg-brand-primary hover:text-white transition-colors">
+                <span class="text-sm">🏆</span>
+                <span>মেধা তালিকা প্রিন্ট / PDF</span>
+              </a>
+              <a href="{% url 'courses:admin_exam_merit_list_csv' exam.id %}" class="flex items-center gap-2.5 px-4 py-2.5 text-slate-700 dark:text-slate-200 hover:bg-brand-primary hover:text-white transition-colors">
+                <span class="text-sm">📑</span>
+                <span>মেধা তালিকা Excel / CSV</span>
               </a>
             </div>
             <div class="py-1">
@@ -300,22 +335,22 @@
           <!-- Options Grid -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
             <div class="p-3 rounded-2xl border flex items-center gap-2.5 {% if q.correct_option == 'A' %}bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 font-bold{% else %}bg-slate-50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300{% endif %}">
-              <span class="w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] {% if q.correct_option == 'A' %}bg-emerald-500 text-white{% else %}bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400{% endif %}">ক</span>
+              <span class="w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] {% if q.correct_option == 'A' %}bg-emerald-500 text-white{% else %}bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400{% endif %}">{{ q.opt_a_label }}</span>
               <span>{{ q.option_a }}</span>
             </div>
 
             <div class="p-3 rounded-2xl border flex items-center gap-2.5 {% if q.correct_option == 'B' %}bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 font-bold{% else %}bg-slate-50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300{% endif %}">
-              <span class="w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] {% if q.correct_option == 'B' %}bg-emerald-500 text-white{% else %}bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400{% endif %}">খ</span>
+              <span class="w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] {% if q.correct_option == 'B' %}bg-emerald-500 text-white{% else %}bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400{% endif %}">{{ q.opt_b_label }}</span>
               <span>{{ q.option_b }}</span>
             </div>
 
             <div class="p-3 rounded-2xl border flex items-center gap-2.5 {% if q.correct_option == 'C' %}bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 font-bold{% else %}bg-slate-50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300{% endif %}">
-              <span class="w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] {% if q.correct_option == 'C' %}bg-emerald-500 text-white{% else %}bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400{% endif %}">গ</span>
+              <span class="w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] {% if q.correct_option == 'C' %}bg-emerald-500 text-white{% else %}bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400{% endif %}">{{ q.opt_c_label }}</span>
               <span>{{ q.option_c }}</span>
             </div>
 
             <div class="p-3 rounded-2xl border flex items-center gap-2.5 {% if q.correct_option == 'D' %}bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 font-bold{% else %}bg-slate-50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300{% endif %}">
-              <span class="w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] {% if q.correct_option == 'D' %}bg-emerald-500 text-white{% else %}bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400{% endif %}">ঘ</span>
+              <span class="w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] {% if q.correct_option == 'D' %}bg-emerald-500 text-white{% else %}bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400{% endif %}">{{ q.opt_d_label }}</span>
               <span>{{ q.option_d }}</span>
             </div>
           </div>
@@ -439,8 +474,8 @@
         <div class="flex items-center gap-2">
           <span class="text-base">🔤</span>
           <div>
-            <span class="font-bold text-slate-800 dark:text-slate-200">বাংলা ফন্ট এনকোডিং:</span>
-            <span class="text-[11px] text-slate-500 block">অভ্র (Unicode) অথবা বিজয় (SutonnyMJ) উভয় ফরম্যাট সাপোর্ট করে</span>
+            <span class="font-bold text-slate-800 dark:text-slate-200">ভাষা ও ফন্ট এনকোডিং:</span>
+            <span class="text-[11px] text-slate-500 block">English, অভ্র (Unicode) অথবা বিজয় (SutonnyMJ) সবগুলো ফরম্যাট সাপোর্ট করে</span>
           </div>
         </div>
 
@@ -455,11 +490,19 @@
           </button>
           <button 
             type="button" 
+            @click="encodingMode = 'english'"
+            :class="encodingMode === 'english' ? 'bg-white dark:bg-slate-900 text-brand-primary shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+            class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1"
+          >
+            <span>🇬🇧 English</span>
+          </button>
+          <button 
+            type="button" 
             @click="encodingMode = 'unicode'"
             :class="encodingMode === 'unicode' ? 'bg-white dark:bg-slate-900 text-brand-primary shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
             class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1"
           >
-            <span>🇧🇩 অভ্র / ইউনিকোড</span>
+            <span>🇧🇩 অভ্র / বাংলা</span>
           </button>
           <button 
             type="button" 
@@ -496,13 +539,19 @@
       <!-- Format Helper Banner -->
       <div class="p-3.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 text-xs space-y-1.5 text-indigo-900 dark:text-indigo-200">
         <div class="font-bold flex items-center gap-1.5">
-          <span>💡 স্ট্যান্ডার্ড MCQ ফরম্যাট নমুনা:</span>
+          <span>💡 স্ট্যান্ডার্ড MCQ ফরম্যাট নমুনা (বাংলা ও ইংরেজি উভয় সমর্থিত):</span>
         </div>
-        <div class="font-mono text-[11px] bg-white dark:bg-slate-950 p-2.5 rounded-xl border border-indigo-200/50 dark:border-indigo-900/50 leading-relaxed overflow-x-auto text-slate-800 dark:text-slate-200">
-          ১। ‘সোনার তরী’ কবিতার বর্ণনামতে বর্ষা কখন এল?<br>
-          ক. ধান কাটা শুরু হলে &nbsp;&nbsp; খ. ধান কাটতে কাটতে &nbsp;&nbsp; গ. ধান কাটা শেষ হলে &nbsp;&nbsp; ঘ. নৌকায় ধান তুলে দিলে &nbsp;&nbsp; খ<br>
-          ২। ‘ওগো তুমি কোথা যাও কোন বিদেশে’- ‘সোনার তরী’ কবিতায় এখানে ‘তুমি’ কে?<br>
-          ক. কৃষক &nbsp;&nbsp; খ. তরী &nbsp;&nbsp; গ. মাঝি &nbsp;&nbsp; ঘ. কবি &nbsp;&nbsp; গ
+        <div class="font-mono text-[11px] bg-white dark:bg-slate-950 p-2.5 rounded-xl border border-indigo-200/50 dark:border-indigo-900/50 leading-relaxed overflow-x-auto text-slate-800 dark:text-slate-200 space-y-2">
+          <div>
+            <span class="text-indigo-500 font-bold">// বাংলা নমুনা:</span><br>
+            ১। ‘সোনার তরী’ কবিতার বর্ণনামতে বর্ষা কখন এল?<br>
+            ক. ধান কাটা শুরু হলে &nbsp;&nbsp; খ. ধান কাটতে কাটতে &nbsp;&nbsp; গ. ধান কাটা শেষ হলে &nbsp;&nbsp; ঘ. নৌকায় ধান তুলে দিলে &nbsp;&nbsp; খ
+          </div>
+          <div class="pt-1 border-t border-slate-200 dark:border-slate-800">
+            <span class="text-emerald-500 font-bold">// English Sample:</span><br>
+            01. A prefix containing word is—<br>
+            Ⓐ immoral &nbsp;&nbsp; Ⓑ immediate &nbsp;&nbsp; Ⓒ immense &nbsp;&nbsp; Ⓓ important &nbsp;&nbsp;&nbsp;&nbsp; A
+          </div>
         </div>
       </div>
 
@@ -578,16 +627,16 @@
             <div class="p-3.5 hover:bg-slate-50 dark:hover:bg-slate-850 space-y-1.5">
               <div class="flex items-start justify-between gap-2">
                 <div class="font-bold text-slate-900 dark:text-white">
-                  <span class="text-slate-400 font-mono" x-text="(idx + 1) + '। '"></span>
+                  <span class="text-slate-400 font-mono" x-text="(!/[\u0980-\u09FF]/.test(q.question_text) && /[a-zA-Z]/.test(q.question_text)) ? (idx + 1) + '. ' : (idx + 1) + '। '"></span>
                   <span x-text="q.question_text"></span>
                 </div>
                 <span class="px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-600 font-mono font-bold text-[10px] shrink-0" x-text="'উত্তর: ' + q.correct_option"></span>
               </div>
               <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] text-slate-600 dark:text-slate-400 pl-4">
-                <div>ক. <span x-text="q.option_a"></span></div>
-                <div>খ. <span x-text="q.option_b"></span></div>
-                <div>গ. <span x-text="q.option_c"></span></div>
-                <div>ঘ. <span x-text="q.option_d"></span></div>
+                <div><span class="font-bold text-slate-500" x-text="/[\u0980-\u09FF]/.test(q.question_text) ? 'ক. ' : 'A. '"></span><span x-text="q.option_a"></span></div>
+                <div><span class="font-bold text-slate-500" x-text="/[\u0980-\u09FF]/.test(q.question_text) ? 'খ. ' : 'B. '"></span><span x-text="q.option_b"></span></div>
+                <div><span class="font-bold text-slate-500" x-text="/[\u0980-\u09FF]/.test(q.question_text) ? 'গ. ' : 'C. '"></span><span x-text="q.option_c"></span></div>
+                <div><span class="font-bold text-slate-500" x-text="/[\u0980-\u09FF]/.test(q.question_text) ? 'ঘ. ' : 'D. '"></span><span x-text="q.option_d"></span></div>
               </div>
             </div>
           </template>
