@@ -1661,6 +1661,189 @@
 
     </div>
 
+    <!-- TAB: PAYMENT GATEWAY SETTINGS -->
+    <div x-show="activeTab === 'payment'" x-cloak class="space-y-8 animate-fade-in-up">
+      <div class="border-b border-slate-200 dark:border-slate-800 pb-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2.5">
+              <span>💳</span>
+              <span>অনলাইন পেমেন্ট গেটওয়ে সেটিংস</span>
+            </h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              আপনার একাডেমির শিক্ষার্থীদের থেকে বিকাশ, নগদ, রকেটের মাধ্যমে সরাসরি পেমেন্ট নিতে আপনার Webkoders Merchant API Key ও Secret সেট করুন।
+            </p>
+          </div>
+          <span class="px-3.5 py-1.5 rounded-full text-xs font-mono font-bold self-start sm:self-auto {% if branding.gateway_enabled and branding.gateway_api_key %}bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20{% else %}bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20{% endif %}">
+            {% if branding.gateway_enabled and branding.gateway_api_key %}● গেটওয়ে সক্রিয় (Live Active){% else %}○ নিষ্ক্রিয় / কনফিগার করুন{% endif %}
+          </span>
+        </div>
+      </div>
+
+      <!-- Payment Settings Form -->
+      <form method="POST" class="space-y-6 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-6 sm:p-10 shadow-sm" x-data="{ showSecret: false, copiedWebhook: false, copiedReturn: false }">
+        {% csrf_token %}
+        <input type="hidden" name="active_tab" value="payment">
+
+        <!-- Enable/Disable Gateway Toggle -->
+        <div class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <div class="space-y-0.5">
+            <span class="text-sm font-bold text-slate-900 dark:text-white block">অনলাইন গেটওয়ে চেকআউট চালু রাখুন</span>
+            <span class="text-xs text-slate-500 dark:text-slate-400">চালু থাকলে শিক্ষার্থীরা কোর্স ও মডেল টেস্ট কেনার সময় বিকাশ, নগদ বা রকেটের মাধ্যমে সরাসরি ফি পরিশোধ করতে পারবে।</span>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer select-none">
+            <input 
+              type="checkbox" 
+              name="gateway_enabled" 
+              {% if branding.gateway_enabled != False and branding.gateway_enabled != 'false' %}checked{% endif %}
+              class="sr-only peer"
+            >
+            <div class="w-12 h-6.5 bg-slate-300 dark:bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+          </label>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+          <!-- Gateway API Key -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+              মার্চেন্ট API Key (Merchant API Key) *
+            </label>
+            <input 
+              type="text" 
+              name="gateway_api_key" 
+              value="{{ branding.gateway_api_key|default:'' }}"
+              placeholder="যেমন: mfs_live_71ac0d5f45e07152..." 
+              class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-mono focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary shadow-sm"
+            >
+            <p class="text-[11px] text-slate-500 mt-1">পেমেন্ট গেটওয়ের ড্যাশবোর্ড থেকে প্রাপ্ত মার্চেন্ট লাইভ API Key দিন।</p>
+          </div>
+
+          <!-- Gateway API Secret -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+              মার্চেন্ট API Secret (Merchant Secret) *
+            </label>
+            <div class="relative">
+              <input 
+                :type="showSecret ? 'text' : 'password'" 
+                name="gateway_api_secret" 
+                value="{{ branding.gateway_api_secret|default:'' }}"
+                placeholder="যেমন: mfs_sec_f08bea53219f..." 
+                class="w-full px-4 py-3 pr-10 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-mono focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary shadow-sm"
+              >
+              <button 
+                type="button" 
+                @click="showSecret = !showSecret" 
+                class="absolute right-3 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs"
+              >
+                <span x-text="showSecret ? '🙈' : '👁️'"></span>
+              </button>
+            </div>
+            <p class="text-[11px] text-slate-500 mt-1">Webhook ভেরিফিকেশনের জন্য ব্যবহৃত গোপন Secret কী।</p>
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+          <!-- Gateway Base URL -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+              Gateway Server Base URL
+            </label>
+            <input 
+              type="text" 
+              name="gateway_base_url" 
+              value="{{ branding.gateway_base_url|default:'https://payment.webkoders.com' }}"
+              placeholder="https://payment.webkoders.com" 
+              class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-mono focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary shadow-sm"
+            >
+            <p class="text-[11px] text-slate-500 mt-1">ডিফল্ট সার্ভার: https://payment.webkoders.com</p>
+          </div>
+
+          <!-- Checkout Helpline / Support Text -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+              চেকআউট হেল্পলাইন / কাস্টমার সাপোর্ট মেসেজ
+            </label>
+            <input 
+              type="text" 
+              name="gateway_help_text" 
+              value="{{ branding.gateway_help_text|default:'' }}"
+              placeholder="যেমন: প্রয়োজনে কল করুন: 017xxxxxxxx বা হোয়াটসঅ্যাপ করুন" 
+              class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary shadow-sm"
+            >
+            <p class="text-[11px] text-slate-500 mt-1">এই বার্তাটি চেকআউট পেজে শিক্ষার্থীদের দেখানো হবে।</p>
+          </div>
+        </div>
+
+        <!-- Webhook and Return URL Copy Box -->
+        <div class="p-6 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200/60 dark:border-indigo-800/60 space-y-4">
+          <div class="flex items-center gap-2 text-indigo-700 dark:text-indigo-400 font-bold text-xs uppercase tracking-wider">
+            <span>⚙️</span>
+            <span>মার্চেন্ট গেটওয়েতে সেট করার জন্য আপনার URL সমূহ</span>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <!-- Webhook URL Box -->
+            <div class="space-y-1.5">
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">১. আপনার Webhook URL:</label>
+              <div class="flex items-center gap-2">
+                <input 
+                  type="text" 
+                  readonly 
+                  value="https://{{ request.get_host }}/payments/gateway-webhook/" 
+                  id="tenant_webhook_url"
+                  class="flex-1 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-mono text-slate-800 dark:text-slate-200 select-all"
+                >
+                <button 
+                  type="button" 
+                  @click="navigator.clipboard.writeText(document.getElementById('tenant_webhook_url').value); copiedWebhook = true; setTimeout(() => copiedWebhook = false, 2500);" 
+                  class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shrink-0 transition-all shadow-sm"
+                >
+                  <span x-text="copiedWebhook ? '✓ কপি হয়েছে' : 'কপি করুন'"></span>
+                </button>
+              </div>
+              <p class="text-[10px] text-slate-500">গেটওয়ে পেমেন্ট সফল হওয়ার সাথে সাথে এই ঠিকানায় নোটিফিকেশন পাঠাবে।</p>
+            </div>
+
+            <!-- Return URL Box -->
+            <div class="space-y-1.5">
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">২. আপনার Return URL:</label>
+              <div class="flex items-center gap-2">
+                <input 
+                  type="text" 
+                  readonly 
+                  value="https://{{ request.get_host }}/payments/return/" 
+                  id="tenant_return_url"
+                  class="flex-1 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-mono text-slate-800 dark:text-slate-200 select-all"
+                >
+                <button 
+                  type="button" 
+                  @click="navigator.clipboard.writeText(document.getElementById('tenant_return_url').value); copiedReturn = true; setTimeout(() => copiedReturn = false, 2500);" 
+                  class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shrink-0 transition-all shadow-sm"
+                >
+                  <span x-text="copiedReturn ? '✓ কপি হয়েছে' : 'কপি করুন'"></span>
+                </button>
+              </div>
+              <p class="text-[10px] text-slate-500">পেমেন্ট শেষে শিক্ষার্থী স্বয়ংক্রিয়ভাবে এই পেজে ফিরে এসে ক্লাস শুরু করবে।</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="pt-2">
+          <button 
+            type="submit" 
+            class="py-3.5 px-8 rounded-2xl bg-gradient-to-r from-brand-primary to-cyan-500 text-white font-black text-xs shadow-lg shadow-brand-primary/25 hover:opacity-95 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer app-tap"
+          >
+            <span>💾</span>
+            <span>পেমেন্ট গেটওয়ে সেটিংস সংরক্ষণ করুন</span>
+          </button>
+        </div>
+
+      </form>
+    </div>
+
+
     <!-- TAB: PLAN & SUBSCRIPTION -->
     <div x-show="activeTab === 'subscription'" x-cloak class="space-y-8">
       <div class="border-b border-slate-200 dark:border-slate-800 pb-6">

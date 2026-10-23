@@ -26,7 +26,7 @@
       :class="activeTab === 'overview' ? 'text-brand-primary dark:text-emerald-400 font-black' : ''"
     >
       <div class="relative">
-        <span class="text-lg leading-none">📊</span>
+        <i class="fa-solid fa-chart-pie text-base leading-none"></i>
         <span 
           x-show="activeTab === 'overview'" 
           class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-brand-primary dark:bg-emerald-400"
@@ -51,7 +51,7 @@
       :class="activeTab === 'courses' ? 'text-brand-primary dark:text-emerald-400 font-black' : ''"
     >
       <div class="relative">
-        <span class="text-lg leading-none">🎓</span>
+        <i class="fa-solid fa-graduation-cap text-base leading-none"></i>
         <span 
           x-show="activeTab === 'courses'" 
           class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-brand-primary dark:bg-emerald-400"
@@ -76,7 +76,7 @@
       :class="activeTab === 'finance' ? 'text-brand-primary dark:text-emerald-400 font-black' : ''"
     >
       <div class="relative">
-        <span class="text-lg leading-none">💰</span>
+        <i class="fa-solid fa-wallet text-base leading-none"></i>
         <span 
           x-show="activeTab === 'finance'" 
           class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-brand-primary dark:bg-emerald-400"
@@ -101,7 +101,7 @@
       :class="activeTab === 'students' ? 'text-brand-primary dark:text-emerald-400 font-black' : ''"
     >
       <div class="relative">
-        <span class="text-lg leading-none">👨‍🎓</span>
+        <i class="fa-solid fa-users text-base leading-none"></i>
         <span 
           x-show="activeTab === 'students'" 
           class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-brand-primary dark:bg-emerald-400"
@@ -117,9 +117,7 @@
       class="flex flex-col items-center justify-center py-1 transition-transform active:scale-95 group text-slate-800 dark:text-slate-100 hover:text-brand-primary dark:hover:text-emerald-400 cursor-pointer"
     >
       <div class="relative w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shadow-sm group-hover:bg-brand-primary group-hover:text-white transition-colors">
-        <svg class="w-4 h-4 fill-none stroke-current" viewBox="0 0 24 24" stroke-width="2.5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>
-        </svg>
+<i class="fa-solid fa-bars text-sm"></i>
       </div>
       <span class="text-[10px] tracking-tight mt-0.5 font-bold">সকল মেনু</span>
     </button>

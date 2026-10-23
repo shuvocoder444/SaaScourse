@@ -113,13 +113,13 @@
 
       <div class="p-5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-sm">
         <span class="text-xs font-mono text-slate-500 dark:text-slate-400 block mb-1">সর্বোচ্চ প্রাপ্ত নম্বর</span>
-        <div class="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">{{ highest_score }}</div>
-        <span class="text-[10px] text-slate-400 font-mono">পূর্ণমান: {{ exam.total_marks }}</span>
+        <div class="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">{{ highest_score|floatformat:"-2" }}</div>
+        <span class="text-[10px] text-slate-400 font-mono">পূর্ণমান: {{ exam.total_marks|floatformat:"-2" }}</span>
       </div>
 
       <div class="p-5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-sm">
         <span class="text-xs font-mono text-slate-500 dark:text-slate-400 block mb-1">গড় প্রাপ্ত নম্বর</span>
-        <div class="text-2xl sm:text-3xl font-black text-indigo-600 dark:text-indigo-400">{{ avg_score }}</div>
+        <div class="text-2xl sm:text-3xl font-black text-indigo-600 dark:text-indigo-400">{{ avg_score|floatformat:"-2" }}</div>
         <span class="text-[10px] text-slate-400 font-mono">গড় স্কোর</span>
       </div>
 
@@ -208,7 +208,7 @@
 
                   <!-- Score -->
                   <td class="py-3.5 px-4 text-center font-bold text-brand-primary text-sm">
-                    {{ item.score }} <span class="text-[10px] text-slate-400 font-normal">/ {{ item.total_marks }}</span>
+                    {{ item.score|floatformat:"-2" }} <span class="text-[10px] text-slate-400 font-normal">/ {{ item.total_marks|floatformat:"-2" }}</span>
                   </td>
 
                   <!-- Correct -->

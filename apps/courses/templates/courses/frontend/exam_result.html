@@ -73,9 +73,9 @@
         <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-100 dark:border-slate-800/80">
           <span class="text-[10px] font-mono uppercase text-slate-400 block mb-1">প্রাপ্ত নম্বর</span>
           <div class="text-2xl sm:text-3xl font-black text-brand-primary">
-            {{ attempt.score }}
+            {{ attempt.score|floatformat:"-2" }}
           </div>
-          <span class="text-[10px] font-mono text-slate-400">মোট: {{ attempt.total_marks }}</span>
+          <span class="text-[10px] font-mono text-slate-400">মোট: {{ attempt.total_marks|floatformat:"-2" }}</span>
         </div>
 
         <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-100 dark:border-slate-800/80">
@@ -191,7 +191,7 @@
                     </div>
                   </td>
                   <td class="py-3 px-3.5 text-center font-bold text-brand-primary">
-                    {{ item.score }} <span class="text-[10px] text-slate-400 font-normal">/ {{ item.total_marks }}</span>
+                    {{ item.score|floatformat:"-2" }} <span class="text-[10px] text-slate-400 font-normal">/ {{ item.total_marks|floatformat:"-2" }}</span>
                   </td>
                   <td class="py-3 px-3.5 text-center">
                     <span class="text-emerald-500 font-bold">{{ item.correct_count }}</span> / <span class="text-rose-500 font-bold">{{ item.wrong_count }}</span>

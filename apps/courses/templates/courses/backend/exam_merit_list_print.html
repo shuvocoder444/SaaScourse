@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{ exam.title }} — মেধা তালিকা ও ফলাফল | {{ tenant.name }}</title>
+  <title>{{ exam.title }} — ফলাফল শিট | {{ tenant.name }}</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -75,54 +75,49 @@
   <main class="print-container max-w-5xl mx-auto bg-white p-8 sm:p-12 rounded-3xl border border-slate-200 shadow-2xl space-y-6">
 
     <!-- Official Header with Academy Logo & Title -->
-    <header class="border-b-2 border-slate-800 pb-5 text-center space-y-2">
+    <header class="border-b-2 border-slate-800 pb-5 text-center space-y-3">
       
       <div class="flex items-center justify-between">
-        <div class="w-20 text-left">
+        <!-- Enlarged Logo -->
+        <div class="w-36 text-left">
           {% if tenant.logo_url %}
-            <img src="{{ tenant.logo_url }}" alt="{{ tenant.name }}" class="h-14 object-contain">
+            <img src="{{ tenant.logo_url }}" alt="{{ tenant.name }}" class="h-20 sm:h-24 max-w-full object-contain drop-shadow-sm">
           {% elif tenant.logo %}
-            <img src="{{ tenant.logo.url }}" alt="{{ tenant.name }}" class="h-14 object-contain">
+            <img src="{{ tenant.logo.url }}" alt="{{ tenant.name }}" class="h-20 sm:h-24 max-w-full object-contain drop-shadow-sm">
           {% endif %}
         </div>
-        <div class="flex-1 text-center px-4">
-          <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">{{ tenant.name }}</h1>
-          <p class="text-xs uppercase tracking-widest text-slate-600 font-bold mt-0.5">MCQ পরীক্ষা মেধা তালিকা ও অফিশিয়াল ফলাফল শিট</p>
-          <div class="inline-block mt-1 px-4 py-1 rounded-full bg-slate-100 text-slate-800 text-sm font-black border border-slate-300">
-            {{ exam.title }}
+        <div class="flex-1 text-center px-4 space-y-1">
+          <h1 class="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">{{ tenant.name }}</h1>
+          <h2 class="text-base sm:text-lg font-bold text-slate-800 tracking-wide">{{ exam.title }}</h2>
+          <div>
+            <span class="inline-block px-3.5 py-0.5 rounded-full bg-slate-900 text-white text-[11px] font-mono font-black tracking-widest uppercase">
+              LEADERBOARD
+            </span>
           </div>
         </div>
-        <div class="w-20 text-right text-[11px] font-mono text-slate-500">
+        <div class="w-36 text-right text-[11px] font-mono text-slate-500">
           <div>তারিখ:</div>
           <div class="font-bold text-slate-800">{% now "d/m/Y" %}</div>
         </div>
       </div>
 
-      <!-- Exam Metadata Bar -->
-      <div class="pt-3 border-t border-slate-200 grid grid-cols-2 sm:grid-cols-6 gap-2 text-center text-xs font-mono text-slate-700">
-        <div class="p-2 rounded-lg bg-slate-50 border border-slate-200">
-          <span class="block text-[10px] text-slate-500">পূর্ণমান</span>
-          <span class="font-bold text-slate-900">{{ exam.total_marks }}</span>
+      <!-- Exam Metadata Bar (4 Clean Metrics) -->
+      <div class="pt-3 border-t border-slate-200 grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center text-xs font-mono text-slate-700">
+        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+          <span class="block text-[10px] text-slate-500 font-semibold">পূর্ণমান</span>
+          <span class="font-bold text-slate-900 text-sm">{{ exam.total_marks|floatformat:"-2" }}</span>
         </div>
-        <div class="p-2 rounded-lg bg-slate-50 border border-slate-200">
-          <span class="block text-[10px] text-slate-500">সময়</span>
-          <span class="font-bold text-slate-900">{{ exam.duration_minutes }} মিনিট</span>
+        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+          <span class="block text-[10px] text-slate-500 font-semibold">সময়</span>
+          <span class="font-bold text-slate-900 text-sm">{{ exam.duration_minutes }} মিনিট</span>
         </div>
-        <div class="p-2 rounded-lg bg-slate-50 border border-slate-200">
-          <span class="block text-[10px] text-slate-500">মোট পরীক্ষার্থী</span>
-          <span class="font-bold text-slate-900">{{ total_candidates }} জন</span>
+        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+          <span class="block text-[10px] text-slate-500 font-semibold">মোট পরীক্ষার্থী</span>
+          <span class="font-bold text-slate-900 text-sm">{{ total_candidates }} জন</span>
         </div>
-        <div class="p-2 rounded-lg bg-slate-50 border border-slate-200">
-          <span class="block text-[10px] text-slate-500">সর্বোচ্চ নম্বর</span>
-          <span class="font-bold text-slate-900">{{ highest_score }}</span>
-        </div>
-        <div class="p-2 rounded-lg bg-slate-50 border border-slate-200">
-          <span class="block text-[10px] text-slate-500">গড় নম্বর</span>
-          <span class="font-bold text-slate-900">{{ avg_score }}</span>
-        </div>
-        <div class="p-2 rounded-lg bg-slate-50 border border-slate-200">
-          <span class="block text-[10px] text-slate-500">উত্তীর্ণের হার</span>
-          <span class="font-bold text-slate-900">{{ pass_rate }}%</span>
+        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+          <span class="block text-[10px] text-slate-500 font-semibold">সর্বোচ্চ নম্বর</span>
+          <span class="font-bold text-slate-900 text-sm">{{ highest_score|floatformat:"-2" }}</span>
         </div>
       </div>
 
@@ -139,49 +134,33 @@
               <th class="py-2.5 px-3 border border-slate-800">কলেজ / প্রতিষ্ঠান</th>
               <th class="py-2.5 px-3 text-center border border-slate-800">সেশন / ব্যাচ</th>
               <th class="py-2.5 px-3 text-center border border-slate-800">প্রাপ্ত নম্বর</th>
-              <th class="py-2.5 px-3 text-center border border-slate-800">শতকরা</th>
               <th class="py-2.5 px-3 text-center border border-slate-800">সঠিক</th>
               <th class="py-2.5 px-3 text-center border border-slate-800">ভুল</th>
-              <th class="py-2.5 px-3 text-center border border-slate-800">ব্যয়িত সময়</th>
-              <th class="py-2.5 px-3 text-center border border-slate-800">ফলাফল</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-200">
             {% for item in merit_list %}
               <tr class="{% cycle 'bg-white' 'bg-slate-50/70' %} hover:bg-slate-100 transition-colors">
-                <td class="py-2 px-3 text-center font-bold border border-slate-300">
+                <td class="py-2.5 px-3 text-center font-bold border border-slate-300">
                   <span class="text-sm font-bold">{{ item.badge }}</span>
                 </td>
-                <td class="py-2 px-3 font-bold text-slate-900 border border-slate-300">
+                <td class="py-2.5 px-3 font-bold text-slate-900 border border-slate-300">
                   {{ item.student_name }}
                 </td>
-                <td class="py-2 px-3 text-slate-700 border border-slate-300">
+                <td class="py-2.5 px-3 text-slate-700 border border-slate-300">
                   {{ item.institution|default:"—" }}
                 </td>
-                <td class="py-2 px-3 text-center font-mono text-slate-700 border border-slate-300">
+                <td class="py-2.5 px-3 text-center font-mono text-slate-700 border border-slate-300">
                   {{ item.batch|default:"—" }}
                 </td>
-                <td class="py-2 px-3 text-center font-bold text-indigo-700 border border-slate-300">
-                  {{ item.score }} / {{ item.total_marks }}
+                <td class="py-2.5 px-3 text-center font-bold text-indigo-700 border border-slate-300 text-sm">
+                  {{ item.score|floatformat:"-2" }} / {{ item.total_marks|floatformat:"-2" }}
                 </td>
-                <td class="py-2 px-3 text-center font-mono font-bold border border-slate-300">
-                  {{ item.percentage }}%
-                </td>
-                <td class="py-2 px-3 text-center font-mono text-emerald-700 font-bold border border-slate-300">
+                <td class="py-2.5 px-3 text-center font-mono text-emerald-700 font-bold border border-slate-300">
                   {{ item.correct_count }}
                 </td>
-                <td class="py-2 px-3 text-center font-mono text-rose-700 font-bold border border-slate-300">
+                <td class="py-2.5 px-3 text-center font-mono text-rose-700 font-bold border border-slate-300">
                   {{ item.wrong_count }}
-                </td>
-                <td class="py-2 px-3 text-center font-mono text-[10px] text-slate-600 border border-slate-300">
-                  {{ item.time_formatted }}
-                </td>
-                <td class="py-2 px-3 text-center font-bold text-[10px] border border-slate-300">
-                  {% if item.is_passed %}
-                    <span class="text-emerald-700">উত্তীর্ণ</span>
-                  {% else %}
-                    <span class="text-rose-700">অনুত্তীর্ণ</span>
-                  {% endif %}
                 </td>
               </tr>
             {% endfor %}
@@ -189,35 +168,12 @@
         </table>
       </div>
     {% else %}
-      <div class="text-center py-12 text-slate-500">
+      <div class="text-center py-12 text-slate-500 font-medium">
         কোনো পরীক্ষার্থীর ফলাফল পাওয়া যায়নি।
       </div>
     {% endif %}
-
-    <!-- Institutional Signatures Footer -->
-    <div class="page-break pt-16 mt-12 border-t border-slate-300 grid grid-cols-3 gap-6 text-center text-xs text-slate-700">
-      <div>
-        <div class="w-36 mx-auto border-t border-slate-700 pt-1.5 font-bold">
-          প্রস্তুতকারীর স্বাক্ষর
-        </div>
-        <span class="text-[10px] text-slate-400 font-mono">Exam Controller</span>
-      </div>
-      <div>
-        <div class="w-36 mx-auto border-t border-slate-700 pt-1.5 font-bold">
-          যাচাইকারীর স্বাক্ষর
-        </div>
-        <span class="text-[10px] text-slate-400 font-mono">Verifier / Moderator</span>
-      </div>
-      <div>
-        <div class="w-36 mx-auto border-t border-slate-700 pt-1.5 font-bold">
-          প্রতিষ্ঠান প্রধানের স্বাক্ষর ও সিল
-        </div>
-        <span class="text-[10px] text-slate-400 font-mono">Principal / Head of Academy</span>
-      </div>
-    </div>
 
   </main>
 
 </body>
 </html>
-

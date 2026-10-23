@@ -1,5 +1,5 @@
 <!-- Header Style 1: Bangladeshi EdTech Header (Top Notice Bar + Hotline + Search + Bengali Navigation) -->
-<header class="sticky top-0 z-50 transition-colors shadow-sm font-sans" x-data="{ searchOpen: false, mobileMenuOpen: false }">
+<header class="sticky top-0 z-50 bg-white dark:bg-slate-900 transition-colors shadow-sm font-sans" x-data="{ searchOpen: false, mobileMenuOpen: false }">
 
   <!-- 1. Top Announcement & Hotline Bar -->
   {% if current_tenant and current_tenant.branding.show_header_notice != False %}
@@ -37,7 +37,7 @@
   {% endif %}
 
   <!-- 2. Main Navigation Bar -->
-  <div class="backdrop-blur-md bg-white/95 dark:bg-slate-900/98 border-b border-slate-200 dark:border-slate-800 transition-colors">
+  <div class="backdrop-blur-md bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 transition-colors header-nav-container">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
       
       <!-- Brand Logo / Name -->
@@ -69,14 +69,14 @@
         </a>
       </div>
 
-      <!-- Center Navigation Links (Clean, Transparent, High-Contrast Text in Dark Mode) -->
+      <!-- Center Navigation Links (Clean, High-Contrast Text in Both Light & Dark Mode) -->
       {% if current_tenant %}
         <nav class="hidden lg:flex items-center gap-1.5">
           {% for item in tenant_menu_items %}
             <a 
               href="{{ item.url }}" 
               {% if item.open_in_new_tab %}target="_blank" rel="noopener noreferrer"{% endif %}
-              class="px-3.5 py-2 rounded-xl text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100 hover:text-brand-primary dark:hover:text-emerald-400 hover:bg-slate-100/70 dark:hover:bg-slate-800/80 transition-all"
+              class="px-3.5 py-2 rounded-xl text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100 hover:text-brand-primary dark:hover:text-emerald-400 hover:bg-slate-100/70 dark:hover:bg-slate-800 transition-all"
             >
               {{ item.title }}
             </a>
@@ -87,15 +87,76 @@
       <!-- Right Action Items & Theme Switcher -->
       <div class="flex items-center gap-2 sm:gap-2.5 shrink-0">
         {% if user.is_authenticated %}
-          <!-- Compact Dashboard & Dark Mode Group (No Logout in Header, Closely Spaced) -->
+          <!-- Compact Dashboard Dropdown & Dark Mode Group -->
           <div class="flex items-center p-1 rounded-2xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700 shadow-sm gap-1 backdrop-blur-md">
-            <!-- 1. ড্যাশবোর্ড বাটন -->
-            <a 
-              href="{% url 'dashboard' %}" 
-              class="inline-flex items-center justify-center px-3.5 py-1.5 rounded-xl text-xs font-black bg-brand-primary text-white hover:opacity-90 shadow-sm shadow-brand-primary/20 transition-all"
-            >
-              ড্যাশবোর্ড
-            </a>
+            
+            <!-- 1. ড্যাশবোর্ড ড্রপডাউন বাটন -->
+            <div class="relative" x-data="{ userMenuOpen: false }" @click.outside="userMenuOpen = false">
+              <button 
+                type="button" 
+                @click="userMenuOpen = !userMenuOpen"
+                class="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-black bg-brand-primary text-white hover:opacity-95 shadow-sm shadow-brand-primary/20 transition-all cursor-pointer"
+                title="অ্যাকাউন্ট মেনু"
+              >
+                <i class="fa-solid fa-chart-pie text-xs"></i>
+                <span>ড্যাশবোর্ড</span>
+                <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-200" :class="userMenuOpen ? 'rotate-180' : ''"></i>
+              </button>
+
+              <!-- Dropdown Menu under Dashboard Button -->
+              <div 
+                x-show="userMenuOpen" 
+                x-cloak 
+                x-transition:enter="transition ease-out duration-150"
+                x-transition:enter-start="opacity-0 scale-95 translate-y-1"
+                x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                x-transition:leave="transition ease-in duration-100"
+                x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                x-transition:leave-end="opacity-0 scale-95 translate-y-1"
+                class="absolute right-0 mt-2 w-48 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl py-1 z-50 text-xs font-bold divide-y divide-slate-100 dark:divide-slate-800"
+              >
+                <!-- Navigation Links List -->
+                <div class="py-1">
+                  <!-- 1. ড্যাশবোর্ড (Dashboard) -->
+                  <a 
+                    href="{% url 'dashboard' %}" 
+                    class="flex items-center gap-2.5 px-3.5 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-brand-primary dark:hover:text-emerald-400 transition-colors"
+                  >
+                    <i class="fa-solid fa-chart-pie w-4 text-center text-emerald-600 dark:text-emerald-400"></i>
+                    <span>ড্যাশবোর্ড (Dashboard)</span>
+                  </a>
+
+                  <!-- 2. মাই একাউন্ট (My Account) -->
+                  <a 
+                    href="{% url 'dashboard' %}?tab=profile" 
+                    class="flex items-center gap-2.5 px-3.5 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-brand-primary dark:hover:text-emerald-400 transition-colors"
+                  >
+                    <i class="fa-solid fa-user-gear w-4 text-center text-blue-500"></i>
+                    <span>মাই একাউন্ট (My Account)</span>
+                  </a>
+
+                  <!-- 3. পরীক্ষা (Exam) -->
+                  <a 
+                    href="{% if current_tenant and current_tenant.owner == user or user.is_superuser %}{% url 'courses:manage_exams' %}{% else %}{% url 'dashboard' %}?tab=results{% endif %}" 
+                    class="flex items-center gap-2.5 px-3.5 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-brand-primary dark:hover:text-emerald-400 transition-colors"
+                  >
+                    <i class="fa-solid fa-file-pen w-4 text-center text-amber-500"></i>
+                    <span>পরীক্ষা (Exam)</span>
+                  </a>
+                </div>
+
+                <!-- 4. লগআউট (Logout) -->
+                <div class="pt-1">
+                  <a 
+                    href="{% url 'users:logout' %}" 
+                    class="flex items-center gap-2.5 px-3.5 py-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors font-bold"
+                  >
+                    <i class="fa-solid fa-right-from-bracket w-4 text-center"></i>
+                    <span>লগআউট (Logout)</span>
+                  </a>
+                </div>
+              </div>
+            </div>
 
             <!-- 2. Dark Mode Toggle (Compact, Right Beside Dashboard) -->
             <button 
@@ -114,8 +175,8 @@
               title="থিম পরিবর্তন করুন"
               aria-label="Theme toggle"
             >
-              <span x-show="!isDark" class="text-sm leading-none">🌙</span>
-              <span x-show="isDark" x-cloak class="text-sm leading-none">☀️</span>
+              <i x-show="!isDark" class="fa-solid fa-moon text-sm"></i>
+              <i x-show="isDark" x-cloak class="fa-solid fa-sun text-sm text-amber-400"></i>
             </button>
           </div>
         {% else %}
@@ -146,8 +207,8 @@
             class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-amber-400 hover:text-amber-500 dark:hover:bg-slate-700 transition-all shadow-sm cursor-pointer"
             title="Toggle Theme"
           >
-            <span x-show="!isDark" class="text-sm leading-none">🌙</span>
-            <span x-show="isDark" x-cloak class="text-sm leading-none">☀️</span>
+            <i x-show="!isDark" class="fa-solid fa-moon text-sm"></i>
+            <i x-show="isDark" x-cloak class="fa-solid fa-sun text-sm text-amber-400"></i>
           </button>
         {% endif %}
 
@@ -158,9 +219,7 @@
           class="lg:hidden p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all cursor-pointer shadow-sm"
           aria-label="Toggle navigation menu"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>
-          </svg>
+          <i class="fa-solid fa-bars text-base"></i>
         </button>
 
       </div>
@@ -178,10 +237,47 @@
     x-transition:leave="transition ease-in duration-150"
     x-transition:leave-start="opacity-100 translate-y-0"
     x-transition:leave-end="opacity-0 -translate-y-2"
-    class="lg:hidden border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-4 space-y-2 shadow-2xl max-h-[calc(100vh-5rem)] overflow-y-auto relative z-50"
+    class="lg:hidden border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-4 space-y-3 shadow-2xl max-h-[calc(100vh-5rem)] overflow-y-auto relative z-50"
   >
+    <!-- Logged in User Section in Mobile Drawer -->
+    {% if user.is_authenticated %}
+      <div class="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-2">
+        <div class="grid grid-cols-3 gap-1.5">
+          <a 
+            href="{% url 'dashboard' %}" 
+            class="flex flex-col items-center justify-center p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 font-bold text-[11px] hover:text-brand-primary transition-colors text-center"
+          >
+            <i class="fa-solid fa-chart-pie text-sm mb-1 text-emerald-600"></i>
+            <span>ড্যাশবোর্ড</span>
+          </a>
+          <a 
+            href="{% url 'dashboard' %}?tab=profile" 
+            class="flex flex-col items-center justify-center p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 font-bold text-[11px] hover:text-brand-primary transition-colors text-center"
+          >
+            <i class="fa-solid fa-user-gear text-sm mb-1 text-blue-500"></i>
+            <span>মাই একাউন্ট</span>
+          </a>
+          <a 
+            href="{% if current_tenant and current_tenant.owner == user or user.is_superuser %}{% url 'courses:manage_exams' %}{% else %}{% url 'dashboard' %}?tab=results{% endif %}" 
+            class="flex flex-col items-center justify-center p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 font-bold text-[11px] hover:text-brand-primary transition-colors text-center"
+          >
+            <i class="fa-solid fa-file-pen text-sm mb-1 text-amber-500"></i>
+            <span>পরীক্ষা</span>
+          </a>
+        </div>
+
+        <a 
+          href="{% url 'users:logout' %}" 
+          class="flex items-center justify-center gap-2 p-2 rounded-xl text-rose-600 dark:text-rose-400 font-bold text-xs bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 transition-colors"
+        >
+          <i class="fa-solid fa-right-from-bracket"></i>
+          <span>লগআউট (Logout)</span>
+        </a>
+      </div>
+    {% endif %}
+
     {% if current_tenant %}
-      <div class="flex items-center justify-between px-2 pb-2 border-b border-slate-100 dark:border-slate-800 mb-2">
+      <div class="flex items-center justify-between px-2 pb-1 border-b border-slate-100 dark:border-slate-800 mb-1">
         <span class="font-bold text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">মেনু আইটেমসমূহ</span>
         <button type="button" @click="mobileMenuOpen = false" class="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer">✕</button>
       </div>

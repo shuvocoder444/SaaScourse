@@ -82,6 +82,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
+  <!-- Font Awesome 6 Icons (Locally Downloaded with CDN Fallback) -->
+  <link rel="stylesheet" href="/static/vendor/fontawesome/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -141,6 +145,20 @@
     .app-tap:active {
       transform: scale(0.96);
       opacity: 0.9;
+    }
+
+    /* High-Contrast Dark Mode Header & Navigation Visibility Fix */
+    html.dark header,
+    html.dark .header-nav-container {
+      background-color: #0f172a !important;
+      border-color: #1e293b !important;
+    }
+    html.dark header nav a {
+      color: #f1f5f9 !important;
+    }
+    html.dark header nav a:hover {
+      color: #34d399 !important;
+      background-color: #1e293b !important;
     }
   </style>
 
@@ -272,6 +290,7 @@
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       globalPWAInstallPrompt = e;
+      window.globalPWAInstallPrompt = e;
 
       // Show floating bottom banner if not in standalone and not recently dismissed
       const dismissedAt = localStorage.getItem('pwa_banner_dismissed');

@@ -99,7 +99,7 @@
           :class="activeTab === 'overview' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black' : 'font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900 border border-transparent hover:border-slate-200 dark:hover:border-slate-800'"
           class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs transition-all text-left cursor-pointer"
         >
-          <span class="text-sm">📊</span>
+          <i class="fa-solid fa-chart-pie w-4 text-center"></i>
           <span>ড্যাশবোর্ড ওভারভিউ</span>
           <span class="ml-auto px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[9px] font-bold">হোম</span>
         </button>
@@ -111,7 +111,7 @@
           :class="activeTab === 'newsfeed' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black' : 'font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900 border border-transparent hover:border-slate-200 dark:hover:border-slate-800'"
           class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs transition-all text-left cursor-pointer"
         >
-          <span class="text-sm">📰</span>
+          <i class="fa-solid fa-newspaper w-4 text-center"></i>
           <span>নিউজ ফিড</span>
           <span class="ml-auto px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[9px] font-bold border border-slate-300 dark:border-slate-700">কমিউনিটি</span>
         </button>
@@ -123,7 +123,7 @@
           :class="activeTab === 'my_courses' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black' : 'font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900 border border-transparent hover:border-slate-200 dark:border-slate-800'"
           class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs transition-all text-left cursor-pointer"
         >
-          <span class="text-sm">🎓</span>
+          <i class="fa-solid fa-graduation-cap w-4 text-center"></i>
           <span>আমার কোর্সসমূহ</span>
           {% if total_enrolled %}
             <span class="ml-auto px-2 py-0.5 rounded-full text-xs font-mono font-bold {% if activeTab == 'my_courses' %}bg-white/25 text-white{% else %}bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 dark:bg-emerald-500/20{% endif %}">{{ total_enrolled }}</span>
@@ -137,7 +137,7 @@
           :class="activeTab === 'routine' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black' : 'font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900 border border-transparent hover:border-slate-200 dark:border-slate-800'"
           class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs transition-all text-left cursor-pointer"
         >
-          <span class="text-sm">📅</span>
+          <i class="fa-solid fa-calendar-days w-4 text-center"></i>
           <span>ক্লাস রুটিন</span>
         </button>
 
@@ -148,7 +148,7 @@
           :class="activeTab === 'results' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black' : 'font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900 border border-transparent hover:border-slate-200 dark:border-slate-800'"
           class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs transition-all text-left cursor-pointer"
         >
-          <span class="text-sm">📊</span>
+          <i class="fa-solid fa-square-poll-vertical w-4 text-center"></i>
           <span>ফলাফল ও পরীক্ষা</span>
         </button>
 
@@ -159,7 +159,7 @@
           :class="activeTab === 'support' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black' : 'font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900 border border-transparent hover:border-slate-200 dark:border-slate-800'"
           class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs transition-all text-left cursor-pointer"
         >
-          <span class="text-sm">💬</span>
+          <i class="fa-solid fa-headset w-4 text-center"></i>
           <span>সাপোর্ট ও চ্যাট</span>
           <span class="ml-auto w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
         </button>
@@ -171,7 +171,7 @@
           :class="activeTab === 'profile' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black' : 'font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900 border border-transparent hover:border-slate-200 dark:border-slate-800'"
           class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs transition-all text-left cursor-pointer"
         >
-          <span class="text-sm">👤</span>
+          <i class="fa-solid fa-user-gear w-4 text-center"></i>
           <span>প্রোফাইল সেটিংস</span>
         </button>
 
@@ -182,7 +182,7 @@
           :class="activeTab === 'invoices' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black' : 'font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900 border border-transparent hover:border-slate-200 dark:border-slate-800'"
           class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs transition-all text-left cursor-pointer"
         >
-          <span class="text-sm">🧾</span>
+          <i class="fa-solid fa-receipt w-4 text-center"></i>
           <span>ইনভয়েস ও মানি রিসিপ্ট</span>
         </button>
 
@@ -193,7 +193,7 @@
           :class="activeTab === 'orders' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black' : 'font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900 border border-transparent hover:border-slate-200 dark:border-slate-800'"
           class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs transition-all text-left cursor-pointer"
         >
-          <span class="text-sm">📦</span>
+          <i class="fa-solid fa-box-archive w-4 text-center"></i>
           <span>আমার বই অর্ডার</span>
         </button>
 
@@ -204,7 +204,7 @@
           :class="activeTab === 'clubs' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black' : 'font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900 border border-transparent hover:border-slate-200 dark:border-slate-800'"
           class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs transition-all text-left cursor-pointer"
         >
-          <span class="text-sm">🏛️</span>
+          <i class="fa-solid fa-users-rectangle w-4 text-center"></i>
           <span>স্টাডি ক্লাব ও গ্রুপ</span>
           <span class="ml-auto px-1.5 py-0.5 rounded bg-amber-500 text-slate-950 font-bold text-[9px]">গ্রুপ</span>
         </button>
@@ -223,7 +223,7 @@
           :class="activeTab === 'browse_courses' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black' : 'font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900 border border-transparent hover:border-slate-200 dark:border-slate-800'"
           class="w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs transition-all text-left cursor-pointer"
         >
-          <span class="text-sm">🔍</span>
+          <i class="fa-solid fa-magnifying-glass w-4 text-center"></i>
           <span>সকল কোর্সসমূহ</span>
         </button>
 
@@ -234,7 +234,7 @@
           :class="activeTab === 'browse_books' ? 'bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black' : 'font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900 border border-transparent hover:border-slate-200 dark:border-slate-800'"
           class="w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs transition-all text-left cursor-pointer"
         >
-          <span class="text-sm">📖</span>
+          <i class="fa-solid fa-book-open-reader w-4 text-center"></i>
           <span>সকল বইসমূহ</span>
         </button>
       </div>

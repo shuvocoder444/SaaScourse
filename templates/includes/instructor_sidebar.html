@@ -17,7 +17,7 @@
             {{ user.get_full_name|default:user.email }}
           </span>
           <div class="flex items-center gap-1.5 mt-0.5">
-            <span class="text-xs">🟢</span>
+            <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block shrink-0"></span>
             <span class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 truncate">
               {% if user.is_superuser %}সুপার অ্যাডমিন{% elif current_tenant and current_tenant.owner == user %}একাডেমি ক্রিয়েটর{% else %}মেন্টর প্রোফাইল{% endif %}
             </span>
@@ -34,7 +34,7 @@
         courses: {% if '/exams/' in request.path or '/curriculum/' in request.path or '/courses/manage/courses/' in request.path or request.GET.tab == 'courses' or request.GET.tab == 'live' %}true{% else %}false{% endif %},
         content: {% if '/books/' in request.path or '/resources/' in request.path or '/blog/' in request.path %}true{% else %}false{% endif %},
         design: {% if request.GET.tab == 'template' or request.GET.tab == 'header_footer' or request.GET.tab == 'navigation' or request.GET.tab == 'branding' %}true{% else %}false{% endif %},
-        settings: {% if '/tenants/settings/' in request.path or request.GET.tab == 'domain' or request.GET.tab == 'sms' or request.GET.tab == 'subscription' or request.GET.tab == 'backup' %}true{% else %}false{% endif %}
+        settings: {% if '/tenants/settings/' in request.path or request.GET.tab == 'domain' or request.GET.tab == 'sms' or request.GET.tab == 'subscription' or request.GET.tab == 'backup' or request.GET.tab == 'payment' %}true{% else %}false{% endif %}
       },
       init() {
         const path = window.location.pathname;
@@ -46,7 +46,7 @@
           this.openGroups.content = true;
         } else if (tab === 'template' || tab === 'header_footer' || tab === 'navigation' || tab === 'branding') {
           this.openGroups.design = true;
-        } else if (path.includes('/settings/') || tab === 'domain' || tab === 'sms' || tab === 'subscription' || tab === 'backup') {
+        } else if (path.includes('/settings/') || tab === 'domain' || tab === 'sms' || tab === 'subscription' || tab === 'backup' || tab === 'payment') {
           this.openGroups.settings = true;
         } else if (path.includes('/dashboard/') || tab === 'overview' || tab === 'finance' || tab === 'students') {
           this.openGroups.analytics = true;
@@ -69,7 +69,7 @@
           :class="openGroups['analytics'] ? 'bg-slate-100/90 dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 text-brand-primary dark:text-emerald-400 shadow-sm' : ''"
         >
           <span class="flex items-center gap-2.5">
-            <span class="text-base">📊</span>
+            <i class="fa-solid fa-chart-pie w-4 text-center"></i>
             <span class="tracking-tight">ড্যাশবোর্ড ও রিপোর্ট</span>
           </span>
           <span class="text-xs font-bold text-slate-400 dark:text-slate-400 transition-transform duration-200" x-text="openGroups['analytics'] ? '▲' : '▼'"></span>
@@ -82,7 +82,7 @@
             href="/dashboard/?tab=overview" 
             class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if request.GET.tab == 'overview' or not request.GET.tab and '/exams/' not in request.path and '/books/' not in request.path and '/resources/' not in request.path and '/blog/' not in request.path and '/tenants/settings/' not in request.path %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
-            <span class="text-sm">📈</span>
+            <i class="fa-solid fa-chart-line w-4 text-center"></i>
             <span>ওভারভিউ ড্যাশবোর্ড</span>
           </a>
 
@@ -91,7 +91,7 @@
             href="/dashboard/?tab=finance" 
             class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if request.GET.tab == 'finance' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
-            <span class="text-sm">💰</span>
+            <i class="fa-solid fa-wallet w-4 text-center"></i>
             <span>আয়-ব্যয় ও লেজার</span>
             <span class="ml-auto px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold text-[9px]">হিসাব</span>
           </a>
@@ -101,7 +101,7 @@
             href="/dashboard/?tab=students" 
             class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if request.GET.tab == 'students' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
-            <span class="text-sm">👨‍🎓</span>
+            <i class="fa-solid fa-user-graduate w-4 text-center"></i>
             <span>শিক্ষার্থী ও এনরোল</span>
             {% if total_registered_students or total_enrollments %}
               <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-mono font-bold {% if request.GET.tab == 'students' %}bg-white/25 text-white{% else %}bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 dark:bg-emerald-500/20{% endif %}">
@@ -124,7 +124,7 @@
           :class="openGroups['courses'] ? 'bg-slate-100/90 dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 text-brand-primary dark:text-emerald-400 shadow-sm' : ''"
         >
           <span class="flex items-center gap-2.5">
-            <span class="text-base">🎓</span>
+            <i class="fa-solid fa-graduation-cap w-4 text-center"></i>
             <span class="tracking-tight">কোর্স ও লাইভ ক্লাস</span>
           </span>
           <span class="text-xs font-bold text-slate-400 dark:text-slate-400 transition-transform duration-200" x-text="openGroups['courses'] ? '▲' : '▼'"></span>
@@ -137,7 +137,7 @@
             href="/dashboard/?tab=courses" 
             class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if request.GET.tab == 'courses' or '/courses/manage/courses/' in request.path or '/curriculum/' in request.path %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
-            <span class="text-sm">📋</span>
+            <i class="fa-solid fa-layer-group w-4 text-center"></i>
             <span>কোর্স তালিকা ও কারিকুলাম</span>
             {% if courses %}
               <span class="ml-auto px-1.5 py-0.5 rounded text-[10px] font-mono font-bold {% if request.GET.tab == 'courses' %}bg-white/25 text-white{% else %}bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700{% endif %}">
@@ -151,7 +151,7 @@
             href="/dashboard/?tab=live" 
             class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if request.GET.tab == 'live' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
-            <span class="text-sm">🔴</span>
+            <i class="fa-solid fa-video w-4 text-center text-rose-500"></i>
             <span>লাইভ ক্লাস শিডিউল</span>
             <span class="ml-auto px-1.5 py-0.2 rounded bg-rose-500 text-white font-bold text-[9px]">LIVE</span>
           </a>
@@ -161,7 +161,7 @@
             href="{% url 'courses:manage_exams' %}" 
             class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if '/courses/manage/exams/' in request.path or '/courses/manage/exam/' in request.path or '/exams/' in request.path %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
-            <span class="text-sm">📝</span>
+            <i class="fa-solid fa-file-pen w-4 text-center"></i>
             <span>MCQ ও অনলাইন পরীক্ষা</span>
           </a>
         </div>
@@ -179,7 +179,7 @@
           :class="openGroups['content'] ? 'bg-slate-100/90 dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 text-brand-primary dark:text-emerald-400 shadow-sm' : ''"
         >
           <span class="flex items-center gap-2.5">
-            <span class="text-base">📚</span>
+            <i class="fa-solid fa-book-open w-4 text-center"></i>
             <span class="tracking-tight">কনটেন্ট ও রিসোর্স</span>
           </span>
           <span class="text-xs font-bold text-slate-400 dark:text-slate-400 transition-transform duration-200" x-text="openGroups['content'] ? '▲' : '▼'"></span>
@@ -192,7 +192,7 @@
             href="{% url 'courses:manage_books' %}" 
             class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if '/courses/manage/books/' in request.path or '/books/' in request.path %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
-            <span class="text-sm">📖</span>
+            <i class="fa-solid fa-book w-4 text-center"></i>
             <span>বই ও প্রকাশনা</span>
           </a>
 
@@ -201,7 +201,7 @@
             href="{% url 'courses:manage_resources' %}" 
             class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if '/courses/manage/resources/' in request.path or '/resources/' in request.path %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
-            <span class="text-sm">🎁</span>
+            <i class="fa-solid fa-folder-open w-4 text-center"></i>
             <span>ফ্রি শিট ও নোট</span>
           </a>
 
@@ -210,7 +210,7 @@
             href="{% url 'courses:manage_blog' %}" 
             class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if '/courses/manage/blog/' in request.path or '/blog/' in request.path %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
-            <span class="text-sm">📰</span>
+            <i class="fa-solid fa-newspaper w-4 text-center"></i>
             <span>ব্লগ ও আর্টিকেল</span>
           </a>
         </div>
@@ -228,7 +228,7 @@
           :class="openGroups['design'] ? 'bg-slate-100/90 dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 text-brand-primary dark:text-emerald-400 shadow-sm' : ''"
         >
           <span class="flex items-center gap-2.5">
-            <span class="text-base">🎨</span>
+            <i class="fa-solid fa-palette w-4 text-center"></i>
             <span class="tracking-tight">ডিজাইন ও স্টোরফ্রন্ট</span>
           </span>
           <span class="text-xs font-bold text-slate-400 dark:text-slate-400 transition-transform duration-200" x-text="openGroups['design'] ? '▲' : '▼'"></span>
@@ -241,7 +241,7 @@
             href="/tenants/settings/?tab=template" 
             class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if request.GET.tab == 'template' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
-            <span class="text-sm">🖼️</span>
+            <i class="fa-solid fa-image w-4 text-center"></i>
             <span>ল্যান্ডিং পেজ থিম</span>
             <span class="ml-auto px-1.5 py-0.2 rounded bg-amber-500 text-slate-950 font-bold text-[9px]">৩টি থিম</span>
           </a>
@@ -251,7 +251,7 @@
             href="/tenants/settings/?tab=header_footer" 
             class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if request.GET.tab == 'header_footer' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
-            <span class="text-sm">📐</span>
+            <i class="fa-solid fa-table-columns w-4 text-center"></i>
             <span>হেডার ও ফুটার ডিজাইন</span>
           </a>
 
@@ -260,7 +260,7 @@
             href="/tenants/settings/?tab=navigation" 
             class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if request.GET.tab == 'navigation' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
-            <span class="text-sm">🧭</span>
+            <i class="fa-solid fa-compass w-4 text-center"></i>
             <span>কাস্টম মেনু বিল্ডার</span>
           </a>
 
@@ -269,7 +269,7 @@
             href="/tenants/settings/?tab=branding" 
             class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if request.GET.tab == 'branding' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
-            <span class="text-sm">🏷️</span>
+            <i class="fa-solid fa-tags w-4 text-center"></i>
             <span>লোগো ও ব্র্যান্ড কালার</span>
           </a>
         </div>
@@ -287,7 +287,7 @@
           :class="openGroups['settings'] ? 'bg-slate-100/90 dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 text-brand-primary dark:text-emerald-400 shadow-sm' : ''"
         >
           <span class="flex items-center gap-2.5">
-            <span class="text-base">⚙️</span>
+            <i class="fa-solid fa-gear w-4 text-center"></i>
             <span class="tracking-tight">সেটিংস ও বিলিং</span>
           </span>
           <span class="text-xs font-bold text-slate-400 dark:text-slate-400 transition-transform duration-200" x-text="openGroups['settings'] ? '▲' : '▼'"></span>
@@ -300,7 +300,7 @@
             href="/tenants/settings/?tab=domain" 
             class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if request.GET.tab == 'domain' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
-            <span class="text-sm">🌐</span>
+            <i class="fa-solid fa-globe w-4 text-center"></i>
             <span>কাস্টম ডোমেন ও SSL</span>
           </a>
 
@@ -309,8 +309,18 @@
             href="/tenants/settings/?tab=sms" 
             class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if request.GET.tab == 'sms' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
-            <span class="text-sm">📱</span>
+            <i class="fa-solid fa-comment-sms w-4 text-center"></i>
             <span>SMS গেটওয়ে সেটিংস</span>
+          </a>
+
+          <!-- 5.3 Payment Gateway Settings -->
+          <a 
+            href="/tenants/settings/?tab=payment" 
+            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if request.GET.tab == 'payment' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
+          >
+            <i class="fa-solid fa-money-bill-transfer w-4 text-center"></i>
+            <span>পেমেন্ট গেটওয়ে সেটিংস</span>
+            <span class="ml-auto px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold text-[9px]">API</span>
           </a>
 
           <!-- 5.3 Plan & Subscription -->
@@ -318,16 +328,16 @@
             href="/tenants/settings/?tab=subscription" 
             class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if request.GET.tab == 'subscription' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
-            <span class="text-sm">💎</span>
+            <i class="fa-solid fa-credit-card w-4 text-center"></i>
             <span>প্ল্যান ও সাবস্ক্রিপশন</span>
           </a>
 
           <!-- 5.4 Academy Data Backup & Restore -->
           <a 
             href="/tenants/settings/?tab=backup" 
-            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if request.GET.tab == 'backup' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
+            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 {% if request.GET.tab == 'backup' or request.GET.tab == 'payment' %}bg-brand-primary text-white shadow-md shadow-brand-primary/25 font-black{% else %}font-bold text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-900{% endif %}"
           >
-            <span class="text-sm">💾</span>
+            <i class="fa-solid fa-database w-4 text-center"></i>
             <span>ডাটা ব্যাকআপ ও রিস্টোর</span>
             <span class="ml-auto px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-500 dark:text-indigo-400 font-bold text-[9px]">নিরাপদ</span>
           </a>
@@ -346,9 +356,9 @@
       class="flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-100 hover:bg-white dark:hover:bg-slate-800 hover:shadow-md transition-all"
     >
       <span class="flex items-center gap-2">
-        <span>🌐</span> লাইভ স্টোরফ্রন্ট
+        <i class="fa-solid fa-globe text-emerald-500 mr-2"></i> লাইভ স্টোরফ্রন্ট
       </span>
-      <span class="text-emerald-500 dark:text-emerald-400 font-bold">↗</span>
+      <i class="fa-solid fa-arrow-up-right-from-square text-emerald-500 text-[10px]"></i>
     </a>
     <a 
       href="{% url 'users:logout' %}" 

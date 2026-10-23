@@ -4,6 +4,7 @@ from django.contrib import admin
 from django.urls import include, path
 
 from apps.courses import views as courses_views
+from apps.payments import views as payments_views
 from apps.tenants.views import download_academy_app, tenant_registration_view
 from apps.users.views import universal_dashboard_view
 from saascourse.views import (
@@ -50,6 +51,9 @@ urlpatterns = [
 
     path("tenants/", include("apps.tenants.urls", namespace="tenants")),
     path("courses/", include("apps.courses.urls", namespace="courses")),
+    path("payments/", include("apps.payments.urls", namespace="payments")),
+    path("api/payment-webhook", payments_views.gateway_webhook, name="gateway_webhook_root_alias"),
+    path("order-success", payments_views.payment_return_view, name="order_success_root_alias"),
     path("", include("apps.users.urls", namespace="users")),
 ]
 

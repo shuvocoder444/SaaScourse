@@ -4,7 +4,11 @@
 
 {% block content %}
 <div class="min-h-[85vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-slate-50/50 dark:bg-slate-950/50">
-  <div class="max-w-md w-full p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-6 transition-colors" x-data="{ mode: '{{ initial_mode|default:'login' }}', showPass: false }">
+  <div 
+    class="w-full p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-6 transition-all duration-200" 
+    :class="mode === 'register' ? 'max-w-lg' : 'max-w-md'" 
+    x-data="{ mode: '{{ initial_mode|default:'login' }}', showPass: false, pass: '', confirmPass: '' }"
+  >
     
     <!-- Top Branding & Icon -->
     <div class="text-center">
@@ -56,7 +60,12 @@
     </div>
 
     <!-- Auth Form -->
-    <form class="space-y-4 text-xs" method="POST" action="{% url 'users:login' %}">
+    <form 
+      class="space-y-4 text-xs" 
+      method="POST" 
+      action="{% url 'users:login' %}"
+      @submit="if (mode === 'register' && pass !== confirmPass) { alert('⚠️ পাসওয়ার্ড এবং কনফার্ম পাসওয়ার্ড মেলেনি! অনুগ্রহ করে যাচাই করুন।'); $event.preventDefault(); }"
+    >
       {% csrf_token %}
       <input type="hidden" name="next" value="{{ next }}">
       <input type="hidden" name="auth_mode" :value="mode">
@@ -64,7 +73,7 @@
       <!-- Full Name (Only for Registration) -->
       <div x-show="mode === 'register'" x-cloak class="space-y-1">
         <label for="full_name" class="block font-bold text-slate-700 dark:text-slate-300">
-          আপনার পূর্ণ নাম *
+          পূর্ণ নাম *
         </label>
         <input
           id="full_name"
@@ -79,17 +88,89 @@
       <!-- Identifier: Mobile Number / Email -->
       <div class="space-y-1">
         <label for="identifier" class="block font-bold text-slate-700 dark:text-slate-300">
-          মোবাইল নম্বর অথবা ইমেইল *
+          <span x-text="mode === 'login' ? 'মোবাইল নম্বর অথবা ইমেইল *' : 'মোবাইল নাম্বার *'"></span>
         </label>
         <input
           id="identifier"
           name="identifier"
-          type="text"
+          :type="mode === 'register' ? 'tel' : 'text'"
+          :inputmode="mode === 'register' ? 'numeric' : 'text'"
+          :maxlength="mode === 'register' ? '11' : '100'"
+          @input="if (mode === 'register') { $el.value = $el.value.replace(/[^0-9]/g, '').slice(0, 11); }"
           value="{{ identifier|default:'' }}"
           required
-          placeholder="যেমন: 01712345678 বা student@gmail.com"
+          :placeholder="mode === 'register' ? '১১ ডিজিটের মোবাইল নম্বর (যেমন: 01712345678)' : 'মোবাইল নম্বর অথবা ইমেইল'"
           class="block w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-xs font-mono focus:ring-2 focus:ring-brand-primary/20 focus:outline-none"
         >
+        <p x-show="mode === 'register'" class="text-[10px] text-slate-400">
+          শুধুমাত্র ১১ ডিজিটের মোবাইল নম্বর (কোনো অক্ষর বা টেক্সট গ্রহণযোগ্য নয়)
+        </p>
+      </div>
+
+      <!-- Institution Name (Directly below Mobile Number) -->
+      <div x-show="mode === 'register'" x-cloak class="space-y-1">
+        <label for="institution_name" class="block font-bold text-slate-700 dark:text-slate-300">
+          প্রতিষ্ঠানের নাম
+        </label>
+        <input
+          id="institution_name"
+          name="institution_name"
+          type="text"
+          placeholder="যেমন: ঢাকা কলেজ / আদমজী ক্যান্টনমেন্ট কলেজ"
+          class="block w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-brand-primary/20 focus:outline-none"
+        >
+      </div>
+
+      <!-- Academic Info Box (SSC BATCH & HSC BATCH) -->
+      <div x-show="mode === 'register'" x-cloak class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 space-y-2">
+        <span class="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">
+          একাডেমিক ব্যাচ তথ্য
+        </span>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div>
+            <label for="ssc_year" class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+              SSC BATCH
+            </label>
+            <input
+              id="ssc_year"
+              name="ssc_year"
+              type="text"
+              placeholder="যেমন: 2024"
+              class="block w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-mono focus:ring-2 focus:ring-brand-primary/20 focus:outline-none"
+            >
+          </div>
+          <div>
+            <label for="hsc_year" class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+              HSC BATCH *
+            </label>
+            <input
+              id="hsc_year"
+              name="hsc_year"
+              type="text"
+              :required="mode === 'register'"
+              placeholder="যেমন: 2026"
+              class="block w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-mono focus:ring-2 focus:ring-brand-primary/20 focus:outline-none"
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- Gender Selection (Only for Registration) -->
+      <div x-show="mode === 'register'" x-cloak class="space-y-1">
+        <label for="gender" class="block font-bold text-slate-700 dark:text-slate-300">
+          লিঙ্গ সিলেক্ট করো *
+        </label>
+        <select
+          id="gender"
+          name="gender"
+          :required="mode === 'register'"
+          class="block w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-brand-primary/20 focus:outline-none"
+        >
+          <option value="">-- লিঙ্গ নির্বাচন করুন --</option>
+          <option value="ছাত্র">ছাত্র (Male)</option>
+          <option value="ছাত্রী">ছাত্রী (Female)</option>
+          <option value="অন্যান্য">অন্যান্য (Other)</option>
+        </select>
       </div>
 
       <!-- Password Field with Show/Hide Toggle -->
@@ -101,6 +182,7 @@
           <input
             id="password"
             name="password"
+            x-model="pass"
             :type="showPass ? 'text' : 'password'"
             required
             placeholder="••••••••••••"
@@ -114,6 +196,30 @@
             <span x-text="showPass ? '🙈' : '👁️'"></span>
           </button>
         </div>
+      </div>
+
+      <!-- Confirm Password Field (Only for Registration) -->
+      <div x-show="mode === 'register'" x-cloak class="space-y-1">
+        <label for="confirm_password" class="block font-bold text-slate-700 dark:text-slate-300">
+          কনফার্ম পাসওয়ার্ড *
+        </label>
+        <div class="relative">
+          <input
+            id="confirm_password"
+            name="confirm_password"
+            x-model="confirmPass"
+            :type="showPass ? 'text' : 'password'"
+            :required="mode === 'register'"
+            placeholder="••••••••••••"
+            class="block w-full px-4 py-2.5 pr-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-xs font-mono focus:ring-2 focus:ring-brand-primary/20 focus:outline-none"
+          >
+        </div>
+        <p x-show="mode === 'register' && confirmPass && pass !== confirmPass" class="text-[10px] text-rose-500 font-bold">
+          ⚠️ পাসওয়ার্ড দুটি মিলছে না!
+        </p>
+        <p x-show="mode === 'register' && confirmPass && pass === confirmPass" class="text-[10px] text-emerald-500 font-bold">
+          ✓ পাসওয়ার্ড মিলেছে
+        </p>
       </div>
 
       <!-- Submit Button -->

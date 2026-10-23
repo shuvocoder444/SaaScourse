@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}{{ tenant.name }} - মোবাইল অ্যাপ ইনস্টল ও ব্যবহার{% endblock %}
-{% block meta_description %}{{ tenant.name }} এর অফিসিয়াল মোবাইল অ্যাপ সরাসরি আপনার ফোনে ইনস্টল করুন। এক ক্লিকেই লাইভ ক্লাস, মডেল টেস্ট ও স্টাডি মেটেরিয়ালস উপভোগ করুন।{% endblock %}
+{% block meta_description %}{{ tenant.name }} এর অফিসিয়াল মোবাইল অ্যাপ সরাসরি আপনার ফোনে ডাউনলোড ও ইনস্টল করুন। এক ক্লিকেই লাইভ ক্লাস, মডেল টেস্ট ও স্টাডি মেটেরিয়ালস উপভোগ করুন।{% endblock %}
 
 {% block content %}
 <div class="min-h-[85vh] py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col justify-center">
@@ -18,7 +18,7 @@
     </h1>
     
     <p class="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl mx-auto">
-      প্লে-স্টোরের ঝামেলা ছাড়াই সরাসরি আপনার ফোনের হোমস্ক্রিনে ইনস্টল করে নিন। যেকোনো স্থান থেকে সবচেয়ে দ্রুতগতিতে ক্লাস ও পরীক্ষায় অংশ নিন।
+      প্লে-স্টোরের ঝামেলা ছাড়াই সরাসরি আপনার ফোনে ডাউনলোড করে ইনস্টল করে নিন। যেকোনো স্থান থেকে সবচেয়ে দ্রুতগতিতে ক্লাস ও পরীক্ষায় অংশ নিন।
     </p>
   </div>
 
@@ -90,19 +90,47 @@
         <!-- Action Buttons -->
         <div class="space-y-3 pt-2">
           
-          <!-- Primary: 1-Tap Instant Native Android / iOS Install Button -->
-          <button 
-            type="button" 
-            onclick="triggerAppInstall()" 
-            id="app-install-btn"
-            class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-sm shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-3 transition-all transform hover:-translate-y-0.5 active:scale-95"
-          >
-            <span class="text-2xl">📱</span>
-            <div class="text-left leading-tight">
-              <div class="text-[10px] font-bold uppercase tracking-wider text-emerald-100">1-TAP APP INSTALL</div>
-              <div class="text-sm sm:text-base font-black">সরাসরি অ্যাপ ইনস্টল করুন</div>
+          {% if has_apk_file and apk_download_url %}
+            <!-- Direct Download APK Button -->
+            <a 
+              href="{{ apk_download_url }}" 
+              download
+              id="app-download-btn"
+              class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-sm shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-3 transition-all transform hover:-translate-y-0.5 active:scale-95 text-center cursor-pointer no-underline"
+            >
+              <span class="text-2xl animate-pulse">📥</span>
+              <div class="text-left leading-tight">
+                <div class="text-[10px] font-bold uppercase tracking-wider text-emerald-100">DIRECT APK DOWNLOAD</div>
+                <div class="text-sm sm:text-base font-black">সরাসরি অ্যাপ ডাউনলোড করুন (.APK)</div>
+              </div>
+            </a>
+          {% else %}
+            <!-- 1-Tap Instant Native Android / iOS Install Button -->
+            <button 
+              type="button" 
+              onclick="triggerAppInstall()" 
+              id="app-install-btn"
+              class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-sm shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-3 transition-all transform hover:-translate-y-0.5 active:scale-95 text-center cursor-pointer"
+            >
+              <span class="text-2xl">📱</span>
+              <div class="text-left leading-tight">
+                <div class="text-[10px] font-bold uppercase tracking-wider text-emerald-100">1-TAP APP INSTALL</div>
+                <div class="text-sm sm:text-base font-black">সরাসরি অ্যাপ ইনস্টল করুন</div>
+              </div>
+            </button>
+          {% endif %}
+
+          {% if is_admin and not has_apk_file %}
+            <div class="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-xs flex items-center justify-between gap-3">
+              <div class="flex items-center gap-2">
+                <span>⚠️</span>
+                <span>অ্যাকাডেমির নিজস্ব APK ফাইলটি এখনও আপলোড করা হয়নি।</span>
+              </div>
+              <a href="/courses/manage/settings/?tab=branding" class="shrink-0 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] shadow">
+                APK আপলোড করুন
+              </a>
             </div>
-          </button>
+          {% endif %}
 
           <!-- Support Contact -->
           <div class="pt-2 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-1">
@@ -198,9 +226,9 @@
           <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-extrabold flex items-center justify-center text-sm">
             ১
           </div>
-          <h4 class="font-bold text-slate-900 dark:text-white text-sm">ইনস্টল বাটনে চাপুন</h4>
+          <h4 class="font-bold text-slate-900 dark:text-white text-sm">ডাউনলোড বা ইনস্টল বাটনে চাপুন</h4>
           <p class="text-slate-600 dark:text-slate-400 leading-relaxed">
-            উপরের <strong>"সরাসরি অ্যাপ ইনস্টল করুন"</strong> বাটনে ক্লিক করুন।
+            উপরের <strong>"সরাসরি অ্যাপ ডাউনলোড / ইনস্টল করুন"</strong> বাটনে ট্যাপ করুন।
           </p>
         </div>
 
@@ -208,9 +236,9 @@
           <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-extrabold flex items-center justify-center text-sm">
             ২
           </div>
-          <h4 class="font-bold text-slate-900 dark:text-white text-sm">কনফার্ম করুন</h4>
+          <h4 class="font-bold text-slate-900 dark:text-white text-sm">ইনস্টল নিশ্চিত করুন</h4>
           <p class="text-slate-600 dark:text-slate-400 leading-relaxed">
-            ব্রাউজারের পপআপে আসা <strong>"Install"</strong> বা <strong>"Add to Home screen"</strong> অপশনে চাপুন।
+            APK ডাউনলোড হলে ফাইলে ট্যাপ করে ইনস্টল করুন অথবা স্ক্রিনের পপআপে <strong>"Install"</strong> বাটনে চাপুন।
           </p>
         </div>
 
@@ -228,32 +256,125 @@
   </div>
 
 </div>
+
+<!-- Modern In-Page Install / Info Modal (No ugly 3-dot alert popups!) -->
+<div id="install-guide-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden items-center justify-center p-4">
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+    <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg">
+          📱
+        </div>
+        <div>
+          <h4 class="text-sm font-black text-slate-900 dark:text-white">মোবাইল অ্যাপ ইনস্টল</h4>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400">{{ tenant.name }}</p>
+        </div>
+      </div>
+      <button type="button" onclick="closeInstallModal()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center justify-center text-sm font-bold">
+        ✕
+      </button>
+    </div>
+
+    {% if is_admin and not has_apk_file %}
+      <!-- Admin APK Upload Prompt -->
+      <div class="space-y-4 text-xs">
+        <div class="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-200 space-y-1.5">
+          <div class="font-bold flex items-center gap-1.5">
+            <span>⚙️</span>
+            <span>অ্যাকাডেমির নিজস্ব APK যুক্ত করুন</span>
+          </div>
+          <p class="text-[11px] leading-relaxed">
+            আপনার অ্যাকাডেমির নিজস্ব Android APK ফাইলটি এখনও আপলোড করা হয়নি। নিচে ক্লিক করে সেটিংস থেকে সরাসরি আপনার APK ফাইল আপলোড করুন অথবা এক্সটার্নাল APK লিংক দিন। এরপর এই বাটনে ক্লিক করলেই শিক্ষার্থীরা সাথে সাথে APK ফাইলটি ডাউনলোড করতে পারবে।
+          </p>
+        </div>
+
+        <a 
+          href="/courses/manage/settings/?tab=branding" 
+          class="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs text-center block shadow-lg shadow-emerald-600/20 transition-all"
+        >
+          ⚙️ অ্যাকাডেমি সেটিংসে গিয়ে APK ফাইল আপলোড করুন
+        </a>
+      </div>
+    {% else %}
+      <!-- Student / Visitor Friendly Info -->
+      <div class="space-y-4 text-xs text-slate-600 dark:text-slate-300">
+        <p class="leading-relaxed">
+          অফিসিয়াল অ্যাপটি সরাসরি আপনার ডিভাইসে ইনস্টল করতে অথবা সরাসরি APK ফাইল পেতে নিচের অপশন ব্যবহার করুন:
+        </p>
+
+        <div class="space-y-2">
+          <a 
+            href="{{ tenant.whatsapp_url }}" 
+            target="_blank"
+            class="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
+          >
+            <span>💬</span>
+            <span>WhatsApp হেল্পলাইনে সরাসরি APK চান</span>
+          </a>
+          <button 
+            type="button" 
+            onclick="closeInstallModal()"
+            class="w-full py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs"
+          >
+            ঠিক আছে, বুঝতে পেরেছি
+          </button>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
-  let deferredPrompt = null;
+  const apkDownloadUrl = "{{ apk_download_url|default:'' }}";
+  let deferredPrompt = window.globalPWAInstallPrompt || null;
 
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
+    window.globalPWAInstallPrompt = e;
   });
 
+  function openInstallModal() {
+    const modal = document.getElementById('install-guide-modal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+  }
+
+  function closeInstallModal() {
+    const modal = document.getElementById('install-guide-modal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+  }
+
   function triggerAppInstall() {
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      deferredPrompt.userChoice.then((choiceResult) => {
+    // 1. If APK download URL exists, trigger immediate download
+    if (apkDownloadUrl) {
+      window.location.href = apkDownloadUrl;
+      return;
+    }
+
+    // 2. If browser PWA prompt is ready, trigger native 1-tap installation
+    const promptEvent = window.globalPWAInstallPrompt || deferredPrompt;
+    if (promptEvent) {
+      promptEvent.prompt();
+      promptEvent.userChoice.then((choiceResult) => {
         if (choiceResult.outcome === 'accepted') {
-          console.log('User accepted app install');
+          console.log('App install accepted');
         }
+        window.globalPWAInstallPrompt = null;
         deferredPrompt = null;
       });
-    } else if (isIOS) {
-      alert('iPhone/iPad এ ইনস্টল করার নিয়ম:\n১. Safari ব্রাউজারের নিচে "Share" (📤) আইকনে চাপুন।\n২. স্ক্রল করে "Add to Home Screen" (➕) অপশনটি নির্বাচন করুন।');
-    } else {
-      alert('আপনার ব্রাউজার মেনুর (উপরে ডানে ৩-ডট ⋮) "Install App" বা "Add to Home screen" এ ক্লিক করে অ্যাপটি ইনস্টল করুন।');
+      return;
     }
+
+    // 3. Otherwise show modern in-page modal (NO annoying browser alert popups!)
+    openInstallModal();
   }
 </script>
 {% endblock %}

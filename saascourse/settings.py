@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     "apps.tenants.apps.TenantsConfig",
     "apps.users.apps.UsersConfig",
     "apps.courses.apps.CoursesConfig",
+    "apps.payments.apps.PaymentsConfig",
 ]
 
 MIDDLEWARE = [
@@ -165,3 +166,15 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/dashboard/"
 LOGOUT_REDIRECT_URL = "/login/"
+
+
+# Webkoders Payment Gateway Configuration (https://payment.webkoders.com)
+GATEWAY_BASE_URL = os.environ.get(
+    "GATEWAY_BASE_URL", "https://payment.webkoders.com"
+).rstrip("/")
+GATEWAY_API_KEY = os.environ.get(
+    "GATEWAY_API_KEY", "mfs_live_71ac0d5f45e07152a5ad1629ce4ec36d"
+).strip()
+GATEWAY_API_SECRET = os.environ.get(
+    "GATEWAY_API_SECRET", "mfs_sec_f08bea53219f336dfe5075db9abddb3542ab3fd74f2e61a7"
+).strip()

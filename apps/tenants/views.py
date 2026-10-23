@@ -544,7 +544,22 @@ def tenant_branding_settings_view(request):
             ).strip()
             sms_setting.save()
             messages.success(request, "SMS Gateway configuration saved successfully!")
-        elif not menu_action:
+
+        # 7. Update Payment Gateway Settings
+        if target_tab == "payment" or "gateway_api_key" in request.POST:
+            branding["gateway_enabled"] = (request.POST.get("gateway_enabled") == "on") or (
+                request.POST.get("gateway_enabled") == "true"
+            )
+            branding["gateway_base_url"] = request.POST.get(
+                "gateway_base_url", "https://payment.webkoders.com"
+            ).strip().rstrip("/")
+            branding["gateway_api_key"] = request.POST.get("gateway_api_key", "").strip()
+            branding["gateway_api_secret"] = request.POST.get("gateway_api_secret", "").strip()
+            branding["gateway_help_text"] = request.POST.get("gateway_help_text", "").strip()
+            tenant.branding = branding
+            tenant.save(update_fields=["branding"])
+            messages.success(request, "পেমেন্ট গেটওয়ে সেটিংস সফলভাবে সংরক্ষিত হয়েছে!")
+        elif not menu_action and target_tab != "sms":
             messages.success(request, "সেটিংস সফলভাবে সংরক্ষিত হয়েছে!")
 
         # If subdomain changed, redirect to the new subdomain URL so session and routing stay valid
@@ -1048,6 +1063,17 @@ def download_academy_app(request):
         else branding.get("android_apk_url", "")
     )
 
+    is_admin = False
+    if request.user.is_authenticated:
+        if request.user.is_superuser:
+            is_admin = True
+        else:
+            is_admin = TenantMembership.objects.filter(
+                tenant=tenant,
+                user=request.user,
+                role__in=["owner", "admin"],
+            ).exists()
+
     return render(
         request,
         "tenants/app_download.html",
@@ -1056,6 +1082,7 @@ def download_academy_app(request):
             "branding": branding,
             "has_apk_file": has_apk_file,
             "apk_download_url": apk_download_url,
+            "is_admin": is_admin,
         },
     )
 

@@ -48,7 +48,7 @@
               <div class="text-base font-black text-slate-900 dark:text-white">
                 {{ my_rank.rank_bn }}তম স্থান
               </div>
-              <span class="text-[11px] font-mono text-slate-500">নম্বর: {{ my_rank.score }} / {{ my_rank.total_marks }}</span>
+              <span class="text-[11px] font-mono text-slate-500">নম্বর: {{ my_rank.score|floatformat:"-2" }} / {{ my_rank.total_marks|floatformat:"-2" }}</span>
             </div>
           </div>
         {% endif %}
@@ -130,7 +130,7 @@
 
                   <!-- Score -->
                   <td class="py-3.5 px-4 text-center font-bold text-brand-primary text-sm">
-                    {{ item.score }} <span class="text-[10px] text-slate-400 font-normal">/ {{ item.total_marks }}</span>
+                    {{ item.score|floatformat:"-2" }} <span class="text-[10px] text-slate-400 font-normal">/ {{ item.total_marks|floatformat:"-2" }}</span>
                   </td>
 
                   <!-- Correct / Wrong Breakdown -->

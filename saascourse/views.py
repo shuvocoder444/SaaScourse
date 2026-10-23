@@ -114,15 +114,27 @@ def manifest_json_view(request):
         "icons": [
             {
                 "src": icon_src,
-                "sizes": "192x192 512x512",
+                "sizes": "192x192",
                 "type": "image/svg+xml" if icon_src.endswith(".svg") else "image/png",
-                "purpose": "any maskable",
+                "purpose": "any",
             },
             {
                 "src": icon_src,
                 "sizes": "512x512",
                 "type": "image/svg+xml" if icon_src.endswith(".svg") else "image/png",
-                "purpose": "any maskable",
+                "purpose": "any",
+            },
+            {
+                "src": icon_src,
+                "sizes": "192x192",
+                "type": "image/svg+xml" if icon_src.endswith(".svg") else "image/png",
+                "purpose": "maskable",
+            },
+            {
+                "src": icon_src,
+                "sizes": "512x512",
+                "type": "image/svg+xml" if icon_src.endswith(".svg") else "image/png",
+                "purpose": "maskable",
             },
         ],
         "shortcuts": [
